@@ -145,11 +145,15 @@ app.post('/api/auth/register', h(async (req, res) => {
   if (!EMAIL_RE.test(email)) return bad(res, 'Please enter a valid email');
   if (password.length < 6) return bad(res, 'Password must be at least 6 characters');
   if (await db.one('SELECT 1 AS x FROM users WHERE email = ? OR login = ?', [email, email])) return bad(res, 'An account with this email already exists — sign in instead', 409);
+  // hosted without MASTER_PASSWORD: the owner's email (MASTER_EMAIL) becomes the teacher on first sign-up
+  const owner = process.env.MASTER_EMAIL && email === process.env.MASTER_EMAIL.trim().toLowerCase()
+    && !(await db.one("SELECT 1 AS x FROM users WHERE role = 'master'"));
+  const role = owner ? 'master' : 'student';
   const r = await db.run(
-    "INSERT INTO users (name, login, email, password_hash, role, provider, last_login_at) VALUES (?,?,?,?,'student','email', now()) RETURNING id",
-    [name, email, email, bcrypt.hashSync(password, 10)]
+    "INSERT INTO users (name, login, email, password_hash, role, provider, last_login_at) VALUES (?,?,?,?,?,?, now()) RETURNING id",
+    [name, email, email, bcrypt.hashSync(password, 10), role, owner ? 'teacher' : 'email']
   );
-  res.json({ token: signToken({ id: r.id, role: 'student' }) });
+  res.json({ token: signToken({ id: r.id, role }) });
 }));
 
 app.post('/api/auth/google', h(async (req, res) => {

@@ -1,9 +1,12 @@
 /**
  * Vercel entry: every /api/* request is handled by the Express app in server/src.
- * The app needs a hosted Postgres database (DATABASE_URL) and a teacher password
- * (MASTER_PASSWORD) — until both are set, the API answers with a setup message.
+ * The app needs a hosted Postgres database (DATABASE_URL / POSTGRES_URL, e.g. Neon via Vercel Storage)
+ * and a teacher: MASTER_EMAIL (that email becomes the teacher on first sign-up) or MASTER_PASSWORD.
+ * Until both are set, the API answers with a setup message.
  */
-const missing = ['DATABASE_URL', 'MASTER_PASSWORD'].filter((k) => !process.env[k]);
+const missing = [];
+if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) missing.push('DATABASE_URL');
+if (!process.env.MASTER_PASSWORD && !process.env.MASTER_EMAIL) missing.push('MASTER_EMAIL (or MASTER_PASSWORD)');
 let handler;
 if (missing.length) {
   handler = (req, res) => {

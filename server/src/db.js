@@ -22,6 +22,8 @@ const iso = (v) => (v == null ? v : new Date(v).toISOString());
 let driver; // { query(sql, params) -> {rows, rowCount}, transaction(fn), exec(sql), close() }
 export let DB_KIND = 'pglite';
 
+// Vercel's Neon / Postgres integrations provide POSTGRES_URL as well
+if (!process.env.DATABASE_URL && process.env.POSTGRES_URL) process.env.DATABASE_URL = process.env.POSTGRES_URL;
 if (process.env.DATABASE_URL) {
   DB_KIND = 'postgres';
   const pg = (await import('pg')).default;

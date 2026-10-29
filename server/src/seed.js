@@ -86,13 +86,14 @@ async function insertQuestions(t, quizId, list) {
 
 export async function seed() {
   const { c } = await db.one('SELECT COUNT(*) AS c FROM users');
-  if (c) return false;
+  if (c || (await db.one("SELECT 1 AS x FROM settings WHERE key = '_seeded'"))) return false;
 
   const masterLogin = process.env.MASTER_LOGIN || 'master';
   const masterPass = process.env.MASTER_PASSWORD || 'master123';
 
   await db.tx(async (t) => {
-    const master = (await t.run("INSERT INTO users (name, login, password_hash, role, provider) VALUES (?, ?, ?, 'master', 'teacher') RETURNING id",
+    // hosted without MASTER_PASSWORD: no default teacher — the MASTER_EMAIL owner signs up and becomes the teacher
+    const master = (process.env.VERCEL && !process.env.MASTER_PASSWORD) ? null : (await t.run("INSERT INTO users (name, login, password_hash, role, provider) VALUES (?, ?, ?, 'master', 'teacher') RETURNING id",
       ['Teacher', masterLogin, bcrypt.hashSync(masterPass, 10)])).id;
 
     const g = (await t.run('INSERT INTO groups (name) VALUES (?) RETURNING id', ['Happy Smurfs | PRE-eng'])).id;
@@ -128,6 +129,7 @@ export async function seed() {
       student, 'Goal: Carnegie Mellon Qatar', 'Goal', 'Target SAT 1550 (Math 800, English 750). Exam day: Mar 6, 2027.', '2026-10-01',
     ]);
   });
+  await db.run("INSERT INTO settings (key, value) VALUES ('_seeded', '1') ON CONFLICT (key) DO NOTHING");
   return { masterLogin, masterPass };
 }
 
