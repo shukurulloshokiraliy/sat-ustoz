@@ -1,0 +1,233 @@
+{
+  "domain": "Standard English Conventions",
+  "skill": "Form, Structure, and Sense",
+  "skill_id": "form-structure-sense",
+  "about": "Subject–verb agreement, pronouns, verb tense and form, possessives, modifiers and parallel structure.",
+  "questions": [
+    {
+      "id": "fss-01",
+      "difficulty": "easy",
+      "passage": "The collection of old maps in the city archive ______ visitors from around the world every year.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "attract",
+        "are attracting",
+        "have attracted",
+        "attracts"
+      ],
+      "answer": 3,
+      "explanation": "The subject is \"collection\" (singular); \"of old maps\" is a prepositional phrase and does not change the subject. A singular subject needs the singular verb \"attracts.\" A, B and C are plural forms.",
+      "tip": "Cross out prepositional phrases (of..., in..., with...) to find the real subject."
+    },
+    {
+      "id": "fss-02",
+      "difficulty": "easy",
+      "passage": "When the students finished the experiment, the teacher asked ______ to write a short report about the results.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "them",
+        "it",
+        "him",
+        "they"
+      ],
+      "answer": 0,
+      "explanation": "The pronoun refers to \"the students\" (plural) and is the object of \"asked,\" so the plural object pronoun \"them\" is correct. \"It\" and \"him\" are singular, and \"they\" is a subject pronoun.",
+      "tip": "A pronoun must match its noun in number and fit its role (subject or object)."
+    },
+    {
+      "id": "fss-03",
+      "difficulty": "easy",
+      "passage": "Last summer, my grandparents ______ a small vineyard near Parkent, where they still grow several kinds of grapes.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "plant",
+        "will plant",
+        "planted",
+        "are planting"
+      ],
+      "answer": 2,
+      "explanation": "\"Last summer\" places the action in the past, so the simple past \"planted\" is correct. The present, future and present progressive forms do not match the time marker.",
+      "tip": "Look for time markers (last summer, next year, since 2010) to choose the tense."
+    },
+    {
+      "id": "fss-04",
+      "difficulty": "easy",
+      "passage": "Every morning, the baker opens the shop at six, prepares the dough for the day ______ fresh bread to the neighborhood cafes.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "and delivering",
+        "and delivers",
+        "and delivered",
+        "and to deliver"
+      ],
+      "answer": 1,
+      "explanation": "The list of actions must be parallel: \"opens... prepares... and delivers.\" All are present-tense verbs. \"Delivering,\" \"delivered\" and \"to deliver\" break the pattern.",
+      "tip": "Items in a list should share the same grammatical form."
+    },
+    {
+      "id": "fss-05",
+      "difficulty": "easy",
+      "passage": "The ______ uniforms were washed and ironed before the championship game.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "players",
+        "player's",
+        "players's",
+        "players'"
+      ],
+      "answer": 3,
+      "explanation": "The uniforms belong to several players, so the plural possessive \"players'\" is correct. \"Players\" has no apostrophe for possession, \"player's\" refers to only one player, and \"players's\" is not a correct form.",
+      "tip": "Plural noun ending in -s + possession = apostrophe after the s (players')."
+    },
+    {
+      "id": "fss-06",
+      "difficulty": "medium",
+      "passage": "Neither the coach nor the players ______ expected the storm to delay the match by three hours.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "was",
+        "has",
+        "is",
+        "had"
+      ],
+      "answer": 3,
+      "explanation": "With \"neither... nor,\" the verb agrees with the closer subject, \"players\" (plural). \"Had expected\" works for plural subjects and fits the past context. \"Was\" and \"has\" are singular, and \"is\" is singular and present tense, which does not fit the past event.",
+      "tip": "Neither/nor and either/or: the verb agrees with the noun closest to it."
+    },
+    {
+      "id": "fss-07",
+      "difficulty": "medium",
+      "passage": "Walking through the old city of Khiva at sunset, ______",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "the tiled minarets seemed to glow in the golden light.",
+        "the golden light made the tiled minarets glow.",
+        "we watched the tiled minarets glow in the golden light.",
+        "the glow of the tiled minarets appeared in the golden light."
+      ],
+      "answer": 2,
+      "explanation": "The opening phrase \"Walking through the old city\" must describe the subject that comes right after the comma. Only people can walk, so the subject must be \"we\" (C). In A, B and D, the minarets, light or glow appear to be walking.",
+      "tip": "Dangling modifier rule: the noun right after the comma must be the one doing the action in the opening phrase."
+    },
+    {
+      "id": "fss-08",
+      "difficulty": "medium",
+      "passage": "The city's new museum of applied arts, along with its gardens and two restored caravanserais, ______ expected to open to the public next spring.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "is",
+        "are",
+        "were",
+        "have been"
+      ],
+      "answer": 0,
+      "explanation": "The subject is \"museum\" (singular). \"Along with its gardens and two restored caravanserais\" is extra information and does not make the subject plural. So the singular \"is\" is correct.",
+      "tip": "\"Along with,\" \"as well as\" and \"together with\" do not create plural subjects."
+    },
+    {
+      "id": "fss-09",
+      "difficulty": "medium",
+      "passage": "Each of the competing teams presented ______ design for a low-cost water filter to the panel of judges.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "their",
+        "its",
+        "they're",
+        "it's"
+      ],
+      "answer": 1,
+      "explanation": "\"Each\" is singular, so the pronoun must be singular: \"its.\" \"Their\" is plural; \"they're\" means \"they are\" and \"it's\" means \"it is,\" which do not fit.",
+      "tip": "On the SAT, \"each,\" \"every\" and collective nouns like \"team\" usually take singular pronouns (its)."
+    },
+    {
+      "id": "fss-10",
+      "difficulty": "medium",
+      "passage": "By the time the rescue team reached the village, the floodwaters ______ already begun to fall.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "have",
+        "has",
+        "had",
+        "will have"
+      ],
+      "answer": 2,
+      "explanation": "The waters began to fall before another past event (the team's arrival), so the past perfect \"had begun\" is correct. \"Have\" and \"has\" are present perfect, and \"will have\" is future.",
+      "tip": "\"By the time\" + past event usually signals the past perfect (had + V3) for the earlier action."
+    },
+    {
+      "id": "fss-11",
+      "difficulty": "hard",
+      "passage": "The results of the long-term study, which followed more than 2,000 participants for nearly three decades, ______ that regular physical activity is linked to a lower risk of memory loss.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "suggests",
+        "suggest",
+        "has suggested",
+        "was suggesting"
+      ],
+      "answer": 1,
+      "explanation": "The subject is \"results\" (plural). The long phrase \"of the long-term study, which followed...\" separates the subject from the verb but does not change it. The plural verb \"suggest\" is correct; the other choices are singular.",
+      "tip": "The SAT puts long interrupters between subject and verb. Connect the verb back to the first noun."
+    },
+    {
+      "id": "fss-12",
+      "difficulty": "hard",
+      "passage": "The novelist's early stories were praised for their humor, their vivid descriptions of village life, and ______",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "because the dialogue sounded natural.",
+        "the dialogue sounded natural.",
+        "their natural-sounding dialogue.",
+        "having natural-sounding dialogue."
+      ],
+      "answer": 2,
+      "explanation": "The list follows the pattern \"their + noun\": \"their humor, their vivid descriptions..., and their natural-sounding dialogue.\" A adds a clause, B adds a complete sentence, and D uses an -ing phrase, all breaking the parallel structure.",
+      "tip": "Read the first item of the list, then the answer choice right after \"and.\" They should sound alike."
+    },
+    {
+      "id": "fss-13",
+      "difficulty": "hard",
+      "passage": "According to a recent survey, the population of wild mountain goats in the northern valley is smaller than ______ in the southern valley.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "the wild mountain goats",
+        "it is",
+        "the southern valley's",
+        "that"
+      ],
+      "answer": 3,
+      "explanation": "The comparison must be between two populations. \"That\" stands for \"the population,\" so the sentence compares the population in the northern valley with the population in the southern valley. A compares a population with animals, C with a valley, and B (\"it is in the southern valley\") does not make a logical comparison.",
+      "tip": "Faulty comparison: compare like with like. \"That of\" or \"that\" often fixes the problem."
+    },
+    {
+      "id": "fss-14",
+      "difficulty": "hard",
+      "passage": "Known for its sweetness and long shelf life, ______",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "farmers in Uzbekistan have grown the gulyabi melon for generations.",
+        "the gulyabi melon has been grown by farmers in Uzbekistan for generations.",
+        "generations of farmers in Uzbekistan have grown the gulyabi melon.",
+        "Uzbekistan's farmers have been growing the gulyabi melon for generations."
+      ],
+      "answer": 1,
+      "explanation": "The phrase \"Known for its sweetness and long shelf life\" describes the melon, so \"the gulyabi melon\" must come right after the comma (B). In A, C and D, the farmers or generations seem to be known for sweetness.",
+      "tip": "Ask who or what the opening phrase describes. That noun must come right after the comma."
+    },
+    {
+      "id": "fss-15",
+      "difficulty": "hard",
+      "passage": "Among the artifacts discovered at the site ______ a bronze mirror, several glass beads and a coin minted in a distant kingdom.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "was",
+        "is",
+        "has been",
+        "were"
+      ],
+      "answer": 3,
+      "explanation": "This is an inverted sentence: the subject comes after the verb. The subject is \"a bronze mirror, several glass beads and a coin,\" a compound (plural) subject, so the plural \"were\" is needed. \"Was,\" \"is\" and \"has been\" are singular.",
+      "tip": "In inverted sentences (\"Among X were Y\"), find the subject after the verb, then make them agree."
+    }
+  ]
+}

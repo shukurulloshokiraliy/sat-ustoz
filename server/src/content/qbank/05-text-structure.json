@@ -1,0 +1,233 @@
+{
+  "domain": "Craft and Structure",
+  "skill": "Text Structure and Purpose",
+  "skill_id": "text-structure",
+  "about": "Explain why a text was written, how it is organized, or what role one sentence plays in it.",
+  "questions": [
+    {
+      "id": "tsp-01",
+      "difficulty": "easy",
+      "passage": "Many people believe that goldfish can remember things for only a few seconds. However, experiments have shown that goldfish can be trained to push a lever for food and can remember this skill for months. In some studies, they even learned to respond to particular sounds that signaled feeding time.",
+      "prompt": "Which choice best describes the overall structure of the text?",
+      "options": [
+        "It presents a popular belief and then gives evidence that the belief is wrong.",
+        "It describes how to care for goldfish and lists common mistakes.",
+        "It compares goldfish with other pets and explains which is smarter.",
+        "It tells the story of one scientist's career."
+      ],
+      "answer": 0,
+      "explanation": "The text opens with a common belief (short memory) and then uses experiments to show goldfish remember for months. It does not give care instructions, compare pets, or tell a scientist's life story.",
+      "tip": "Label each sentence (belief, evidence, more evidence), then match the labels to a choice."
+    },
+    {
+      "id": "tsp-02",
+      "difficulty": "easy",
+      "passage": "To make traditional Uzbek plov, the cook first heats oil in a heavy pot called a kazan. Next, onions and meat are browned, and then carrots cut into long strips are added. After water and spices are poured in and the mixture simmers, the rice is spread on top and cooked until it absorbs the liquid.",
+      "prompt": "Which choice best describes the overall structure of the text?",
+      "options": [
+        "It argues that plov is healthier than other dishes.",
+        "It describes the steps of a process in the order they occur.",
+        "It compares two different ways of cooking rice.",
+        "It explains the history of the kazan."
+      ],
+      "answer": 1,
+      "explanation": "Words such as first, next, then and after show a sequence of steps. The text does not make an argument, compare methods, or give history.",
+      "tip": "Sequence words (first, next, then, finally) signal a process structure."
+    },
+    {
+      "id": "tsp-03",
+      "difficulty": "easy",
+      "passage": "The city council is considering closing the old public swimming pool to save money. This would be a mistake. The pool is the only place in the neighborhood where children can learn to swim for free, and it gives families a safe place to cool off during the summer heat. The council should look for savings elsewhere.",
+      "prompt": "Which choice best states the main purpose of the text?",
+      "options": [
+        "To explain how public pools are built and maintained",
+        "To describe the history of the neighborhood",
+        "To report how much money the city council spends each year",
+        "To argue that the city should keep the swimming pool open"
+      ],
+      "answer": 3,
+      "explanation": "The writer calls the closure \"a mistake,\" gives reasons the pool matters, and tells the council to save money elsewhere: that is an argument to keep the pool open. The text gives no construction details, history or budget figures.",
+      "tip": "Opinion words (\"a mistake,\" \"should\") show the purpose is to argue, not just to inform."
+    },
+    {
+      "id": "tsp-04",
+      "difficulty": "easy",
+      "passage": "The following text is from a short story.\n\nThe market was waking up. Bread sellers stacked round loaves of non into tall towers, a man pushed a cart of melons through the narrow lane, and somewhere a radio played an old song. Laylo stood at the entrance, breathing in the smell of fresh bread, and felt that the whole city was greeting her.",
+      "prompt": "Which choice best states the main purpose of the text?",
+      "options": [
+        "To explain how bread is baked in a traditional oven",
+        "To describe a lively scene and a character's warm reaction to it",
+        "To argue that markets are better than supermarkets",
+        "To compare the market in the morning with the market at night"
+      ],
+      "answer": 1,
+      "explanation": "The text paints the busy market with sights and sounds and ends with Laylo feeling greeted by the city. It does not explain baking, make an argument, or compare times of day.",
+      "tip": "In fiction, purpose questions usually describe what the passage does: describe a scene, reveal a feeling, introduce a conflict."
+    },
+    {
+      "id": "tsp-05",
+      "difficulty": "easy",
+      "passage": "Volcanic soil is often extremely fertile. When volcanic rock breaks down, it releases minerals such as potassium and phosphorus that plants need to grow. [[This is why farmers in many parts of the world continue to live and work near active volcanoes, despite the danger of eruptions.]]",
+      "prompt": "Which choice best describes the function of the underlined sentence in the text as a whole?",
+      "options": [
+        "It explains a consequence of the fact described in the previous sentences.",
+        "It introduces a new topic unrelated to soil.",
+        "It challenges the claim that volcanic soil is fertile.",
+        "It gives an example of a recent eruption."
+      ],
+      "answer": 0,
+      "explanation": "\"This is why\" shows that the fertile soil described earlier leads farmers to live near volcanoes, which is a consequence. The sentence stays on topic, supports rather than challenges the claim, and mentions no specific eruption.",
+      "tip": "\"This is why,\" \"as a result\" and \"therefore\" mark a consequence."
+    },
+    {
+      "id": "tsp-06",
+      "difficulty": "medium",
+      "passage": "Some music critics claim that the electric guitar killed the folk traditions of the 1960s. [[Yet many of the decade's most influential folk musicians adopted the electric guitar themselves, blending old songs with new sounds.]] Rather than ending folk music, the instrument may have helped it reach a much wider audience.",
+      "prompt": "Which choice best describes the function of the underlined sentence in the text as a whole?",
+      "options": [
+        "It provides an example that supports the critics' claim.",
+        "It describes how electric guitars are built.",
+        "It summarizes the history of folk music before the 1960s.",
+        "It presents a fact that complicates the critics' claim."
+      ],
+      "answer": 3,
+      "explanation": "\"Yet\" signals a contrast: folk musicians themselves used the electric guitar, which complicates the claim that the guitar destroyed folk music. It does not support the critics or describe construction or earlier history.",
+      "tip": "Function questions: look at the transition word at the start of the sentence. \"Yet\" and \"however\" usually challenge what came before."
+    },
+    {
+      "id": "tsp-07",
+      "difficulty": "medium",
+      "passage": "Tardigrades, tiny animals less than a millimeter long, can survive conditions that would kill almost any other creature. They have been revived after being frozen for decades, and they can endure extreme heat and even the vacuum of space. To survive, tardigrades enter a state called a tun, in which they lose almost all their body water and nearly stop their metabolism until conditions improve.",
+      "prompt": "Which choice best describes the overall structure of the text?",
+      "options": [
+        "It introduces an animal's remarkable ability and then explains how the animal achieves it.",
+        "It compares tardigrades with insects and concludes that insects are tougher.",
+        "It argues that tardigrades should be protected by law.",
+        "It describes a debate among scientists about where tardigrades live."
+      ],
+      "answer": 0,
+      "explanation": "The first two sentences show what tardigrades can survive, and the last explains the mechanism (the tun state). There is no comparison with insects, no argument about law, and no debate.",
+      "tip": "\"What\" followed by \"how\" is a very common SAT structure for science texts."
+    },
+    {
+      "id": "tsp-08",
+      "difficulty": "medium",
+      "passage": "The following text is from a novel.\n\nGrandfather's workshop had not changed in forty years. The same tools hung in the same places on the wall, each outlined in faded paint so that anything missing could be noticed at once. [[Even the dust seemed to settle in an orderly way.]]",
+      "prompt": "Which choice best describes the function of the underlined sentence in the text as a whole?",
+      "options": [
+        "It suggests that Grandfather has stopped using the workshop.",
+        "It humorously emphasizes how orderly the workshop is.",
+        "It introduces a problem that the narrator must solve.",
+        "It contrasts Grandfather's workshop with the narrator's own messy room."
+      ],
+      "answer": 1,
+      "explanation": "Dust cannot really settle in an \"orderly\" way; this playful exaggeration emphasizes the workshop's extreme order described earlier. Nothing indicates the workshop is unused, presents a problem, or mentions the narrator's room.",
+      "tip": "Exaggeration at the end of a description usually emphasizes the description, often with humor."
+    },
+    {
+      "id": "tsp-09",
+      "difficulty": "medium",
+      "passage": "Researchers once thought that elephants communicated mainly through trumpeting calls that humans can hear. Then, in the 1980s, scientists recording elephants noticed that the animals also produce deep rumbles, too low for human ears, that can travel several kilometers. Since then, studies have shown that elephants use these low sounds to coordinate movements and find family members far away.",
+      "prompt": "Which choice best states the main purpose of the text?",
+      "options": [
+        "To describe how scientists' understanding of elephant communication has changed",
+        "To argue that elephants are more intelligent than other mammals",
+        "To explain why humans cannot hear low sounds",
+        "To list the different family groups elephants form"
+      ],
+      "answer": 0,
+      "explanation": "The text moves from an old belief to a discovery and then to what later studies showed, tracing how understanding changed. It makes no comparison of intelligence, does not explain human hearing, and does not list family groups.",
+      "tip": "Time markers (once, then, since then) often signal a text about how knowledge developed."
+    },
+    {
+      "id": "tsp-10",
+      "difficulty": "medium",
+      "passage": "City planners in Tashkent and other growing cities face a difficult choice. Building tall apartment towers allows many people to live close to jobs and public transport. [[On the other hand, high-rise neighborhoods can feel crowded and may lack the courtyards and gardens that make traditional mahallas such close-knit communities.]] Planners must therefore weigh efficiency against residents' sense of community.",
+      "prompt": "Which choice best describes the function of the underlined sentence in the text as a whole?",
+      "options": [
+        "It provides further evidence that tall towers are the best solution.",
+        "It rejects the idea that cities are growing.",
+        "It explains how mahallas were first built.",
+        "It presents a drawback of one option, setting up the choice described in the final sentence."
+      ],
+      "answer": 3,
+      "explanation": "\"On the other hand\" introduces a disadvantage of towers; together with the advantage before it, this creates the trade-off the final sentence describes. It neither supports towers as best nor explains mahalla history, nor denies growth.",
+      "tip": "Find the sentence's job in the argument: advantage, disadvantage, example, or conclusion."
+    },
+    {
+      "id": "tsp-11",
+      "difficulty": "hard",
+      "passage": "The historian begins by acknowledging that the 15th-century Timurid court in Herat was famous for its poetry and painting. She then notes that most studies of the court focus on its rulers and famous artists. Finally, she turns to account books and workshop records to show how much of the court's artistic production depended on paper makers, bookbinders and pigment grinders whose names are rarely remembered.",
+      "prompt": "Which choice best describes the overall structure of the text?",
+      "options": [
+        "It praises famous artists, then criticizes rulers for neglecting them.",
+        "It describes a well-known topic, identifies a gap in how it is usually studied, and then presents evidence that fills that gap.",
+        "It summarizes a debate between two historians and declares one of them correct.",
+        "It explains how paper was invented and later used for painting."
+      ],
+      "answer": 1,
+      "explanation": "The text moves from the court's fame, to the usual focus on rulers and artists (a gap), to evidence about overlooked workers that fills the gap. There is no criticism of rulers, no two-historian debate, and no account of paper's invention.",
+      "tip": "Map the steps: known topic → what studies usually miss → new evidence. That pattern appears often on the SAT."
+    },
+    {
+      "id": "tsp-12",
+      "difficulty": "hard",
+      "passage": "In 2023, a group of researchers announced that a material they called LK-99 could conduct electricity without any resistance at room temperature, a result that would transform the energy industry. Laboratories around the world quickly tried to reproduce the experiment but failed. [[Within weeks, other teams showed that small amounts of copper sulfide in the samples could explain the unusual measurements that had seemed so remarkable.]] The episode is often cited to show why scientists insist that important results be repeated independently before they are accepted.",
+      "prompt": "Which choice best describes the function of the underlined sentence in the text as a whole?",
+      "options": [
+        "It offers an explanation for the surprising original results, supporting the lesson stated in the final sentence.",
+        "It shows that the new material was later used in the energy industry.",
+        "It suggests that the laboratories trying to reproduce the result made errors in their experiments.",
+        "It introduces a second discovery made by the original researchers."
+      ],
+      "answer": 0,
+      "explanation": "The copper sulfide finding explains the remarkable original measurements without a new kind of material, which supports the final sentence's point about independent repetition. The material was not used in industry, the other laboratories were not at fault, and the finding came from other teams, not the original researchers.",
+      "tip": "To find a sentence's function, ask how it connects to the sentence before it and to the conclusion."
+    },
+    {
+      "id": "tsp-13",
+      "difficulty": "hard",
+      "passage": "The following text is from a novel.\n\nEveryone in the family agreed that Aunt Gulnora was the most generous person they knew. She brought gifts to every celebration, lent money without being asked, and cooked for neighbors who were ill. It was only years later, reading her diaries, that her niece understood how carefully Gulnora had saved, mending her own coats and skipping meals, so that she could give so freely to others.",
+      "prompt": "Which choice best describes the overall structure of the text?",
+      "options": [
+        "It describes how a character was seen by others and then reveals a hidden cost behind that image.",
+        "It shows a character changing from selfish to generous over many years.",
+        "It contrasts two aunts with very different personalities.",
+        "It explains why the family disagreed about Gulnora."
+      ],
+      "answer": 0,
+      "explanation": "The text first shows the family's view of Gulnora's generosity and then reveals, through the diaries, the personal sacrifices behind it. Gulnora does not change, there is only one aunt, and the family agreed about her.",
+      "tip": "\"It was only years later...\" signals a reveal that adds a new layer to what came before."
+    },
+    {
+      "id": "tsp-14",
+      "difficulty": "hard",
+      "passage": "Some linguists argue that the spread of global languages such as English will inevitably cause smaller languages to disappear. The case of Welsh suggests otherwise. Although nearly all Welsh speakers also speak English, the share of children who can speak Welsh is far higher today than it was in the 1980s, helped by Welsh-language schools, television channels and road signs. [[Such policies, the evidence suggests, can allow a smaller language to survive alongside a global one.]]",
+      "prompt": "Which choice best describes the function of the underlined sentence in the text as a whole?",
+      "options": [
+        "It restates the linguists' argument in simpler words.",
+        "It predicts that English will eventually stop being a global language.",
+        "It introduces a new example that contradicts the Welsh case.",
+        "It draws a general conclusion from the example presented earlier in the text."
+      ],
+      "answer": 3,
+      "explanation": "After presenting Welsh as an example, the final sentence generalizes: policies like these can help smaller languages survive. It opposes the linguists rather than restating them, offers no new example, and makes no prediction about English.",
+      "tip": "Example first, generalization last is a common pattern. The last sentence often turns the example into a broader point."
+    },
+    {
+      "id": "tsp-15",
+      "difficulty": "hard",
+      "passage": "A common explanation for why zebras have stripes is that the pattern confuses predators such as lions. Field studies, however, have found little evidence that lions have more trouble catching striped animals. More recent experiments point to a different benefit: biting flies, which spread disease, land far less often on striped surfaces than on plain ones. Some researchers now think that protection from these insects may be the main advantage of stripes.",
+      "prompt": "Which choice best states the main purpose of the text?",
+      "options": [
+        "To explain why lions are unable to catch zebras",
+        "To describe how flies spread disease among animals",
+        "To present evidence that questions one explanation for zebra stripes and supports another",
+        "To argue that scientists will never understand why zebras have stripes"
+      ],
+      "answer": 2,
+      "explanation": "The text weakens the predator explanation with field studies and then presents experiments supporting the fly-protection explanation. A contradicts the field studies, B is only a supporting detail, and D is too extreme because the text offers a likely answer.",
+      "tip": "If a text examines two explanations, the purpose usually involves comparing or weighing them."
+    }
+  ]
+}

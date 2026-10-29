@@ -1,0 +1,233 @@
+{
+  "domain": "Information and Ideas",
+  "skill": "Central Ideas and Details",
+  "skill_id": "central-ideas",
+  "about": "Find the main point of a text, or a detail that the text states directly.",
+  "questions": [
+    {
+      "id": "cid-01",
+      "difficulty": "easy",
+      "passage": "Honeybees communicate the location of food through a movement called the waggle dance. A forager returning to the hive walks in a straight line while shaking its body, then circles back and repeats the pattern. The angle of the straight run tells other bees the direction of the food relative to the sun, and the length of the run tells them how far away it is.",
+      "prompt": "Which choice best states the main idea of the text?",
+      "options": [
+        "Honeybees use a specific dance to tell other bees where food can be found.",
+        "Honeybees prefer to collect food from flowers that are close to the hive.",
+        "The sun is the most important factor in how far honeybees can travel.",
+        "Foragers that return to the hive teach younger bees how to dance."
+      ],
+      "answer": 0,
+      "explanation": "The whole text explains how the waggle dance shows direction and distance to food. The text never says bees prefer nearby flowers (B), never compares the sun with other factors (C), and never mentions younger bees (D).",
+      "tip": "Main idea = the point every sentence supports. Ask: what is the whole text about?"
+    },
+    {
+      "id": "cid-02",
+      "difficulty": "easy",
+      "passage": "In the fifteenth century, the ruler and astronomer Ulugh Beg built a large observatory in Samarkand. Using its instruments, he and his team measured the positions of about a thousand stars. Their star catalogue was one of the most accurate of its time and was studied by astronomers for centuries afterward.",
+      "prompt": "According to the text, what did Ulugh Beg and his team do at the observatory?",
+      "options": [
+        "They designed new instruments for sailors.",
+        "They trained astronomers from other countries.",
+        "They discovered a new planet in the solar system.",
+        "They measured the positions of about a thousand stars."
+      ],
+      "answer": 3,
+      "explanation": "The text states directly that they \"measured the positions of about a thousand stars.\" Sailors, new planets and foreign trainees are never mentioned.",
+      "tip": "\"According to the text\" means the answer is written in the passage. Find the line, then match it."
+    },
+    {
+      "id": "cid-03",
+      "difficulty": "easy",
+      "passage": "Many people assume that cacti need almost no water. In fact, most cacti grow quickly after heavy rain, absorbing large amounts of water through shallow roots that spread wide just under the soil. The plants then store this water in their thick stems and use it slowly during the long dry months.",
+      "prompt": "Which choice best states the main idea of the text?",
+      "options": [
+        "Cacti grow best in places where rain falls every day.",
+        "Cacti have deep roots that reach underground rivers.",
+        "Cacti survive dry periods by quickly absorbing and storing rainwater.",
+        "Most people know very little about desert animals."
+      ],
+      "answer": 2,
+      "explanation": "The text corrects a common belief and explains how cacti take in water after rain and store it. Their roots are described as shallow, not deep (B), and the text does not say rain falls daily (A) or discuss animals (D).",
+      "tip": "\"Many people assume... In fact\" is a classic SAT pattern: the main idea is what comes after \"In fact.\""
+    },
+    {
+      "id": "cid-04",
+      "difficulty": "easy",
+      "passage": "The following text is from a short story.\n\nDilnoza had practiced the piano piece every evening for a month, yet when she sat down in front of the judges, her hands felt like they belonged to someone else. She took a slow breath, looked at the first line of music, and reminded herself that she only had to play one note at a time.",
+      "prompt": "Which choice best describes what happens in the text?",
+      "options": [
+        "Dilnoza decides not to perform in front of the judges.",
+        "Dilnoza calms herself before beginning a performance she feels nervous about.",
+        "Dilnoza realizes that she has learned the wrong piece of music.",
+        "Dilnoza remembers a lesson her teacher gave her a month earlier."
+      ],
+      "answer": 1,
+      "explanation": "Her hands feel strange (nervousness), and she breathes slowly and reminds herself to play one note at a time (calming herself). She does not quit (A), the piece is not wrong (C), and no teacher is mentioned (D).",
+      "tip": "For fiction, summarize the scene in your own words before you look at the choices."
+    },
+    {
+      "id": "cid-05",
+      "difficulty": "easy",
+      "passage": "Libraries in many cities now lend more than books. Patrons can borrow tools, musical instruments, cameras and even sewing machines. Librarians say these collections help people try new hobbies or finish household projects without buying expensive equipment they might use only once.",
+      "prompt": "Which choice best states the main idea of the text?",
+      "options": [
+        "Some libraries lend useful objects so that people do not have to buy them.",
+        "Libraries have stopped lending books because few people read anymore.",
+        "Musical instruments are the most popular items in library collections.",
+        "Librarians believe people should not start expensive hobbies."
+      ],
+      "answer": 0,
+      "explanation": "The text describes libraries lending objects and explains the benefit: people avoid buying equipment. Libraries still lend books (\"more than books\"), so B is wrong; C and D are not stated.",
+      "tip": "Watch for extreme or invented claims like \"stopped lending books.\" The correct answer stays as moderate as the text."
+    },
+    {
+      "id": "cid-06",
+      "difficulty": "medium",
+      "passage": "For decades, the Aral Sea shrank because the rivers that fed it were diverted to irrigate cotton fields. In 2005, Kazakhstan completed the Kokaral Dam, which separates the small northern part of the sea from the rest. Since then, water levels in the northern part have risen, the water has become less salty, and fish populations have returned, allowing local fishing to restart.",
+      "prompt": "Which choice best states the main idea of the text?",
+      "options": [
+        "Cotton farming in Central Asia has ended because the Aral Sea shrank.",
+        "The whole Aral Sea has returned to its original size since 2005.",
+        "A dam has helped part of the Aral Sea recover after years of shrinking.",
+        "Fish populations in the Aral Sea were never affected by the loss of water."
+      ],
+      "answer": 2,
+      "explanation": "The text explains why the sea shrank and then focuses on how the dam improved conditions in the northern part. B overstates: only the northern part recovered. A and D are not supported.",
+      "tip": "Check the scope. \"Part of the sea\" and \"the whole sea\" are very different claims."
+    },
+    {
+      "id": "cid-07",
+      "difficulty": "medium",
+      "passage": "Octopuses can change the color and texture of their skin in a fraction of a second. Surprisingly, researchers have found that many octopus species have only one type of light-sensitive cell in their eyes, which suggests that they cannot see color the way humans do. Scientists are now studying whether light-sensitive proteins found in octopus skin might help explain how these animals match their surroundings so precisely.",
+      "prompt": "Which choice best states the main idea of the text?",
+      "options": [
+        "Octopuses change color mainly to communicate with other octopuses.",
+        "Octopuses see colors more clearly than humans do.",
+        "Researchers have proven that octopus skin can see colors.",
+        "Octopuses match their surroundings well, even though their eyes may not detect color, and scientists are investigating how."
+      ],
+      "answer": 3,
+      "explanation": "The text sets up a puzzle (excellent color matching, limited color vision) and says scientists are studying a possible explanation. C is too strong: the idea is still being studied, not proven. B contradicts the text, and A is never mentioned.",
+      "tip": "Words like \"suggests\" and \"are now studying\" signal an open question. Avoid answers that say \"proven.\""
+    },
+    {
+      "id": "cid-08",
+      "difficulty": "medium",
+      "passage": "Before the invention of the printing press reached Europe, papermaking had already traveled a long road. Chinese papermakers developed the craft by the second century CE, and knowledge of it spread westward along trade routes. By the eighth century, Samarkand had become a well-known center of paper production, and from there the craft moved on to Baghdad and eventually to Europe.",
+      "prompt": "Based on the text, what role did Samarkand play in the history of paper?",
+      "options": [
+        "It was the city where paper was first invented.",
+        "It was a major center of papermaking on the route the craft took westward.",
+        "It was the place where the printing press was first used.",
+        "It was the last city to learn the craft of papermaking."
+      ],
+      "answer": 1,
+      "explanation": "The text says Samarkand \"had become a well-known center of paper production\" and that the craft \"moved on\" from there to Baghdad and Europe. Paper was invented in China (A), the printing press is not linked to Samarkand (C), and Europe learned the craft later (D).",
+      "tip": "Detail questions often test the order of events. Draw a quick arrow chain: China → Samarkand → Baghdad → Europe."
+    },
+    {
+      "id": "cid-09",
+      "difficulty": "medium",
+      "passage": "The following text is from a short story.\n\nThe old clockmaker never hurried. Customers who rushed into his shop with broken watches would find him bent over his bench, lifting each tiny gear with tweezers as if it were made of glass. \"A clock that is fixed quickly,\" he liked to say, \"will need fixing again soon.\" Most customers grumbled, but they always came back.",
+      "prompt": "Which choice best describes the clockmaker as he is presented in the text?",
+      "options": [
+        "He is careful and patient, believing that slow work lasts longer.",
+        "He is unfriendly and tries to send customers to other shops.",
+        "He is worried that he will lose his customers to faster repairers.",
+        "He is unskilled and often breaks the watches he repairs."
+      ],
+      "answer": 0,
+      "explanation": "He \"never hurried,\" handles gears with great care, and says quick repairs do not last. Customers still return, so he is not losing them (C). Nothing shows he is unfriendly (B) or unskilled (D).",
+      "tip": "Character questions: base your answer on actions and quotes, not on how other characters feel."
+    },
+    {
+      "id": "cid-10",
+      "difficulty": "medium",
+      "passage": "Urban planners once believed that adding lanes to crowded highways would reduce traffic. However, studies in many cities have found that within a few years, the new lanes fill up again. Because driving becomes easier for a while, more people choose to drive, take longer trips, or move farther from work. Planners call this effect induced demand.",
+      "prompt": "According to the text, why do new highway lanes often fail to reduce traffic for long?",
+      "options": [
+        "Construction of the lanes takes many years to finish.",
+        "Most drivers avoid using newly built lanes.",
+        "Cities usually close older lanes when new ones are added.",
+        "Easier driving encourages more people to drive more often and farther."
+      ],
+      "answer": 3,
+      "explanation": "The text explains that because driving becomes easier, \"more people choose to drive, take longer trips, or move farther from work.\" The other choices describe causes the text never mentions.",
+      "tip": "For \"why\" questions, look for \"because\" in the passage. The answer is usually right next to it."
+    },
+    {
+      "id": "cid-11",
+      "difficulty": "hard",
+      "passage": "Archaeologists long assumed that the earliest farmers in a region abandoned hunting once they began growing crops. But animal bones excavated from several early farming villages tell a more complicated story: for centuries after crops appeared, villagers continued to hunt wild deer and gazelle, and these animals made up a large share of the meat they ate. Farming, it seems, was added to older ways of getting food rather than replacing them.",
+      "prompt": "Which choice best states the main idea of the text?",
+      "options": [
+        "Early farmers stopped hunting because crops provided enough food.",
+        "Evidence suggests that early farmers combined farming with hunting for a long time.",
+        "Wild deer and gazelle became extinct soon after farming began.",
+        "Archaeologists cannot determine what early farmers ate."
+      ],
+      "answer": 1,
+      "explanation": "The text challenges the old assumption and concludes that farming was \"added to\" hunting rather than replacing it. A repeats the old view the text rejects. C is unsupported, and D contradicts the text, since the bones show what villagers ate.",
+      "tip": "When a text opens with \"X long assumed...\" and then says \"But...\", the main idea is the new view, not the old one."
+    },
+    {
+      "id": "cid-12",
+      "difficulty": "hard",
+      "passage": "Composer Ludwig van Beethoven continued to write music after he had become almost completely deaf. Some listeners have treated this as evidence that he no longer needed to hear music at all. Music historians offer a more nuanced view: Beethoven had spent decades training his inner ear, so he could imagine with great precision how notes would sound together. His late works, they argue, show not that hearing did not matter, but that his long experience allowed him to compose without it.",
+      "prompt": "Which choice best states the main idea of the text?",
+      "options": [
+        "Beethoven's deafness made his late music worse than his early music.",
+        "Beethoven never needed to hear music, even when he was young.",
+        "Historians argue that Beethoven's long training allowed him to compose after losing his hearing.",
+        "Listeners were unable to enjoy Beethoven's music after he became deaf."
+      ],
+      "answer": 2,
+      "explanation": "The text contrasts a simple claim (he did not need hearing) with the historians' \"more nuanced view\": years of training his inner ear allowed him to compose. B is the simple view the historians reject. A and D are not discussed.",
+      "tip": "\"A more nuanced view\" signals the author's real point. Pick the answer that matches that view."
+    },
+    {
+      "id": "cid-13",
+      "difficulty": "hard",
+      "passage": "The following text is from a novel.\n\nFrom the window of the train, Akmal watched the cotton fields give way to the first gray buildings of the city. He had imagined this moment for years, picturing himself stepping onto the platform with confidence. Now, holding his small suitcase on his knees, he found that he was counting the stations backward, as if some part of him were still traveling home.",
+      "prompt": "Which choice best describes Akmal's feelings in the text?",
+      "options": [
+        "He is excited about the city and has forgotten his home completely.",
+        "He is angry that the train is arriving later than he expected.",
+        "He is uncertain about the move, even though he long looked forward to it.",
+        "He is bored by the journey and eager to fall asleep."
+      ],
+      "answer": 2,
+      "explanation": "He \"had imagined this moment for years,\" but counting stations backward, \"as if... still traveling home,\" shows mixed feelings. A ignores his attachment to home. Nothing suggests anger (B) or boredom (D).",
+      "tip": "In fiction, a contrast between what a character expected and what they now feel usually points to mixed emotions."
+    },
+    {
+      "id": "cid-14",
+      "difficulty": "hard",
+      "passage": "Economists studying microloans (small loans given to people with little income who want to start businesses) expected the loans to sharply reduce poverty. Large studies in several countries found more modest results. Borrowers often started or expanded small businesses, and some households gained more control over how they spent their money, but average household incomes rose only slightly. The researchers concluded that microloans can be useful tools, though they are not the dramatic solution that early supporters had hoped for.",
+      "prompt": "Which choice best states the main idea of the text?",
+      "options": [
+        "Microloans have no measurable effect on the people who receive them.",
+        "Microloans have some benefits but did not reduce poverty as much as expected.",
+        "Microloans are the most effective known way to raise household incomes.",
+        "Microloans are only useful in the countries where they were first tested."
+      ],
+      "answer": 1,
+      "explanation": "The studies found \"more modest results\": real benefits but only slight income gains. A ignores the benefits listed, C contradicts the conclusion, and D is not supported by the text.",
+      "tip": "Balanced conclusions (\"useful, but not dramatic\") need balanced answers. Reject answers that say \"no effect\" or \"the most effective.\""
+    },
+    {
+      "id": "cid-15",
+      "difficulty": "hard",
+      "passage": "Most birds that migrate long distances fly mainly at night. One explanation is that the cooler night air helps the birds avoid overheating and losing water during long flights. Another is that flying at night leaves the daytime free for feeding, so birds can rebuild the fat reserves they burn while flying. Researchers also point out that many birds navigate partly by the stars, which are visible only after dark. These explanations are not competing; most scientists think all of them contribute.",
+      "prompt": "Which choice best states the main idea of the text?",
+      "options": [
+        "Several factors likely work together to explain why many migrating birds fly at night.",
+        "Birds migrate at night mainly because they cannot find food during the day.",
+        "Scientists disagree strongly about why birds migrate at all.",
+        "Birds that navigate by the stars migrate farther than other birds."
+      ],
+      "answer": 0,
+      "explanation": "The text lists three explanations and ends by saying they \"are not competing\" and \"all of them contribute.\" B reverses a detail (birds feed during the day), C invents a disagreement, and D compares distances, which the text never does.",
+      "tip": "The last sentence of a short text often states the conclusion. Read it twice."
+    }
+  ]
+}

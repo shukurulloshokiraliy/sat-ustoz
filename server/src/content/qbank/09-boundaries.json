@@ -1,0 +1,233 @@
+{
+  "domain": "Standard English Conventions",
+  "skill": "Boundaries",
+  "skill_id": "boundaries",
+  "about": "Punctuate sentences correctly: periods, semicolons, colons, dashes and commas.",
+  "questions": [
+    {
+      "id": "bd-01",
+      "difficulty": "easy",
+      "passage": "The museum opened in 1998 ______ it has welcomed more than two million visitors.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "1998, since then,",
+        "1998, since then",
+        "1998 since then,",
+        "1998. Since then,"
+      ],
+      "answer": 3,
+      "explanation": "\"The museum opened in 1998\" and \"since then it has welcomed...\" are both independent clauses, so they must be separated by a period (or semicolon). A comma alone creates a comma splice (A and B), and no punctuation creates a run-on (C).",
+      "tip": "Two complete sentences cannot be joined by a comma alone. Use a period, a semicolon, or comma + FANBOYS."
+    },
+    {
+      "id": "bd-02",
+      "difficulty": "easy",
+      "passage": "The hikers packed three essential items ______ water, a map and a flashlight.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "items:",
+        "items;",
+        "items, and",
+        "items. Water,"
+      ],
+      "answer": 0,
+      "explanation": "A colon introduces a list after a complete independent clause. A semicolon (B) needs an independent clause on both sides, but \"water, a map and a flashlight\" is not a clause. C and D create ungrammatical structures.",
+      "tip": "Colon test: the part before it must be a complete sentence, and the part after explains or lists."
+    },
+    {
+      "id": "bd-03",
+      "difficulty": "easy",
+      "passage": "Bukhara's Ark fortress has stood for more than a thousand years ______ its massive walls still dominate the old city.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "years,",
+        "years",
+        "years;",
+        "years, and,"
+      ],
+      "answer": 2,
+      "explanation": "Both parts are independent clauses, so a semicolon correctly joins them. A comma alone (A) is a comma splice, no punctuation (B) is a run-on, and \"and,\" with an extra comma after it (D) is incorrect.",
+      "tip": "A semicolon works like a period: full sentence on both sides."
+    },
+    {
+      "id": "bd-04",
+      "difficulty": "easy",
+      "passage": "My cousin, who lives in Namangan ______ is studying to become an architect.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "Namangan;",
+        "Namangan,",
+        "Namangan",
+        "Namangan:"
+      ],
+      "answer": 1,
+      "explanation": "\"who lives in Namangan\" is extra (nonessential) information, opened with a comma after \"cousin,\" so it must be closed with a comma too. A semicolon or colon (A, D) cannot separate a subject from its verb, and no comma (C) leaves the clause open.",
+      "tip": "Nonessential information needs matching punctuation on both sides: two commas, two dashes, or two parentheses."
+    },
+    {
+      "id": "bd-05",
+      "difficulty": "easy",
+      "passage": "The cafe was small and crowded ______ the coffee was the best in town.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "crowded but,",
+        "crowded, but",
+        "crowded but;",
+        "crowded, but,"
+      ],
+      "answer": 1,
+      "explanation": "To join two independent clauses with a coordinating conjunction (FANBOYS), place a comma before the conjunction: \", but.\" Commas or semicolons after \"but\" (A, C, D) are incorrect.",
+      "tip": "Formula: Independent clause + comma + FANBOYS + independent clause. No comma after the FANBOYS word."
+    },
+    {
+      "id": "bd-06",
+      "difficulty": "medium",
+      "passage": "The study's results were clear ______ students who slept at least eight hours performed better on memory tests than those who slept less.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "clear, students",
+        "clear students",
+        "clear: students",
+        "clear, and, students"
+      ],
+      "answer": 2,
+      "explanation": "The second clause explains what the clear results were, which is a perfect use of a colon between two independent clauses. A is a comma splice, B is a run-on, and D adds an incorrect comma after \"and.\"",
+      "tip": "Use a colon when the second clause explains or specifies the first."
+    },
+    {
+      "id": "bd-07",
+      "difficulty": "medium",
+      "passage": "Mirzo Ulugbek, the 15th-century ruler of Samarkand ______ is remembered today more for his astronomy than for his politics.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "Samarkand",
+        "Samarkand,",
+        "Samarkand—",
+        "Samarkand;"
+      ],
+      "answer": 1,
+      "explanation": "\"the 15th-century ruler of Samarkand\" is a nonessential appositive that begins with a comma, so it must end with a comma. A dash (C) does not match the opening comma, a semicolon (D) separates the subject from its verb, and no punctuation (A) leaves the appositive open.",
+      "tip": "Match the closing mark to the opening mark: comma with comma, dash with dash."
+    },
+    {
+      "id": "bd-08",
+      "difficulty": "medium",
+      "passage": "When the bridge was finally completed ______ residents of both villages gathered to celebrate with music, food and fireworks.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "completed,",
+        "completed;",
+        "completed:",
+        "completed. Residents"
+      ],
+      "answer": 0,
+      "explanation": "\"When the bridge was finally completed\" is a dependent clause at the start of a sentence, so it is followed by a comma. A semicolon, colon or period (B, C, D) would separate the dependent clause from the main clause as if it could stand alone, which it cannot.",
+      "tip": "Dependent clause first? Use a comma. A semicolon or period after a dependent clause creates a fragment."
+    },
+    {
+      "id": "bd-09",
+      "difficulty": "medium",
+      "passage": "The documentary explores the lives of shepherds in the Nuratau Mountains ______ a region where some families still move their flocks to high pastures every summer.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "Mountains;",
+        "Mountains, it is",
+        "Mountains",
+        "Mountains,"
+      ],
+      "answer": 3,
+      "explanation": "\"a region where...\" is a noun phrase that renames the mountains, so it is attached with a comma. A semicolon (A) requires an independent clause after it. B creates a comma splice, and C runs the phrase into the sentence without needed punctuation.",
+      "tip": "A phrase that renames a noun (an appositive) at the end of a sentence is set off with a comma or a dash."
+    },
+    {
+      "id": "bd-10",
+      "difficulty": "medium",
+      "passage": "The chef's signature dish combines three unexpected ingredients ______ pomegranate, black pepper and dark chocolate.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "ingredients—",
+        "ingredients, they are",
+        "ingredients;",
+        "ingredients that"
+      ],
+      "answer": 0,
+      "explanation": "A single dash, like a colon, can introduce a list after an independent clause. B creates a comma splice. C needs an independent clause after the semicolon, and D creates an incomplete thought (\"ingredients that pomegranate...\").",
+      "tip": "A dash can do a colon's job at the end of a sentence."
+    },
+    {
+      "id": "bd-11",
+      "difficulty": "hard",
+      "passage": "Researchers tested the new vaccine in three countries: Kenya, where trials began in 2021 ______ Peru, where they began in 2022; and Vietnam.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "2021;",
+        "2021,",
+        "2021:",
+        "2021—"
+      ],
+      "answer": 0,
+      "explanation": "The list items already contain commas (\"Kenya, where trials began in 2021\"), so semicolons separate the items, and the text already uses one before \"and Vietnam.\" A comma (B) makes the items run together, and a colon or dash (C, D) cannot separate items in a list.",
+      "tip": "List items that contain their own commas are separated by semicolons."
+    },
+    {
+      "id": "bd-12",
+      "difficulty": "hard",
+      "passage": "The poem's final line—only four words long ______ is often quoted as one of the most powerful in the collection.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "long,",
+        "long—",
+        "long;",
+        "long"
+      ],
+      "answer": 1,
+      "explanation": "\"only four words long\" is nonessential information that opens with a dash, so it must close with a dash. A comma (A) does not match the opening dash, a semicolon (C) cannot separate a subject from its verb, and no punctuation (D) leaves the interruption open.",
+      "tip": "Interrupters need a matched pair. Mixing a comma and a dash is always wrong."
+    },
+    {
+      "id": "bd-13",
+      "difficulty": "hard",
+      "passage": "In 1946, a shepherd searching for a lost goat near the Dead Sea entered a cave and found clay jars ______ inside the jars were ancient scrolls that would become known as the Dead Sea Scrolls.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "jars,",
+        "jars",
+        "jars, and,",
+        "jars;"
+      ],
+      "answer": 3,
+      "explanation": "\"inside the jars were ancient scrolls...\" is an independent clause (inverted: the subject \"scrolls\" follows the verb \"were\"). Two independent clauses need a semicolon or period. A is a comma splice, B a run-on, and C adds an incorrect comma after \"and.\"",
+      "tip": "Inverted clauses (\"inside the jars were scrolls\") are still independent clauses. Check for a subject and verb even when the order is flipped."
+    },
+    {
+      "id": "bd-14",
+      "difficulty": "hard",
+      "passage": "The architect who designed the new library ______ won an international award for her use of local stone and natural light.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "library,",
+        "library",
+        "library—",
+        "library;"
+      ],
+      "answer": 1,
+      "explanation": "\"who designed the new library\" is essential: it tells us which architect. Essential clauses take no commas, and nothing should separate the subject \"The architect\" from its verb \"won.\" A, C and D all insert punctuation between the subject and the verb.",
+      "tip": "No punctuation between a subject and its verb unless it closes a pair that opened earlier."
+    },
+    {
+      "id": "bd-15",
+      "difficulty": "hard",
+      "passage": "The festival's organizers faced an unusual problem ______ so many people bought tickets in the first hour that the website crashed, leaving thousands of buyers unsure whether their purchases had gone through.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "problem,",
+        "problem",
+        "problem:",
+        "problem, which"
+      ],
+      "answer": 2,
+      "explanation": "The second independent clause explains the \"unusual problem,\" so a colon is correct. A is a comma splice and B is a run-on. D creates a confusing relative clause (\"problem, which so many people bought tickets...\") that is ungrammatical.",
+      "tip": "When a sentence says \"a problem,\" \"a reason\" or \"one goal\" and then explains it, a colon is usually right."
+    }
+  ]
+}

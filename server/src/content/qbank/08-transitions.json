@@ -1,0 +1,143 @@
+{
+  "domain": "Expression of Ideas",
+  "skill": "Transitions",
+  "skill_id": "transitions",
+  "about": "Choose the transition word or phrase that shows the logical relationship between ideas.",
+  "questions": [
+    {
+      "id": "tr-01", "difficulty": "easy",
+      "passage": "The weather forecast predicted heavy rain for the afternoon. ______ the school moved its outdoor sports day to the following week.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["Therefore,", "However,", "For example,", "Similarly,"],
+      "answer": 0,
+      "explanation": "Rain was predicted, and as a result the event was moved: a cause-and-effect relationship, so \"Therefore\" fits. \"However\" signals contrast, \"For example\" introduces an example, and \"Similarly\" signals a comparison.",
+      "tip": "Read the two sentences and name the relationship (cause → result) before looking at the choices."
+    },
+    {
+      "id": "tr-02", "difficulty": "easy",
+      "passage": "Many people think of deserts as lifeless places. ______ deserts are home to a surprising variety of plants, insects, reptiles and mammals.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["As a result,", "In fact,", "Likewise,", "First,"],
+      "answer": 1,
+      "explanation": "The second sentence corrects a mistaken belief with the true situation. \"In fact\" introduces that correction. \"As a result\" signals a consequence, \"Likewise\" a similarity, and \"First\" the start of a sequence.",
+      "tip": "\"In fact\" often follows a common misconception and introduces the truth."
+    },
+    {
+      "id": "tr-03", "difficulty": "easy",
+      "passage": "Uzbekistan has no coastline; it is one of only two doubly landlocked countries in the world. ______ every country that borders Uzbekistan is also landlocked.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["In other words,", "Nevertheless,", "Instead,", "Meanwhile,"],
+      "answer": 0,
+      "explanation": "The second sentence explains what \"doubly landlocked\" means, restating the idea in simpler terms, so \"In other words\" fits. The sentences do not contrast (\"Nevertheless,\" \"Instead\") or describe events happening at the same time (\"Meanwhile\").",
+      "tip": "If the second sentence defines or rephrases the first, choose \"In other words\" or \"That is.\""
+    },
+    {
+      "id": "tr-04", "difficulty": "easy",
+      "passage": "The recipe calls for only five ingredients. ______ it can be prepared in less than fifteen minutes, making it a popular choice for busy families.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["However,", "In contrast,", "Moreover,", "For instance,"],
+      "answer": 2,
+      "explanation": "The second sentence adds another advantage (quick preparation) to the first (few ingredients), so \"Moreover\" fits. \"However\" and \"In contrast\" signal opposition, and \"For instance\" would introduce an example of the first idea.",
+      "tip": "Two points in the same direction call for an addition word: moreover, furthermore, additionally."
+    },
+    {
+      "id": "tr-05", "difficulty": "easy",
+      "passage": "The first version of the robot could move only in straight lines. The engineers' improved design, ______ could turn corners and climb small steps.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["for example,", "therefore,", "similarly,", "by contrast,"],
+      "answer": 3,
+      "explanation": "The improved robot is being contrasted with the limited first version, so \"by contrast\" fits. The text gives no example, no cause and effect, and no similarity.",
+      "tip": "Transitions can sit in the middle of a sentence. Still ask: how does this sentence relate to the previous one?"
+    },
+    {
+      "id": "tr-06", "difficulty": "medium",
+      "passage": "Early telescopes produced blurry images because different colors of light bent by different amounts as they passed through the glass lens. Isaac Newton tried to solve this problem by designing a telescope that used a curved mirror rather than a lens. ______ because mirrors reflect all colors the same way, his telescope produced much sharper images.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["Indeed,", "Still,", "Alternatively,", "Regardless,"],
+      "answer": 0,
+      "explanation": "The last sentence confirms that Newton's approach worked, strengthening the previous point, so \"Indeed\" fits. \"Still\" and \"Regardless\" suggest something happened despite an obstacle, and \"Alternatively\" offers a different option.",
+      "tip": "\"Indeed\" confirms and strengthens the previous statement."
+    },
+    {
+      "id": "tr-07", "difficulty": "medium",
+      "passage": "Most bats find insects at night by echolocation, producing high-pitched calls and listening for the echoes. Some moths, ______ have developed a defense: when they detect bat calls, they produce their own clicking sounds that seem to confuse the bats.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["for instance,", "however,", "in summary,", "similarly,"],
+      "answer": 1,
+      "explanation": "The moths' defense works against the bats' hunting method described before, which is a contrast, so \"however\" fits. The moths are not an example of bats hunting, nothing is being summarized, and moths are not doing the same thing as bats.",
+      "tip": "A shift from one side (predator) to the opposing side (prey's defense) usually needs a contrast word."
+    },
+    {
+      "id": "tr-08", "difficulty": "medium",
+      "passage": "To build the Charvak Reservoir near Tashkent, engineers constructed a dam more than 160 meters high across the Chirchiq River. ______ the reservoir now provides water for irrigation and electricity for the region, and its shores have become a popular place for summer holidays.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["Similarly,", "Nevertheless,", "Today,", "On the contrary,"],
+      "answer": 2,
+      "explanation": "The text moves from the time of construction to the present, so \"Today\" fits. The second sentence does not compare, contrast or contradict the first.",
+      "tip": "Time transitions (today, later, at first) are right when the sentences describe different periods."
+    },
+    {
+      "id": "tr-09", "difficulty": "medium",
+      "passage": "The novel received poor reviews when it was first published, and only a few hundred copies were sold. ______ fifty years later, it was rediscovered by a new generation of readers and is now considered a classic.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["Consequently,", "Additionally,", "Similarly,", "Eventually, though,"],
+      "answer": 3,
+      "explanation": "The second sentence describes a later change that contrasts with the poor early reception. \"Eventually, though\" signals both the passage of time and the contrast. \"Consequently\" wrongly suggests the poor reviews caused its later success, and the other two signal addition or similarity.",
+      "tip": "Some transitions combine two relationships (time + contrast). Check both."
+    },
+    {
+      "id": "tr-10", "difficulty": "medium",
+      "passage": "Apricots are among the most important fruits grown in the Fergana Valley, where the hot, dry summers help them develop a high sugar content. ______ much of the harvest is dried and exported, since dried apricots keep for months and are easy to transport.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["In addition,", "For example,", "In contrast,", "Nonetheless,"],
+      "answer": 0,
+      "explanation": "The second sentence adds more information about the apricot harvest, so \"In addition\" fits. The drying is not an example of high sugar content, and nothing contrasts with or contradicts the first sentence.",
+      "tip": "If you can join the two sentences with \"and also,\" you need an addition transition."
+    },
+    {
+      "id": "tr-11", "difficulty": "hard",
+      "passage": "Some early European scholars assumed that the ancient Maya knew little about astronomy beyond tracking the Sun and Moon. Studies of a Maya book known as the Dresden Codex, ______ revealed detailed tables predicting the movements of Venus and the timing of eclipses.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["for example,", "likewise,", "however,", "in short,"],
+      "answer": 2,
+      "explanation": "The discovery of detailed Venus and eclipse tables contradicts the scholars' belief, so \"however\" fits. The codex is not an example of the belief, it is not similar to it, and it does not summarize it.",
+      "tip": "If the second sentence proves an earlier belief wrong, you need a contrast transition."
+    },
+    {
+      "id": "tr-12", "difficulty": "hard",
+      "passage": "Many urban planners favor narrow streets because drivers tend to slow down when lanes are tight, which makes streets safer for pedestrians. Narrow streets also leave more room for sidewalks, trees and bicycle lanes. ______ narrow streets can make it harder for fire trucks and other emergency vehicles to pass, so planners must balance safety in everyday traffic against access in emergencies.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["Thus,", "On the other hand,", "Furthermore,", "That is,"],
+      "answer": 1,
+      "explanation": "After two advantages, the text introduces a disadvantage, so a contrasting transition such as \"On the other hand\" is needed. \"Thus\" signals a result, \"Furthermore\" adds another advantage, and \"That is\" restates.",
+      "tip": "Notice when a text switches from pros to cons. That switch needs a contrast word."
+    },
+    {
+      "id": "tr-13", "difficulty": "hard",
+      "passage": "Researchers expected that students who used laptops to take notes would remember more, since typing allows them to record more of what is said. Instead, students who wrote by hand performed better on questions about ideas. The researchers suggest that because handwriting is slower, it forces students to summarize rather than copy word for word. ______ the advantage of laptops, recording more words, may actually work against deeper understanding.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["Ironically,", "Similarly,", "Meanwhile,", "For example,"],
+      "answer": 0,
+      "explanation": "The supposed benefit of laptops turns out to be a disadvantage, an unexpected reversal, which \"Ironically\" signals. \"Similarly\" signals likeness, \"Meanwhile\" signals simultaneous events, and \"For example\" introduces an example.",
+      "tip": "When an expected advantage becomes a disadvantage, \"ironically\" is often correct."
+    },
+    {
+      "id": "tr-14", "difficulty": "hard",
+      "passage": "The composer insisted that her symphony had no hidden story; it was, she said, simply an exploration of sound. ______ many listeners have heard in its final movement a description of a storm at sea, complete with crashing waves and howling wind.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["Accordingly,", "In other words,", "Specifically,", "Even so,"],
+      "answer": 3,
+      "explanation": "Despite the composer's statement that there is no story, listeners hear one. \"Even so\" introduces something that happens in spite of what came before. \"Accordingly\" suggests agreement, \"In other words\" restates, and \"Specifically\" adds detail to the same idea.",
+      "tip": "\"Even so,\" \"nevertheless\" and \"still\" mean \"despite that.\""
+    },
+    {
+      "id": "tr-15", "difficulty": "hard",
+      "passage": "In many parts of Central Asia, traditional houses were built with thick walls of mud brick, which stayed cool during hot summer days and released stored warmth during cold nights. Modern concrete apartment blocks, ______ often become uncomfortably hot in summer, leading residents to depend on air conditioning.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": ["as a result,", "in turn,", "by comparison,", "for this reason,"],
+      "answer": 2,
+      "explanation": "The text compares traditional houses with modern apartment blocks on how well they handle heat, so \"by comparison\" fits. The traditional houses did not cause the modern blocks to overheat, so \"as a result,\" \"in turn\" and \"for this reason\" create a false cause-and-effect link.",
+      "tip": "Cause-and-effect transitions are a common trap. Check that the first sentence really causes the second."
+    }
+  ]
+}

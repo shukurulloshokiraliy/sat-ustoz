@@ -1,0 +1,143 @@
+{
+  "domain": "Craft and Structure",
+  "skill": "Words in Context",
+  "skill_id": "words-in-context",
+  "about": "Choose the most logical and precise word for a blank, or find what a word means in its context.",
+  "questions": [
+    {
+      "id": "wic-01", "difficulty": "easy",
+      "passage": "The new bridge was designed to be ______: engineers expect it to stand for at least two hundred years with only minor repairs.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": ["durable", "temporary", "decorative", "narrow"],
+      "answer": 0,
+      "explanation": "Standing for two hundred years with few repairs describes something durable (long-lasting). Temporary means the opposite, and decorative and narrow do not match the explanation after the colon.",
+      "tip": "A colon often explains the blank. Use the words after it as a definition."
+    },
+    {
+      "id": "wic-02", "difficulty": "easy",
+      "passage": "Although the speaker was usually confident on stage, she seemed ______ during her first interview on television, pausing often and looking down at her notes.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": ["energetic", "humorous", "careless", "hesitant"],
+      "answer": 3,
+      "explanation": "\"Although\" signals a contrast with \"confident,\" and pausing and looking at notes describe someone hesitant. Energetic and humorous do not fit those actions, and careless suggests a lack of attention rather than uncertainty.",
+      "tip": "\"Although\" means the blank should be the opposite of the first idea."
+    },
+    {
+      "id": "wic-03", "difficulty": "easy",
+      "passage": "Suzani embroideries from Uzbekistan are known for their ______ designs: large circles of flowers, vines and stars cover almost every part of the cloth.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": ["elaborate", "plain", "faded", "tiny"],
+      "answer": 0,
+      "explanation": "Designs that fill almost the entire cloth with flowers, vines and stars are elaborate (detailed and complex). Plain is the opposite, and nothing suggests the designs are faded or tiny; the circles are \"large.\"",
+      "tip": "Picture the description, then name it with one word before reading the choices."
+    },
+    {
+      "id": "wic-04", "difficulty": "easy",
+      "passage": "The scientist was ______ about the early results of the experiment. She wanted to repeat the tests several more times before telling anyone that the new medicine worked.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": ["thrilled", "cautious", "angry", "certain"],
+      "answer": 1,
+      "explanation": "Wanting to repeat the tests before announcing anything shows caution. Certain and thrilled suggest she would share the results right away, and nothing suggests anger.",
+      "tip": "Base the word on what the person does, not on how you might feel in their place."
+    },
+    {
+      "id": "wic-05", "difficulty": "easy",
+      "passage": "Because the hiking trail was poorly marked, several groups of visitors became ______ and had to ask park rangers for directions.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": ["rested", "famous", "experienced", "disoriented"],
+      "answer": 3,
+      "explanation": "A poorly marked trail and needing directions show that visitors lost their sense of direction, so disoriented fits. The other words do not follow from the cause given.",
+      "tip": "\"Because\" introduces a cause. The blank must be its logical result."
+    },
+    {
+      "id": "wic-06", "difficulty": "medium",
+      "passage": "The following text is from a short story.\n\nThe village elders listened to the young engineer's plan for a new irrigation canal, but they did not **receive** it warmly. Several of them crossed their arms, and one asked why the old ditches were no longer good enough.",
+      "prompt": "As used in the text, what does the word \"receive\" most nearly mean?",
+      "options": ["respond to", "collect", "deliver", "pay for"],
+      "answer": 0,
+      "explanation": "The elders did not \"receive\" the plan warmly; they reacted to it with crossed arms and doubts. So receive means respond to. Collect, deliver and pay for do not describe a reaction to an idea.",
+      "tip": "Replace the word with each choice. The right one keeps the sentence's meaning."
+    },
+    {
+      "id": "wic-07", "difficulty": "medium",
+      "passage": "Early critics dismissed the novel as a simple adventure story. Later scholars, however, argued that its ______ plot concealed a serious examination of power and loyalty.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": ["tedious", "confusing", "unfinished", "lighthearted"],
+      "answer": 3,
+      "explanation": "Scholars argue that a seemingly simple, fun surface hides serious themes, so the plot is lighthearted. Tedious and confusing do not match \"a simple adventure story,\" and unfinished has no support.",
+      "tip": "\"Concealed\" sets up a contrast between the surface and what lies under it. The blank describes the surface."
+    },
+    {
+      "id": "wic-08", "difficulty": "medium",
+      "passage": "The museum's new director wants to ______ the collection's reputation as dull and old-fashioned by adding interactive exhibits and evening events for young visitors.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": ["confirm", "overturn", "inherit", "measure"],
+      "answer": 1,
+      "explanation": "Adding new, lively programs is meant to change the museum's dull reputation, so overturn fits. Confirm means the opposite, and inherit and measure do not describe trying to change a reputation.",
+      "tip": "Ask what the person's actions are meant to do to the thing in the blank."
+    },
+    {
+      "id": "wic-09", "difficulty": "medium",
+      "passage": "Rather than relying on a single source, the historian ______ her account of a nineteenth-century siege by comparing letters, newspaper reports and official records.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": ["corroborated", "invented", "ignored", "shortened"],
+      "answer": 0,
+      "explanation": "To corroborate is to confirm by using other evidence. Comparing several kinds of sources does exactly that. Invented and ignored contradict careful research, and shortened has nothing to do with checking sources.",
+      "tip": "SAT vocabulary words often appear in research contexts. Learn the \"research verbs\": corroborate, refute, substantiate, undermine."
+    },
+    {
+      "id": "wic-10", "difficulty": "medium",
+      "passage": "The following text is from a novel.\n\nMr. Karimov was a man of few words, but his silences were never empty. When he disapproved of something, he simply raised one eyebrow, and the whole office **took note**.",
+      "prompt": "As used in the text, what does the phrase \"took note\" most nearly mean?",
+      "options": ["wrote a message", "made a decision", "paid attention", "felt confused"],
+      "answer": 2,
+      "explanation": "When Mr. Karimov raised an eyebrow, the office noticed and paid attention to his disapproval. Nothing suggests people literally wrote anything, made decisions or felt confused.",
+      "tip": "Phrases on the SAT are usually tested in their figurative meaning, not the literal one."
+    },
+    {
+      "id": "wic-11", "difficulty": "hard",
+      "passage": "Some economists argue that the effects of the new tax were ______: while it raised revenue as planned, it also led many small businesses to move across the border, which reduced local employment.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": ["negligible", "predictable", "ambivalent", "mixed"],
+      "answer": 3,
+      "explanation": "The tax had one intended benefit and one harmful result, so its effects were mixed. Negligible (very small) contradicts the real effects. Predictable is not suggested, and ambivalent describes a person's feelings, not effects.",
+      "tip": "Beware of words that sound right but describe the wrong thing. Ambivalent describes people; mixed describes results."
+    },
+    {
+      "id": "wic-12", "difficulty": "hard",
+      "passage": "Though the poet's early work was praised for its bold experiments with form, her final collection is strikingly ______, using only traditional rhyme schemes and familiar meters.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": ["conventional", "innovative", "obscure", "prolific"],
+      "answer": 0,
+      "explanation": "\"Though\" contrasts the early experiments with the final collection, which uses only traditional forms, so conventional fits. Innovative describes the early work, obscure means hard to understand, and prolific describes producing a large quantity of work.",
+      "tip": "Find the contrast word, identify the two sides, and make the blank match the second side."
+    },
+    {
+      "id": "wic-13", "difficulty": "hard",
+      "passage": "Researchers had expected the new species of beetle to be rare, but surveys of the forest revealed that it was ______, found on nearly every tree the team examined.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": ["endangered", "ubiquitous", "dormant", "elusive"],
+      "answer": 1,
+      "explanation": "Found on nearly every tree means the beetle was present everywhere: ubiquitous. Endangered and elusive (hard to find) fit the original expectation of rarity, which the text says was wrong. Dormant (inactive) is unrelated.",
+      "tip": "\"Expected X, but\" tells you the blank is the opposite of X."
+    },
+    {
+      "id": "wic-14", "difficulty": "hard",
+      "passage": "The following text is from an essay.\n\nThe great libraries of the past did not simply store manuscripts; they **cultivated** whole communities of scholars, providing them with space, materials and the company of other curious minds.",
+      "prompt": "As used in the text, what does the word \"cultivated\" most nearly mean?",
+      "options": ["planted", "harvested", "fostered", "decorated"],
+      "answer": 2,
+      "explanation": "Providing space, materials and company helped scholarly communities grow and develop, which is the meaning of fostered. Planted and harvested are literal farming meanings that do not fit people, and decorated is unrelated.",
+      "tip": "Words with farming meanings (cultivate, harvest, sow) usually have a figurative sense in essays."
+    },
+    {
+      "id": "wic-15", "difficulty": "hard",
+      "passage": "The committee's report was deliberately ______; by avoiding specific recommendations, it allowed every member to claim that the report supported his or her own position.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": ["meticulous", "concise", "partisan", "equivocal"],
+      "answer": 3,
+      "explanation": "A report that avoids specific positions so that everyone can read it as supporting them is equivocal (open to more than one interpretation). Partisan would favor one side, meticulous means very detailed, and concise means short; none of these explains why every member could claim support.",
+      "tip": "Use the explanation after the semicolon as a definition of the missing word."
+    }
+  ]
+}

@@ -1,0 +1,218 @@
+{
+  "domain": "Expression of Ideas",
+  "skill": "Rhetorical Synthesis",
+  "skill_id": "rhetorical-synthesis",
+  "about": "Use a student's notes to write a sentence that achieves a specific goal.",
+  "questions": [
+    {
+      "id": "rs-01", "difficulty": "easy",
+      "passage": "While researching a topic, a student has taken the following notes:\n- The Registan is a large public square in Samarkand, Uzbekistan.\n- It is surrounded by three madrasas (religious schools).\n- The oldest of the three, the Ulugh Beg Madrasa, was completed in 1420.\n- The square was a center of trade and public gatherings for centuries.",
+      "prompt": "The student wants to state when the oldest madrasa on the Registan was completed. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "The Registan, a square in Samarkand, was a center of trade.",
+        "The Registan is surrounded by three madrasas.",
+        "Public gatherings took place on the Registan for centuries.",
+        "The Ulugh Beg Madrasa, the oldest of the Registan's three madrasas, was completed in 1420."
+      ],
+      "answer": 3,
+      "explanation": "The goal asks for when the oldest madrasa was completed. Only D names the madrasa and gives the date 1420. The other choices are true but do not meet the goal.",
+      "tip": "Ignore which sentence is most interesting. Choose the one that does exactly what the goal says."
+    },
+    {
+      "id": "rs-02", "difficulty": "easy",
+      "passage": "While researching a topic, a student has taken the following notes:\n- Penguins are birds that cannot fly.\n- Their wings have evolved into stiff flippers.\n- Emperor penguins can dive deeper than 500 meters.\n- They can hold their breath for more than 20 minutes.",
+      "prompt": "The student wants to emphasize the diving ability of emperor penguins. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "Emperor penguins can dive deeper than 500 meters and hold their breath for more than 20 minutes.",
+        "Penguins are birds that cannot fly.",
+        "Penguins' wings have evolved into stiff flippers.",
+        "Although penguins are birds, they cannot fly."
+      ],
+      "answer": 0,
+      "explanation": "Diving depth and breath-holding time both highlight diving ability. The other choices focus on flight or wing shape, not diving.",
+      "tip": "Find the key word of the goal (diving), then find the notes that relate to it."
+    },
+    {
+      "id": "rs-03", "difficulty": "easy",
+      "passage": "While researching a topic, a student has taken the following notes:\n- Alisher Navoi was a poet who lived from 1441 to 1501.\n- He wrote mostly in Chagatai, a Turkic literary language.\n- At the time, many writers believed Persian was the better language for poetry.\n- Navoi argued that Turkic languages were just as expressive.",
+      "prompt": "The student wants to explain why Navoi's choice of language was notable. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "Alisher Navoi lived from 1441 to 1501.",
+        "Alisher Navoi was a poet who wrote poetry.",
+        "At a time when many writers favored Persian for poetry, Navoi wrote mostly in Chagatai, arguing that Turkic languages were just as expressive.",
+        "Chagatai is a Turkic literary language."
+      ],
+      "answer": 2,
+      "explanation": "To show why the choice was notable, the sentence must contrast Navoi's language with the common preference for Persian. Only C makes that contrast. A, B and D give background facts without explaining what made the choice unusual.",
+      "tip": "\"Notable,\" \"surprising\" or \"unusual\" goals need a contrast with what was normal."
+    },
+    {
+      "id": "rs-04", "difficulty": "easy",
+      "passage": "While researching a topic, a student has taken the following notes:\n- The Amazon rainforest covers about 5.5 million square kilometers.\n- It spreads across nine countries.\n- Most of it lies in Brazil.\n- It is home to around 10% of the world's known species.",
+      "prompt": "The student wants to highlight the Amazon rainforest's importance for biodiversity. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "The Amazon rainforest spreads across nine countries.",
+        "Most of the Amazon rainforest lies in Brazil.",
+        "The Amazon rainforest covers about 5.5 million square kilometers.",
+        "The Amazon rainforest is home to around 10% of the world's known species."
+      ],
+      "answer": 3,
+      "explanation": "Biodiversity means the variety of living things, and only D mentions the share of the world's species found in the Amazon. The other notes are about size and location.",
+      "tip": "Know the key terms: biodiversity = variety of species, so pick the species note."
+    },
+    {
+      "id": "rs-05", "difficulty": "easy",
+      "passage": "While researching a topic, a student has taken the following notes:\n- Hot-air balloons rise because hot air is lighter than cool air.\n- In 1783, brothers Joseph-Michel and Jacques-Étienne Montgolfier launched a balloon in France.\n- Their first passengers were a sheep, a duck and a rooster.\n- The animals landed safely after a flight of about eight minutes.",
+      "prompt": "The student wants to describe the passengers on the Montgolfier brothers' early flight. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "Hot-air balloons rise because hot air is lighter than cool air.",
+        "The Montgolfier brothers' first passengers, a sheep, a duck and a rooster, landed safely after about eight minutes.",
+        "The Montgolfier brothers launched a balloon in France in 1783.",
+        "Joseph-Michel and Jacques-Étienne Montgolfier were brothers."
+      ],
+      "answer": 1,
+      "explanation": "Only B names the passengers (a sheep, a duck and a rooster). A explains how balloons rise, and C and D describe the brothers and the launch, not the passengers.",
+      "tip": "Scan each choice for the exact information the goal names."
+    },
+    {
+      "id": "rs-06", "difficulty": "medium",
+      "passage": "While researching a topic, a student has taken the following notes:\n- Bamboo and oak are both used to make floors.\n- Bamboo can be harvested every 3 to 5 years.\n- Oak trees usually need 40 years or more before they can be harvested.\n- Both materials can be made into strong, long-lasting floors.",
+      "prompt": "The student wants to emphasize a difference between bamboo and oak. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "Bamboo and oak can both be made into strong, long-lasting floors.",
+        "Bamboo and oak are both used to make floors.",
+        "Bamboo can be harvested every 3 to 5 years, while oak trees usually need 40 years or more.",
+        "Oak trees usually need 40 years or more before they can be harvested."
+      ],
+      "answer": 2,
+      "explanation": "A difference requires comparing the two materials on one feature; C contrasts harvest times. A and B state similarities, and D mentions only oak.",
+      "tip": "Difference goals need both items in the sentence plus a contrast word such as \"while\" or \"whereas.\""
+    },
+    {
+      "id": "rs-07", "difficulty": "medium",
+      "passage": "While researching a topic, a student has taken the following notes:\n- Marie Curie was a physicist and chemist.\n- In 1903, she shared the Nobel Prize in Physics.\n- In 1911, she won the Nobel Prize in Chemistry.\n- She was the first person to win Nobel Prizes in two different sciences.",
+      "prompt": "The student wants to present Marie Curie's achievement to an audience unfamiliar with her. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "In 1911, she won the Nobel Prize in Chemistry.",
+        "Marie Curie, a physicist and chemist, was the first person to win Nobel Prizes in two different sciences: physics in 1903 and chemistry in 1911.",
+        "Curie's two prizes came in 1903 and 1911.",
+        "The Nobel Prize in Physics was shared in 1903."
+      ],
+      "answer": 1,
+      "explanation": "An audience unfamiliar with Curie needs her full name, who she was and what she achieved. B gives all of this. A and C use \"she\" or only her surname without introducing her, and D does not mention Curie.",
+      "tip": "\"Unfamiliar audience\" means: introduce the person with a full name and a short description."
+    },
+    {
+      "id": "rs-08", "difficulty": "medium",
+      "passage": "While researching a topic, a student has taken the following notes:\n- A study tested whether music helps people concentrate.\n- Participants completed reading tasks in silence, with instrumental music, or with songs that had lyrics.\n- Scores were similar in silence and with instrumental music.\n- Scores were lowest when participants listened to songs with lyrics.",
+      "prompt": "The student wants to present the study's main finding. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "Participants completed reading tasks under three conditions.",
+        "A study tested whether music helps people concentrate.",
+        "Reading tasks were part of a study about music.",
+        "The study found that songs with lyrics lowered reading scores, while instrumental music did not reduce them compared with silence."
+      ],
+      "answer": 3,
+      "explanation": "A finding is a result. D reports the results for all three conditions. A, B and C describe the study's design or purpose, not what it found.",
+      "tip": "Separate \"what the study did\" (method) from \"what the study found\" (result)."
+    },
+    {
+      "id": "rs-09", "difficulty": "medium",
+      "passage": "While researching a topic, a student has taken the following notes:\n- The Great Wall of China was built over many centuries.\n- Most of the wall that survives today was built during the Ming dynasty (1368–1644).\n- Builders used bricks and stone for the Ming sections.\n- Earlier sections were often made of packed earth.",
+      "prompt": "The student wants to contrast the materials used in different periods of the wall's construction. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "While earlier sections of the Great Wall were often made of packed earth, builders used bricks and stone for the Ming sections.",
+        "The Great Wall of China was built over many centuries.",
+        "Most of the surviving wall was built during the Ming dynasty, which lasted from 1368 to 1644.",
+        "Builders used bricks and stone for the Ming sections of the wall."
+      ],
+      "answer": 0,
+      "explanation": "The goal is to contrast materials from different periods, and A compares packed earth (earlier) with brick and stone (Ming). B and C are about time, and D mentions only one period.",
+      "tip": "If a choice mentions only one side, it cannot contrast."
+    },
+    {
+      "id": "rs-10", "difficulty": "medium",
+      "passage": "While researching a topic, a student has taken the following notes:\n- Silkworms are the larvae of a moth.\n- Each silkworm spins a cocoon from a single thread of silk.\n- One cocoon's thread can be up to 900 meters long.\n- Producing one kilogram of silk requires thousands of cocoons.",
+      "prompt": "The student wants to emphasize how much material is needed to produce silk. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "Silkworms, the larvae of a moth, spin cocoons.",
+        "Each silkworm spins its cocoon from a single thread.",
+        "Even though a single cocoon's thread can be up to 900 meters long, producing just one kilogram of silk requires thousands of cocoons.",
+        "A cocoon's silk thread can be up to 900 meters long."
+      ],
+      "answer": 2,
+      "explanation": "C stresses that despite very long threads, thousands of cocoons are needed for one kilogram, which emphasizes the large amount of material. A, B and D describe silkworms or one cocoon without addressing quantity needed.",
+      "tip": "Words like \"even though\" and \"just\" help a sentence emphasize a surprising amount."
+    },
+    {
+      "id": "rs-11", "difficulty": "hard",
+      "passage": "While researching a topic, a student has taken the following notes:\n- Two species of finches live on the same island.\n- Species A has a thick, strong beak.\n- Species B has a thin, pointed beak.\n- Species A mainly eats hard seeds; Species B mainly eats insects.\n- Because they eat different foods, the two species rarely compete for food.",
+      "prompt": "The student wants to explain how the two finch species are able to share the island. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "Species A has a thick, strong beak, and Species B has a thin, pointed beak.",
+        "Two species of finches live on the same island.",
+        "Species A mainly eats hard seeds.",
+        "With different beaks suited to different foods (hard seeds for Species A and insects for Species B), the two finch species rarely compete for food, allowing them to share the island."
+      ],
+      "answer": 3,
+      "explanation": "Explaining how they share the island requires the reason: different diets mean little competition. D connects beaks, foods and the lack of competition. A describes beaks without the consequence, B restates the situation, and C covers only one species.",
+      "tip": "\"Explain how\" goals need a cause-and-effect sentence, not a list of facts."
+    },
+    {
+      "id": "rs-12", "difficulty": "hard",
+      "passage": "While researching a topic, a student has taken the following notes:\n- Scientists once believed that the Moon was completely dry.\n- Samples brought back by the Apollo missions (1969–1972) appeared to contain no water.\n- In 2009, a NASA probe crashed into a crater near the Moon's south pole.\n- The impact released a cloud containing water ice.\n- Water on the Moon could one day supply drinking water and fuel for astronauts.",
+      "prompt": "The student wants to emphasize how the 2009 finding changed earlier views. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "Although scientists once believed the Moon was completely dry, a NASA probe that crashed near its south pole in 2009 released a cloud containing water ice.",
+        "Water on the Moon could one day supply drinking water and fuel for astronauts.",
+        "The Apollo missions brought samples back from the Moon between 1969 and 1972.",
+        "In 2009, a NASA probe crashed into a crater near the Moon's south pole."
+      ],
+      "answer": 0,
+      "explanation": "To show a change in views, the sentence must state both the old belief and the new finding. A does both. B is about future use, C is about the earlier samples only, and D describes the crash without the finding or the old belief.",
+      "tip": "\"Changed earlier views\" = old view + new evidence in one sentence."
+    },
+    {
+      "id": "rs-13", "difficulty": "hard",
+      "passage": "While researching a topic, a student has taken the following notes:\n- Ibn Sina (980–1037) was born near Bukhara.\n- He wrote *The Canon of Medicine*.\n- The book organized the medical knowledge of the time.\n- It was translated into Latin in the 12th century.\n- European universities used it as a medical textbook for several centuries.",
+      "prompt": "The student wants to emphasize the long-lasting influence of Ibn Sina's book. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "Ibn Sina, who was born near Bukhara in 980, wrote *The Canon of Medicine*.",
+        "*The Canon of Medicine* organized the medical knowledge of Ibn Sina's time.",
+        "After its translation into Latin in the 12th century, Ibn Sina's *The Canon of Medicine* was used as a textbook in European universities for several centuries.",
+        "Ibn Sina lived from 980 to 1037."
+      ],
+      "answer": 2,
+      "explanation": "Long-lasting influence is shown by the book being used for several centuries in European universities, which only C mentions. A and D give biography, and B describes the book's content, not its later influence.",
+      "tip": "\"Long-lasting\" points to the note about time: \"for several centuries.\""
+    },
+    {
+      "id": "rs-14", "difficulty": "hard",
+      "passage": "While researching a topic, a student has taken the following notes:\n- Researchers studied two groups of patients recovering from surgery.\n- Group 1's rooms had windows facing trees.\n- Group 2's rooms had windows facing a brick wall.\n- Group 1 patients left the hospital about one day earlier on average.\n- Group 1 patients also requested fewer strong painkillers.",
+      "prompt": "The student wants to present the study and its findings to an audience unfamiliar with it. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "Group 1 patients left the hospital about one day earlier and requested fewer strong painkillers.",
+        "In a study of patients recovering from surgery, those whose windows faced trees left the hospital about one day earlier and requested fewer strong painkillers than those whose windows faced a brick wall.",
+        "Some hospital rooms had windows facing trees, while others faced a brick wall.",
+        "Researchers studied patients recovering from surgery."
+      ],
+      "answer": 1,
+      "explanation": "An unfamiliar audience needs the study's context (who and what was compared) plus the findings. B gives both. A uses the unexplained label \"Group 1,\" C gives only the setup, and D gives only the topic.",
+      "tip": "Labels like \"Group 1\" mean nothing to a new reader. The best choice explains what the groups were."
+    },
+    {
+      "id": "rs-15", "difficulty": "hard",
+      "passage": "While researching a topic, a student has taken the following notes:\n- The kirpich (fired brick) was the main building material in medieval Bukhara.\n- Builders arranged bricks in many different patterns.\n- The Samanid Mausoleum (10th century) is a famous example.\n- Its walls use bricks laid in dozens of patterns that create changing shadows during the day.\n- The building has survived for more than a thousand years.",
+      "prompt": "The student wants to use a specific example to illustrate how builders in medieval Bukhara used bricks decoratively. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "Fired brick was the main building material in medieval Bukhara.",
+        "Builders in medieval Bukhara arranged bricks in many different patterns.",
+        "The Samanid Mausoleum has survived for more than a thousand years.",
+        "The 10th-century Samanid Mausoleum shows how Bukhara's builders used bricks decoratively: its walls are laid in dozens of patterns that create changing shadows during the day."
+      ],
+      "answer": 3,
+      "explanation": "The goal needs a specific example and decorative use of bricks. D names the mausoleum and describes its patterns and shadows. B is general (no example), A is about material only, and C is about the building's age.",
+      "tip": "\"Specific example\" means a named instance, not a general statement."
+    }
+  ]
+}

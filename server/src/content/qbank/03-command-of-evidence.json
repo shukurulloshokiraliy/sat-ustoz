@@ -1,0 +1,410 @@
+{
+  "domain": "Information and Ideas",
+  "skill": "Command of Evidence",
+  "skill_id": "command-of-evidence",
+  "about": "Choose the quotation, finding or data that best supports, weakens or illustrates a claim.",
+  "questions": [
+    {
+      "id": "coe-01",
+      "difficulty": "easy",
+      "passage": "A student read that walking in nature can improve mood. She claims that people who walked in a park felt happier afterward than people who walked along a busy road.",
+      "prompt": "Which finding, if true, would most directly support the student's claim?",
+      "options": [
+        "Most people in the study preferred walking in the morning.",
+        "Participants who walked in the park reported higher happiness scores after the walk than participants who walked along the road.",
+        "The park and the road were the same distance from participants' homes.",
+        "Participants who walked along the road walked slightly faster."
+      ],
+      "answer": 1,
+      "explanation": "The claim compares how happy the two groups felt after walking. Only B gives that comparison. A, C and D describe other details that do not show a difference in mood.",
+      "tip": "Underline the exact claim. The right evidence matches every part of it, here: park vs road, and happiness after."
+    },
+    {
+      "id": "coe-02",
+      "difficulty": "easy",
+      "passage": "Monthly visitors to the city botanical garden",
+      "table": {
+        "columns": [
+          "Month",
+          "Visitors"
+        ],
+        "rows": [
+          [
+            "March",
+            "4,200"
+          ],
+          [
+            "April",
+            "7,800"
+          ],
+          [
+            "May",
+            "9,600"
+          ],
+          [
+            "June",
+            "6,100"
+          ]
+        ]
+      },
+      "prompt": "A tour guide claims that the garden had the most visitors in May. Which choice best describes data from the table that support the guide's claim?",
+      "options": [
+        "The garden had 4,200 visitors in March.",
+        "The garden had more visitors in April than in March.",
+        "The garden had 9,600 visitors in May, more than in any other month shown.",
+        "The garden had fewer visitors in June than in April."
+      ],
+      "answer": 2,
+      "explanation": "To show May had the most visitors, the data must compare May with all other months. Only C does this. A, B and D are true but say nothing about May.",
+      "tip": "On data questions, every choice may be true. Choose the one that proves the specific claim."
+    },
+    {
+      "id": "coe-03",
+      "difficulty": "easy",
+      "passage": "The following text is from a short story.\n\nThe narrator describes his grandmother, Saodat, as someone who could not stand to see anything wasted.",
+      "prompt": "Which quotation from the story most effectively illustrates this description?",
+      "options": [
+        "\"Saodat woke before sunrise and liked to drink her tea in silence.\"",
+        "\"She told long stories about the village where she grew up.\"",
+        "\"Her garden was the largest on the street, full of roses and apricot trees.\"",
+        "\"She saved every scrap of bread, every bent nail and every piece of string, certain each would one day be useful.\""
+      ],
+      "answer": 3,
+      "explanation": "Saving bread scraps, bent nails and string directly shows someone who hates waste. The other quotations describe her habits, garden and stories, not wastefulness.",
+      "tip": "Illustrate = show an example. Look for the quotation that acts out the trait."
+    },
+    {
+      "id": "coe-04",
+      "difficulty": "easy",
+      "passage": "Average daily screen time of students in one school (hours)",
+      "table": {
+        "columns": [
+          "Grade",
+          "School days",
+          "Weekend days"
+        ],
+        "rows": [
+          [
+            "9",
+            "3.1",
+            "5.4"
+          ],
+          [
+            "10",
+            "3.4",
+            "5.9"
+          ],
+          [
+            "11",
+            "3.8",
+            "6.2"
+          ],
+          [
+            "12",
+            "4.0",
+            "6.0"
+          ]
+        ]
+      },
+      "prompt": "Which choice most accurately describes data from the table?",
+      "options": [
+        "In every grade, students had more screen time on weekend days than on school days.",
+        "Grade 9 students had the most screen time on school days.",
+        "Grade 12 students had more than 6.5 hours of screen time on weekend days.",
+        "Screen time on school days was the same in every grade."
+      ],
+      "answer": 0,
+      "explanation": "In each row the weekend number is larger than the school-day number. Grade 9 had the least school-day time (B), grade 12 had 6.0 weekend hours (C), and school-day time rose from 3.1 to 4.0 (D).",
+      "tip": "Check a choice against every row it mentions. \"In every grade\" means check all four rows."
+    },
+    {
+      "id": "coe-05",
+      "difficulty": "easy",
+      "passage": "A nutrition researcher claims that eating breakfast helps students concentrate during morning classes.",
+      "prompt": "Which finding, if true, would most directly weaken the researcher's claim?",
+      "options": [
+        "Students who ate breakfast said they enjoyed their morning classes.",
+        "Students who skipped breakfast often felt hungry by noon.",
+        "On attention tests during morning classes, students who ate breakfast scored no better than students who skipped it.",
+        "Most students in the study ate breakfast at home."
+      ],
+      "answer": 2,
+      "explanation": "If breakfast eaters showed no better concentration on attention tests, the claim that breakfast helps concentration is weakened. A and B do not measure concentration, and D only describes where students ate.",
+      "tip": "To weaken a claim, find evidence that the expected effect did not happen."
+    },
+    {
+      "id": "coe-06",
+      "difficulty": "medium",
+      "passage": "Bicycle commuters in four cities, 2015 and 2025 (percent of all commuters)",
+      "table": {
+        "columns": [
+          "City",
+          "2015",
+          "2025"
+        ],
+        "rows": [
+          [
+            "City A",
+            "2%",
+            "5%"
+          ],
+          [
+            "City B",
+            "6%",
+            "7%"
+          ],
+          [
+            "City C",
+            "1%",
+            "4%"
+          ],
+          [
+            "City D",
+            "9%",
+            "8%"
+          ]
+        ]
+      },
+      "prompt": "A planner claims that the cities with the lowest share of bicycle commuters in 2015 saw the largest increases by 2025. Which choice best describes data from the table that support the planner's claim?",
+      "options": [
+        "City D had the highest share of bicycle commuters in both years.",
+        "City B's share rose from 6% to 7%.",
+        "Cities A and C, which had the lowest shares in 2015, each rose by 3 percentage points, more than any other city.",
+        "City D's share fell from 9% to 8%."
+      ],
+      "answer": 2,
+      "explanation": "The claim links the lowest 2015 shares (Cities A and C) with the largest increases (3 points each, compared with 1 point for B and a drop for D). Only C connects both parts of the claim.",
+      "tip": "Claims with two parts (lowest start AND largest increase) need evidence for both parts."
+    },
+    {
+      "id": "coe-07",
+      "difficulty": "medium",
+      "passage": "Biologists hypothesize that a species of lizard on a windy island has evolved shorter legs than members of the same species on a calm nearby island, because short legs help the lizards grip branches and avoid being blown off.",
+      "prompt": "Which finding, if true, would most directly support the biologists' hypothesis?",
+      "options": [
+        "Lizards on both islands eat the same types of insects.",
+        "In wind-tunnel tests, lizards with shorter legs held on to branches at higher wind speeds than lizards with longer legs.",
+        "The windy island is larger than the calm island.",
+        "Lizards on the calm island are more brightly colored."
+      ],
+      "answer": 1,
+      "explanation": "The hypothesis says short legs help lizards hold on in wind. B directly tests that idea and finds short-legged lizards grip better in strong wind. A, C and D have nothing to do with leg length and grip.",
+      "tip": "The strongest support tests the reason in the hypothesis (\"because...\"), not just the outcome."
+    },
+    {
+      "id": "coe-08",
+      "difficulty": "medium",
+      "passage": "Results of a survey on how 400 adults prefer to read books",
+      "table": {
+        "columns": [
+          "Age group",
+          "Printed books",
+          "E-books",
+          "Audiobooks"
+        ],
+        "rows": [
+          [
+            "18–29",
+            "38%",
+            "27%",
+            "35%"
+          ],
+          [
+            "30–49",
+            "45%",
+            "30%",
+            "25%"
+          ],
+          [
+            "50 and older",
+            "64%",
+            "21%",
+            "15%"
+          ]
+        ]
+      },
+      "prompt": "A writer argues that preference for printed books increases with age. Which choice best describes data from the table that support the writer's argument?",
+      "options": [
+        "Audiobooks were preferred by 35% of adults aged 18–29.",
+        "Printed books were the most preferred format among adults aged 50 and older.",
+        "E-books were more popular among adults aged 30–49 than among adults 50 and older.",
+        "The share preferring printed books rose from 38% among adults aged 18–29 to 45% among those aged 30–49 and to 64% among those 50 and older."
+      ],
+      "answer": 3,
+      "explanation": "The argument is about a rise across age groups, so the evidence must show printed-book preference in all three groups going up. Only D does. B mentions just one group, so it cannot show a trend.",
+      "tip": "\"Increases with age\" is a trend. A trend needs at least the first and last data points, ideally all of them."
+    },
+    {
+      "id": "coe-09",
+      "difficulty": "medium",
+      "passage": "Some art historians claim that the painter Kamoliddin Behzod, who worked in Herat in the late 15th century, was admired by his contemporaries mainly for his realistic portrayal of everyday people rather than only kings and heroes.",
+      "prompt": "Which finding, if true, would most directly support the art historians' claim?",
+      "options": [
+        "Behzod's paintings used bright mineral pigments such as lapis lazuli.",
+        "Behzod later moved to Tabriz, where he directed a royal workshop.",
+        "Writers of Behzod's own time praised the lively, natural figures of builders, servants and shepherds in his paintings.",
+        "Many of Behzod's paintings illustrated famous poems."
+      ],
+      "answer": 2,
+      "explanation": "The claim has two parts: contemporaries admired him, and they admired his realistic ordinary people. C shows writers of his time praising exactly that. A, B and D are facts about his work or life that do not address what his contemporaries admired.",
+      "tip": "Check who is speaking in the evidence. \"Contemporaries\" means people of the same time, so the evidence must come from them."
+    },
+    {
+      "id": "coe-10",
+      "difficulty": "medium",
+      "passage": "Average number of hours of sleep per night reported by participants in a study",
+      "table": {
+        "columns": [
+          "Group",
+          "Before the study",
+          "After 4 weeks"
+        ],
+        "rows": [
+          [
+            "No phones in bedroom",
+            "6.4",
+            "7.3"
+          ],
+          [
+            "Phones allowed in bedroom",
+            "6.5",
+            "6.6"
+          ]
+        ]
+      },
+      "prompt": "Researchers concluded that keeping phones out of the bedroom may increase sleep. Which choice best describes data from the table that support this conclusion?",
+      "options": [
+        "Before the study, both groups slept about the same amount.",
+        "The group with phones allowed slept 6.6 hours after four weeks.",
+        "Sleep increased by 0.9 hours in the group without phones, compared with 0.1 hours in the group with phones allowed.",
+        "Neither group slept more than 8 hours per night."
+      ],
+      "answer": 2,
+      "explanation": "The conclusion compares the change in sleep between groups. C shows that the no-phone group gained 0.9 hours while the other gained only 0.1. A is useful background but does not show an effect; B and D do not compare the change.",
+      "tip": "For before-and-after data, calculate the change for each group and compare the changes."
+    },
+    {
+      "id": "coe-11",
+      "difficulty": "hard",
+      "passage": "An economist claims that a city's new free bus program, which began in 2023, was the main reason downtown shops saw more customers in 2024.",
+      "prompt": "Which finding, if true, would most directly weaken the economist's claim?",
+      "options": [
+        "Bus ridership in the city rose by 40% after the program began.",
+        "Customers interviewed downtown in 2024 said they liked the new buses.",
+        "Shops in nearby towns without free buses saw the same increase in customers during 2024.",
+        "Downtown shop owners asked the city to continue the program."
+      ],
+      "answer": 2,
+      "explanation": "If towns without free buses saw the same increase, something other than the bus program probably caused the rise, which weakens the claim. A, B and D are consistent with the claim or irrelevant to whether the buses caused the increase.",
+      "tip": "A comparison group without the cause but with the same effect is the strongest way to weaken a cause-and-effect claim."
+    },
+    {
+      "id": "coe-12",
+      "difficulty": "hard",
+      "passage": "Students studying with a classmate scored an average of 82 points on a test, while students studying alone scored an average of 76. A student concludes that studying with a partner improves test scores. A teacher points out that the students who chose to study with a partner had also earned higher grades than the others earlier in the year.",
+      "prompt": "Which choice best describes how the teacher's observation affects the student's conclusion?",
+      "options": [
+        "It strengthens the conclusion by showing that partner study works for strong students.",
+        "It has no effect on the conclusion, because the test scores are still different.",
+        "It proves that studying alone is more effective than studying with a partner.",
+        "It weakens the conclusion by suggesting that the higher scores may reflect differences between the students rather than the effect of studying together."
+      ],
+      "answer": 3,
+      "explanation": "If the partner group was already stronger, their higher scores might come from that difference, not from studying together. This weakens (but does not reverse) the conclusion, so C goes too far. B ignores the problem.",
+      "tip": "When groups were different before the study began, the results may not show cause and effect."
+    },
+    {
+      "id": "coe-13",
+      "difficulty": "hard",
+      "passage": "Average yield of wheat on test plots (tons per hectare)",
+      "table": {
+        "columns": [
+          "Fertilizer",
+          "Normal rainfall year",
+          "Drought year"
+        ],
+        "rows": [
+          [
+            "None",
+            "3.2",
+            "1.9"
+          ],
+          [
+            "Fertilizer X",
+            "4.6",
+            "2.0"
+          ],
+          [
+            "Fertilizer Y",
+            "4.1",
+            "3.1"
+          ]
+        ]
+      },
+      "prompt": "An agronomist argues that Fertilizer Y is the better choice for farmers in regions where drought is common, even though Fertilizer X performs better in normal years. Which choice best describes data from the table that support this argument?",
+      "options": [
+        "In a normal rainfall year, Fertilizer X produced 4.6 tons per hectare, compared with 4.1 for Fertilizer Y.",
+        "Plots with no fertilizer produced the lowest yield in both years.",
+        "In a drought year, Fertilizer Y produced 3.1 tons per hectare, compared with only 2.0 for Fertilizer X.",
+        "Fertilizer X produced more wheat in a normal year than in a drought year."
+      ],
+      "answer": 2,
+      "explanation": "The argument favors Y for drought regions, so the key evidence is drought-year performance: Y produced 3.1 tons, much more than X's 2.0. A supports the concession, not the argument; B and D do not compare X and Y in droughts.",
+      "tip": "Separate the concession (\"even though X does better in normal years\") from the main argument. Support the main argument."
+    },
+    {
+      "id": "coe-14",
+      "difficulty": "hard",
+      "passage": "The following text is from an essay about the Silk Road.\n\nThe author argues that the Silk Road was important not only for the goods it carried but also for the ideas that traveled along it.",
+      "prompt": "Which quotation from the essay would most effectively support the author's argument?",
+      "options": [
+        "\"Caravans of camels could carry hundreds of kilograms of silk, spices and metalwork across the deserts.\"",
+        "\"Along with silk and spices, merchants and pilgrims carried religions, scientific knowledge and techniques such as papermaking from one region to another.\"",
+        "\"Travel along the route was dangerous, and many caravans were lost to storms and bandits.\"",
+        "\"Cities such as Samarkand and Bukhara grew wealthy from the taxes they collected on trade.\""
+      ],
+      "answer": 1,
+      "explanation": "The argument stresses ideas as well as goods. B mentions both goods and ideas (religions, science, techniques). A and D focus only on goods and trade wealth, and C is about danger.",
+      "tip": "\"Not only X but also Y\" claims are supported best by evidence about Y, the new point."
+    },
+    {
+      "id": "coe-15",
+      "difficulty": "hard",
+      "passage": "Share of electricity generated from solar power in Country Z",
+      "table": {
+        "columns": [
+          "Year",
+          "Share from solar",
+          "Total electricity generated (billion kWh)"
+        ],
+        "rows": [
+          [
+            "2018",
+            "2%",
+            "50"
+          ],
+          [
+            "2021",
+            "5%",
+            "55"
+          ],
+          [
+            "2024",
+            "10%",
+            "60"
+          ]
+        ]
+      },
+      "prompt": "A student claims that the amount of electricity Country Z generated from solar power more than quadrupled between 2018 and 2024. Which choice best describes how the data support the claim?",
+      "options": [
+        "The share from solar rose from 2% to 10%, so the amount must have doubled.",
+        "The share from solar was higher in 2021 than in 2018.",
+        "Total electricity generated rose from 50 to 60 billion kWh.",
+        "Solar produced 1 billion kWh in 2018 (2% of 50) and 6 billion kWh in 2024 (10% of 60), an increase of six times."
+      ],
+      "answer": 3,
+      "explanation": "The claim is about amounts, so multiply share by total: 2% of 50 = 1 billion kWh and 10% of 60 = 6 billion kWh. Six times is more than four times, which supports the claim. A miscalculates. B and C do not give the amount from solar.",
+      "tip": "Percent of a changing total is a trap. Turn percentages into actual amounts before comparing."
+    }
+  ]
+}

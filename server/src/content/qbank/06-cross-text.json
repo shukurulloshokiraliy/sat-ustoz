@@ -1,0 +1,233 @@
+{
+  "domain": "Craft and Structure",
+  "skill": "Cross-Text Connections",
+  "skill_id": "cross-text",
+  "about": "Compare two short texts on the same topic: how would one author respond to the other?",
+  "questions": [
+    {
+      "id": "ctc-01",
+      "difficulty": "easy",
+      "passage": "**Text 1**\nHomework helps students practice what they learn in class. Without it, many students forget new skills before they have a chance to master them.\n\n**Text 2**\nStudies show that large amounts of homework can cause stress and leave students too tired to learn well. Short, focused assignments are more useful than long ones.",
+      "prompt": "Based on the texts, how would the author of Text 2 most likely respond to the author of Text 1?",
+      "options": [
+        "By agreeing that homework should be banned completely",
+        "By arguing that students forget nothing they learn in class",
+        "By claiming that practice is never useful for learning",
+        "By agreeing that practice can help but warning that too much homework may be harmful"
+      ],
+      "answer": 3,
+      "explanation": "Text 2 does not reject homework; it favors \"short, focused assignments\" while warning about large amounts. So the author would partly agree with Text 1. A and C are too extreme, and B is not discussed.",
+      "tip": "Many Text 2 authors partly agree. Look for answers with \"agree... but\" when Text 2 adds a condition."
+    },
+    {
+      "id": "ctc-02",
+      "difficulty": "easy",
+      "passage": "**Text 1**\nCity parks are valuable mainly because they give residents a place to exercise. Running paths and sports fields help people stay healthy.\n\n**Text 2**\nThe most important benefit of city parks is not exercise but nature itself. Trees cool the air, provide homes for birds, and give people a calm place to rest.",
+      "prompt": "Which choice best describes how Text 2 relates to Text 1?",
+      "options": [
+        "Text 2 offers a different view of what makes city parks most valuable.",
+        "Text 2 provides statistics that support the claims in Text 1.",
+        "Text 2 argues that cities should build fewer parks.",
+        "Text 2 explains how running paths are designed."
+      ],
+      "answer": 0,
+      "explanation": "Text 1 says parks matter mainly for exercise; Text 2 says the main benefit is nature. That is a different view. Text 2 gives no statistics, does not oppose parks, and does not discuss path design.",
+      "tip": "First state each author's main claim in a few words, then compare the two claims."
+    },
+    {
+      "id": "ctc-03",
+      "difficulty": "easy",
+      "passage": "**Text 1**\nThe invention of the printing press in the 15th century made books cheaper, allowing many more people to read.\n\n**Text 2**\nIt is true that printed books became cheaper after the 1400s. But in many regions, most people could not read until schools became common centuries later, so cheaper books alone did not create mass literacy.",
+      "prompt": "Based on the texts, how would the author of Text 2 most likely respond to the claim in Text 1?",
+      "options": [
+        "By rejecting the idea that the printing press was ever invented",
+        "By arguing that books became more expensive after the printing press",
+        "By accepting that books became cheaper but questioning whether this alone led many more people to read",
+        "By agreeing completely and adding no new information"
+      ],
+      "answer": 2,
+      "explanation": "Text 2 begins \"It is true that printed books became cheaper\" (agreement), then argues that cheaper books alone did not make most people literate (qualification). A and B contradict Text 2, and D ignores its objection.",
+      "tip": "\"It is true that... But...\" is a concession followed by a challenge."
+    },
+    {
+      "id": "ctc-04",
+      "difficulty": "easy",
+      "passage": "**Text 1**\nOnline classes allow students to learn at their own pace. They can pause videos, review difficult topics and study at any time of day.\n\n**Text 2**\nOnline classes are convenient, but many students struggle without a teacher in the room. Studies show that students in online courses are more likely to stop attending before the course ends.",
+      "prompt": "Which choice best describes a difference between the two texts?",
+      "options": [
+        "Text 1 focuses on benefits of online classes, while Text 2 points out a drawback.",
+        "Text 1 discusses teachers, while Text 2 discusses only videos.",
+        "Text 1 uses research studies, while Text 2 uses personal stories.",
+        "Text 1 opposes online classes, while Text 2 supports them."
+      ],
+      "answer": 0,
+      "explanation": "Text 1 lists advantages; Text 2 admits convenience but stresses that students may drop out. B and C reverse or invent details, and D reverses the authors' positions.",
+      "tip": "For \"difference\" questions, check that both halves of the answer are true."
+    },
+    {
+      "id": "ctc-05",
+      "difficulty": "easy",
+      "passage": "**Text 1**\nPlanting trees is one of the easiest ways for a city to fight summer heat. Shaded streets can be several degrees cooler than streets without trees.\n\n**Text 2**\nIn a survey of 30 cities, streets lined with large trees were on average 3 to 5 degrees Celsius cooler in summer afternoons than nearby streets without trees.",
+      "prompt": "Which choice best describes how Text 2 relates to Text 1?",
+      "options": [
+        "Text 2 disagrees with the main claim of Text 1.",
+        "Text 2 discusses an unrelated problem.",
+        "Text 2 argues that trees make streets hotter at night.",
+        "Text 2 provides data that support the claim made in Text 1."
+      ],
+      "answer": 3,
+      "explanation": "Text 1 claims shaded streets are several degrees cooler; Text 2's survey of 30 cities finds they are 3 to 5 degrees cooler, which supports that claim. Text 2 does not disagree, change topics, or discuss nighttime.",
+      "tip": "If Text 2 contains numbers that match Text 1's claim, the relationship is support."
+    },
+    {
+      "id": "ctc-06",
+      "difficulty": "medium",
+      "passage": "**Text 1**\nThe mathematician al-Khwarizmi, who was born in Khwarazm in Central Asia around 780 CE, is often called the father of algebra. His book on solving equations gave the subject its name, from the Arabic word *al-jabr*.\n\n**Text 2**\nCalling any single person \"the father\" of algebra oversimplifies history. Babylonian, Greek and Indian mathematicians all solved equations long before al-Khwarizmi, even if his book organized these methods in a new and influential way.",
+      "prompt": "Based on the texts, how would the author of Text 2 most likely respond to the description of al-Khwarizmi in Text 1?",
+      "options": [
+        "By arguing that al-Khwarizmi's book had no influence",
+        "By recognizing his important contribution while objecting that the title ignores earlier mathematicians",
+        "By claiming that algebra was invented by Greek mathematicians alone",
+        "By agreeing that al-Khwarizmi was the first person ever to solve an equation"
+      ],
+      "answer": 1,
+      "explanation": "Text 2 calls the book \"new and influential\" but says the title \"father of algebra\" oversimplifies because others solved equations earlier. A contradicts \"influential,\" C names only one of several groups, and D contradicts Text 2.",
+      "tip": "Note the author's exact objection: here it is to the title, not to the achievement."
+    },
+    {
+      "id": "ctc-07",
+      "difficulty": "medium",
+      "passage": "**Text 1**\nSome historians argue that an ancient trading city on the Silk Road declined mainly because of a military invasion in the 13th century, which destroyed much of the city.\n\n**Text 2**\nThe invasion was certainly devastating. However, excavations show that the city's water channels had already fallen into disrepair and that many residents had moved to newer settlements decades earlier. The invasion may have completed a decline that had already begun.",
+      "prompt": "Based on the texts, how would the author of Text 2 most likely respond to the historians mentioned in Text 1?",
+      "options": [
+        "By denying that the invasion took place",
+        "By arguing that the city was abandoned centuries before the invasion",
+        "By suggesting that the city's decline had begun before the invasion, so the invasion was not the only cause",
+        "By agreeing that the invasion was the only cause of the decline"
+      ],
+      "answer": 2,
+      "explanation": "Text 2 accepts the invasion was devastating but cites earlier damage and population movement, suggesting the decline started earlier. A contradicts \"certainly devastating,\" B is unsupported, and D is the view Text 2 challenges.",
+      "tip": "\"May have completed a decline that had already begun\" means the author adds earlier causes, not that they deny the later one."
+    },
+    {
+      "id": "ctc-08",
+      "difficulty": "medium",
+      "passage": "**Text 1**\nSocial media helps young people stay connected with friends and discover communities that share their interests. For students who feel isolated at school, these online groups can be an important source of support.\n\n**Text 2**\nResearchers found that teenagers who spent more than three hours a day on social media reported feeling lonelier than those who used it less. Heavy use, the researchers suggest, may replace face-to-face time with friends.",
+      "prompt": "Which choice best describes how the findings in Text 2 relate to the view in Text 1?",
+      "options": [
+        "They suggest that the benefits described in Text 1 may depend on how much social media a person uses.",
+        "They prove that social media has no benefits for anyone.",
+        "They show that isolated students do not use social media.",
+        "They confirm that more social media use always reduces loneliness."
+      ],
+      "answer": 0,
+      "explanation": "Text 2 links heavy use (over three hours) with more loneliness, which suggests the benefits in Text 1 may hold only for moderate use. B and D are too absolute, and C is not discussed.",
+      "tip": "When Text 2's findings involve a condition (\"more than three hours\"), the relationship is often \"it depends.\""
+    },
+    {
+      "id": "ctc-09",
+      "difficulty": "medium",
+      "passage": "**Text 1**\nTo protect endangered species, governments should focus on saving individual animals. Breeding programs in zoos have rescued several species from extinction.\n\n**Text 2**\nZoo breeding programs have had real successes, but a species released into a destroyed habitat cannot survive for long. Protecting forests, grasslands and rivers is the only lasting way to save endangered animals.",
+      "prompt": "Based on the texts, how would the author of Text 2 most likely respond to the recommendation in Text 1?",
+      "options": [
+        "By agreeing that zoos are the best place for all endangered species",
+        "By arguing that breeding programs have never worked",
+        "By stating that governments should stop protecting animals",
+        "By arguing that focusing on individual animals is not enough without protecting their habitats"
+      ],
+      "answer": 3,
+      "explanation": "Text 2 grants that zoo programs have had successes but argues that habitat protection is essential for lasting survival. B contradicts \"real successes,\" and A and C misstate Text 2's position.",
+      "tip": "Avoid choices that make the Text 2 author more extreme than they are."
+    },
+    {
+      "id": "ctc-10",
+      "difficulty": "medium",
+      "passage": "**Text 1**\nThe novelist's use of very short chapters makes her books feel fast-paced and exciting. Readers keep turning pages because each chapter ends with a small surprise.\n\n**Text 2**\nThe novelist's short chapters are often praised for creating suspense. Yet they also leave little room for developing characters, so many of her figures remain flat and hard to remember once the book is finished.",
+      "prompt": "Which choice best describes how Text 2 relates to Text 1?",
+      "options": [
+        "Text 2 acknowledges the strength described in Text 1 but identifies a related weakness.",
+        "Text 2 argues that the novelist's chapters are actually very long.",
+        "Text 2 provides biographical information about the novelist.",
+        "Text 2 agrees with Text 1 and adds further praise."
+      ],
+      "answer": 0,
+      "explanation": "Text 2 mentions the praised suspense (the strength in Text 1) and then argues that short chapters limit character development. B contradicts both texts, C is absent, and D ignores the criticism.",
+      "tip": "\"Often praised... Yet\" is a common way for Text 2 to accept a point and then add a criticism."
+    },
+    {
+      "id": "ctc-11",
+      "difficulty": "hard",
+      "passage": "**Text 1**\nMany economists argue that raising the minimum wage leads businesses to hire fewer workers. If labor becomes more expensive, they reason, employers will look for ways to use less of it.\n\n**Text 2**\nSeveral studies comparing neighboring regions, one of which raised its minimum wage and one of which did not, have found little or no difference in employment afterward. One explanation is that higher wages reduce how often workers quit, which lowers businesses' hiring and training costs.",
+      "prompt": "Based on the texts, how would the author of Text 2 most likely respond to the reasoning in Text 1?",
+      "options": [
+        "By agreeing that higher wages always reduce employment",
+        "By pointing to evidence that the expected drop in employment does not always occur and offering a possible reason",
+        "By arguing that the minimum wage should be eliminated",
+        "By claiming that labor costs have no effect on businesses"
+      ],
+      "answer": 1,
+      "explanation": "Text 2 cites studies showing little employment change and suggests lower turnover as a reason. A is the opposite. C is not discussed, and D goes too far: Text 2 actually describes cost effects (lower hiring and training costs).",
+      "tip": "Text 2 often answers a theory with real-world evidence. Look for \"evidence + explanation\" answers."
+    },
+    {
+      "id": "ctc-12",
+      "difficulty": "hard",
+      "passage": "**Text 1**\nThe discovery of a 3.2-million-year-old skeleton nicknamed \"Lucy\" suggested that early human ancestors walked upright long before their brains grew large. This overturned the older idea that bigger brains came first and upright walking followed.\n\n**Text 2**\nFossil footprints found at Laetoli in Tanzania, made about 3.6 million years ago, show a clearly upright, two-legged walk. The animals that made them had small brains, similar in size to those of chimpanzees.",
+      "prompt": "Which choice best describes how Text 2 relates to Text 1?",
+      "options": [
+        "Text 2 challenges Text 1 by showing that large brains appeared first.",
+        "Text 2 offers additional evidence consistent with the conclusion described in Text 1.",
+        "Text 2 shows that the Lucy skeleton was misdated.",
+        "Text 2 argues that early ancestors did not walk upright."
+      ],
+      "answer": 1,
+      "explanation": "The footprints show upright walking by small-brained ancestors, which is consistent with Text 1's conclusion that walking came before large brains. Text 2 does not mention large brains appearing first, a dating error, or a lack of upright walking.",
+      "tip": "Ask whether Text 2's evidence points the same way as Text 1's conclusion or the opposite way."
+    },
+    {
+      "id": "ctc-13",
+      "difficulty": "hard",
+      "passage": "**Text 1**\nTranslations of poetry should stay as close as possible to the original words. When translators add their own phrases to create rhyme or rhythm, readers can no longer trust that they are reading the poet's ideas.\n\n**Text 2**\nA word-for-word translation of a poem may be accurate, but it often loses the music that made the original a poem in the first place. A good translator must sometimes change individual words in order to preserve the poem's sound and emotional effect, which are part of its meaning too.",
+      "prompt": "Based on the texts, how would the author of Text 2 most likely respond to the argument in Text 1?",
+      "options": [
+        "By arguing that the original words of a poem are unimportant",
+        "By claiming that poems cannot be translated at all",
+        "By agreeing that translators should never change any words",
+        "By contending that strict accuracy to the words can sacrifice qualities that are also part of a poem's meaning"
+      ],
+      "answer": 3,
+      "explanation": "Text 2 says sound and emotion are \"part of its meaning too,\" so a word-for-word approach can lose meaning. Text 2 does not call words unimportant (A) or say translation is impossible (B), and it rejects C.",
+      "tip": "Look for the phrase in Text 2 that redefines a key term. Here \"meaning\" is broadened to include sound."
+    },
+    {
+      "id": "ctc-14",
+      "difficulty": "hard",
+      "passage": "**Text 1**\nResearchers have long believed that crows solve puzzles mainly by trial and error, trying random actions until one works.\n\n**Text 2**\nIn a recent experiment, crows were shown a tube of water with food floating out of reach. Most crows immediately chose to drop heavy stones rather than light objects into the tube to raise the water level, and they ignored tubes filled with sand, where dropping stones would not help. The researchers argue that the birds understood the cause-and-effect relationship involved.",
+      "prompt": "Based on the texts, how would the researchers in Text 2 most likely respond to the belief described in Text 1?",
+      "options": [
+        "They would argue that their findings suggest crows can solve some problems by understanding them rather than by random attempts.",
+        "They would agree that crows only solve problems by accident.",
+        "They would claim that crows are unable to use tools.",
+        "They would argue that water puzzles are too difficult for any bird."
+      ],
+      "answer": 0,
+      "explanation": "The crows chose effective objects immediately and avoided useless tubes, which is not random trial and error; the researchers say the birds understood cause and effect. B restates the challenged belief, and C and D contradict the experiment's results.",
+      "tip": "Immediate, correct choices are evidence against random trial and error. Connect the evidence to the belief it challenges."
+    },
+    {
+      "id": "ctc-15",
+      "difficulty": "hard",
+      "passage": "**Text 1**\nAncient Greek sculptures were painted in bright colors, but almost all of the paint has worn away. Museums should therefore display painted reconstructions alongside the white marble originals, so that visitors see the works as the ancient Greeks did.\n\n**Text 2**\nScientists can detect tiny traces of pigment on ancient statues, but these traces rarely show exactly which colors covered which areas, or how bright they were. Many reconstructions therefore rely heavily on guesswork, and presenting them as accurate images of the past may mislead visitors.",
+      "prompt": "Based on the texts, how would the author of Text 2 most likely respond to the proposal in Text 1?",
+      "options": [
+        "By denying that Greek statues were ever painted",
+        "By arguing that museums should remove all ancient sculptures from display",
+        "By cautioning that painted reconstructions may not accurately show how the statues looked",
+        "By agreeing that reconstructions show exactly what the Greeks saw"
+      ],
+      "answer": 2,
+      "explanation": "Text 2 accepts that pigment traces exist but warns that reconstructions rely on guesswork and may mislead, which questions Text 1's goal of showing the works \"as the ancient Greeks did.\" A contradicts the pigment traces, B is far too extreme, and D is the opposite of Text 2's view.",
+      "tip": "Find the exact part of Text 1 that Text 2 questions. Here it is the claim that reconstructions show what the Greeks saw."
+    }
+  ]
+}

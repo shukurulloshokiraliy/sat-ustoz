@@ -1,0 +1,1043 @@
+{
+  "id": "satustoz-placement-v1",
+  "title": "SATUstoz Placement Test",
+  "version": "1.0",
+  "language_note": "Student-facing text is English; fields ending in _uz are short Uzbek tips (about 10%).",
+  "sections": [
+    {
+      "id": "grammar",
+      "title": "Part 1 · Grammar",
+      "description": "40 questions from A1 to C1. They get harder as you go. Multiple choice and short written answers.",
+      "time_limit_minutes": 25,
+      "levels_in_order": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1"
+      ],
+      "items_per_level": {
+        "mc": 6,
+        "written": 2
+      }
+    },
+    {
+      "id": "sat",
+      "title": "Part 2 · SAT Reading and Writing",
+      "description": "10 short SAT-style questions. Read each text carefully and choose the best answer.",
+      "time_limit_minutes": 12
+    }
+  ],
+  "items": [
+    {
+      "id": "G-A1-01",
+      "section": "grammar",
+      "level": "A1",
+      "format": "mc",
+      "skill": "agreement",
+      "prompt": "She ___ a student at a school in Tashkent.",
+      "options": [
+        "is",
+        "am",
+        "are",
+        "be"
+      ],
+      "answer": 0,
+      "explanation": "With he, she or it, the verb be is is."
+    },
+    {
+      "id": "G-A1-02",
+      "section": "grammar",
+      "level": "A1",
+      "format": "mc",
+      "skill": "agreement",
+      "prompt": "There ___ two books on the table.",
+      "options": [
+        "is",
+        "am",
+        "are",
+        "be"
+      ],
+      "answer": 2,
+      "explanation": "Two books is plural, so we use there are."
+    },
+    {
+      "id": "G-A1-03",
+      "section": "grammar",
+      "level": "A1",
+      "format": "mc",
+      "skill": "tenses",
+      "prompt": "I ___ green tea every morning.",
+      "options": [
+        "drinks",
+        "drinking",
+        "am drink",
+        "drink"
+      ],
+      "answer": 3,
+      "explanation": "Present simple for habits. With I, the verb has no -s."
+    },
+    {
+      "id": "G-A1-04",
+      "section": "grammar",
+      "level": "A1",
+      "format": "mc",
+      "skill": "tenses",
+      "prompt": "My father doesn’t ___ coffee.",
+      "options": [
+        "likes",
+        "like",
+        "liked",
+        "liking"
+      ],
+      "answer": 1,
+      "explanation": "After doesn’t, use the base form of the verb: like."
+    },
+    {
+      "id": "G-A1-05",
+      "section": "grammar",
+      "level": "A1",
+      "format": "mc",
+      "skill": "word-forms",
+      "prompt": "I bought ___ umbrella yesterday.",
+      "options": [
+        "a",
+        "some",
+        "an",
+        "any"
+      ],
+      "answer": 2,
+      "explanation": "Use an before a vowel sound: an umbrella."
+    },
+    {
+      "id": "G-A1-06",
+      "section": "grammar",
+      "level": "A1",
+      "format": "mc",
+      "skill": "word-forms",
+      "prompt": "“___ do you live?” “In Samarkand.”",
+      "options": [
+        "Where",
+        "What",
+        "Who",
+        "When"
+      ],
+      "answer": 0,
+      "explanation": "The answer is a place, so the question word is where."
+    },
+    {
+      "id": "G-A1-W1",
+      "section": "grammar",
+      "level": "A1",
+      "format": "written",
+      "skill": "agreement",
+      "prompt": "Write the correct form of the verb: My sister ___ (have) two cats.",
+      "accepted": [
+        "has"
+      ],
+      "explanation": "With she / my sister, have becomes has."
+    },
+    {
+      "id": "G-A1-W2",
+      "section": "grammar",
+      "level": "A1",
+      "format": "written",
+      "skill": "tenses",
+      "prompt": "Write the negative form: They ___ (not / like) cold weather.",
+      "accepted": [
+        "don't like",
+        "do not like"
+      ],
+      "explanation": "Present simple negative with they: don’t + base verb."
+    },
+    {
+      "id": "G-A2-01",
+      "section": "grammar",
+      "level": "A2",
+      "format": "mc",
+      "skill": "tenses",
+      "prompt": "Yesterday we ___ to the history museum.",
+      "options": [
+        "go",
+        "went",
+        "gone",
+        "goes"
+      ],
+      "answer": 1,
+      "explanation": "Yesterday means past simple. The past of go is went."
+    },
+    {
+      "id": "G-A2-02",
+      "section": "grammar",
+      "level": "A2",
+      "format": "mc",
+      "skill": "word-forms",
+      "prompt": "My brother is ___ than me.",
+      "options": [
+        "tall",
+        "tallest",
+        "more tall",
+        "taller"
+      ],
+      "answer": 3,
+      "explanation": "Comparing two people with than: short adjective + -er."
+    },
+    {
+      "id": "G-A2-03",
+      "section": "grammar",
+      "level": "A2",
+      "format": "mc",
+      "skill": "tenses",
+      "prompt": "Look outside! It ___.",
+      "options": [
+        "is raining",
+        "rains",
+        "rained",
+        "rain"
+      ],
+      "answer": 0,
+      "explanation": "Look! shows something happening now: present continuous."
+    },
+    {
+      "id": "G-A2-04",
+      "section": "grammar",
+      "level": "A2",
+      "format": "mc",
+      "skill": "tenses",
+      "prompt": "I ___ visit my grandmother next weekend. I’ve already bought the bus ticket.",
+      "options": [
+        "going to",
+        "go to",
+        "am going to",
+        "am go"
+      ],
+      "answer": 2,
+      "explanation": "A plan already decided: be going to + verb."
+    },
+    {
+      "id": "G-A2-05",
+      "section": "grammar",
+      "level": "A2",
+      "format": "mc",
+      "skill": "verb-patterns",
+      "prompt": "You ___ wear a seatbelt in a car. It’s the law.",
+      "options": [
+        "might",
+        "could",
+        "would",
+        "must"
+      ],
+      "answer": 3,
+      "explanation": "A rule or obligation: must."
+    },
+    {
+      "id": "G-A2-06",
+      "section": "grammar",
+      "level": "A2",
+      "format": "mc",
+      "skill": "word-forms",
+      "prompt": "How ___ water do you drink a day?",
+      "options": [
+        "many",
+        "much",
+        "few",
+        "lot"
+      ],
+      "answer": 1,
+      "explanation": "Water is uncountable, so we ask how much."
+    },
+    {
+      "id": "G-A2-W1",
+      "section": "grammar",
+      "level": "A2",
+      "format": "written",
+      "skill": "tenses",
+      "prompt": "Write the correct form of the verb: Last summer I ___ (travel) to Bukhara with my family.",
+      "accepted": [
+        "travelled",
+        "traveled"
+      ],
+      "explanation": "Last summer means past simple: travelled (UK) or traveled (US)."
+    },
+    {
+      "id": "G-A2-W2",
+      "section": "grammar",
+      "level": "A2",
+      "format": "written",
+      "skill": "word-forms",
+      "prompt": "Write the correct form of the adjective: This is the ___ (good) restaurant in our city.",
+      "accepted": [
+        "best"
+      ],
+      "explanation": "The superlative of good is best."
+    },
+    {
+      "id": "G-B1-01",
+      "section": "grammar",
+      "level": "B1",
+      "format": "mc",
+      "skill": "tenses",
+      "prompt": "I ___ in Namangan since 2019.",
+      "options": [
+        "live",
+        "lived",
+        "have lived",
+        "am living"
+      ],
+      "answer": 2,
+      "explanation": "Since + a starting point, and still true now: present perfect."
+    },
+    {
+      "id": "G-B1-02",
+      "section": "grammar",
+      "level": "B1",
+      "format": "mc",
+      "skill": "conditionals",
+      "prompt": "If it rains tomorrow, we ___ at home.",
+      "options": [
+        "will stay",
+        "stay",
+        "would stay",
+        "stayed"
+      ],
+      "answer": 0,
+      "explanation": "First conditional: if + present, will + verb."
+    },
+    {
+      "id": "G-B1-03",
+      "section": "grammar",
+      "level": "B1",
+      "format": "mc",
+      "skill": "verb-patterns",
+      "prompt": "The bridge ___ in 1965.",
+      "options": [
+        "built",
+        "was built",
+        "has built",
+        "is building"
+      ],
+      "answer": 1,
+      "explanation": "The bridge did not build itself, and 1965 is past: past passive."
+    },
+    {
+      "id": "G-B1-04",
+      "section": "grammar",
+      "level": "B1",
+      "format": "mc",
+      "skill": "clauses",
+      "prompt": "She asked me where ___.",
+      "options": [
+        "did I live",
+        "do I live",
+        "I do live",
+        "I lived"
+      ],
+      "answer": 3,
+      "explanation": "In reported questions the word order is like a statement: where I lived."
+    },
+    {
+      "id": "G-B1-05",
+      "section": "grammar",
+      "level": "B1",
+      "format": "mc",
+      "skill": "verb-patterns",
+      "prompt": "I’m used to ___ up early for school.",
+      "options": [
+        "getting",
+        "get",
+        "got",
+        "gets"
+      ],
+      "answer": 0,
+      "explanation": "Be used to is followed by a noun or an -ing form."
+    },
+    {
+      "id": "G-B1-06",
+      "section": "grammar",
+      "level": "B1",
+      "format": "mc",
+      "skill": "clauses",
+      "prompt": "This is the teacher ___ helped me with my essay.",
+      "options": [
+        "which",
+        "whose",
+        "who",
+        "whom"
+      ],
+      "answer": 2,
+      "explanation": "For a person as the subject of the clause, use who."
+    },
+    {
+      "id": "G-B1-W1",
+      "section": "grammar",
+      "level": "B1",
+      "format": "written",
+      "skill": "tenses",
+      "prompt": "Write the correct form: I ___ (never / see) such a beautiful sunset before.",
+      "accepted": [
+        "have never seen",
+        "'ve never seen",
+        "’ve never seen"
+      ],
+      "explanation": "Life experience up to now: present perfect, have never seen."
+    },
+    {
+      "id": "G-B1-W2",
+      "section": "grammar",
+      "level": "B1",
+      "format": "written",
+      "skill": "verb-patterns",
+      "prompt": "Write the passive form: The letter ___ (send) yesterday.",
+      "accepted": [
+        "was sent"
+      ],
+      "explanation": "Past passive: was + past participle."
+    },
+    {
+      "id": "G-B2-01",
+      "section": "grammar",
+      "level": "B2",
+      "format": "mc",
+      "skill": "conditionals",
+      "prompt": "If I ___ about the exam, I would have studied harder.",
+      "options": [
+        "knew",
+        "have known",
+        "would know",
+        "had known"
+      ],
+      "answer": 3,
+      "explanation": "Third conditional about the past: if + had + past participle."
+    },
+    {
+      "id": "G-B2-02",
+      "section": "grammar",
+      "level": "B2",
+      "format": "mc",
+      "skill": "tenses",
+      "prompt": "By the time we arrived at the cinema, the film ___.",
+      "options": [
+        "started",
+        "had already started",
+        "has started",
+        "was starting"
+      ],
+      "answer": 1,
+      "explanation": "One past action happened before another: past perfect."
+    },
+    {
+      "id": "G-B2-03",
+      "section": "grammar",
+      "level": "B2",
+      "format": "mc",
+      "skill": "sentence-structure",
+      "prompt": "Not only ___ the test, but she also got the highest score in her school.",
+      "options": [
+        "she passed",
+        "she did pass",
+        "did she pass",
+        "passed she"
+      ],
+      "answer": 2,
+      "explanation": "After not only at the start of a sentence, use question word order."
+    },
+    {
+      "id": "G-B2-04",
+      "section": "grammar",
+      "level": "B2",
+      "format": "mc",
+      "skill": "clauses",
+      "prompt": "The results, ___ were published last week, surprised everyone.",
+      "options": [
+        "which",
+        "that",
+        "who",
+        "what"
+      ],
+      "answer": 0,
+      "explanation": "Between commas (extra information) about things, use which, not that."
+    },
+    {
+      "id": "G-B2-05",
+      "section": "grammar",
+      "level": "B2",
+      "format": "mc",
+      "skill": "verb-patterns",
+      "prompt": "He denied ___ the window.",
+      "options": [
+        "to break",
+        "breaking",
+        "break",
+        "to have break"
+      ],
+      "answer": 1,
+      "explanation": "Deny is followed by an -ing form."
+    },
+    {
+      "id": "G-B2-06",
+      "section": "grammar",
+      "level": "B2",
+      "format": "mc",
+      "skill": "agreement",
+      "prompt": "Neither the students nor the teacher ___ aware of the change.",
+      "options": [
+        "were",
+        "are",
+        "have",
+        "was"
+      ],
+      "answer": 3,
+      "explanation": "With neither…nor, the verb agrees with the nearer subject: the teacher was."
+    },
+    {
+      "id": "G-B2-W1",
+      "section": "grammar",
+      "level": "B2",
+      "format": "written",
+      "skill": "conditionals",
+      "prompt": "Write the correct form: If she ___ (study) harder last year, she would be at university now.",
+      "accepted": [
+        "had studied"
+      ],
+      "explanation": "Mixed conditional: a past condition (had studied) with a present result."
+    },
+    {
+      "id": "G-B2-W2",
+      "section": "grammar",
+      "level": "B2",
+      "format": "written",
+      "skill": "verb-patterns",
+      "prompt": "Write the correct form: I’m looking forward to ___ (meet) you.",
+      "accepted": [
+        "meeting"
+      ],
+      "explanation": "In look forward to, to is a preposition, so the verb takes -ing."
+    },
+    {
+      "id": "G-C1-01",
+      "section": "grammar",
+      "level": "C1",
+      "format": "mc",
+      "skill": "conditionals",
+      "prompt": "Had the committee reviewed the data more carefully, the error ___.",
+      "options": [
+        "would have been avoided",
+        "would be avoided",
+        "will have been avoided",
+        "had been avoided"
+      ],
+      "answer": 0,
+      "explanation": "Inverted third conditional (Had… = If… had): would have been + past participle."
+    },
+    {
+      "id": "G-C1-02",
+      "section": "grammar",
+      "level": "C1",
+      "format": "mc",
+      "skill": "conditionals",
+      "prompt": "It is essential that every applicant ___ the form by Friday.",
+      "options": [
+        "submits",
+        "submitted",
+        "submit",
+        "will submit"
+      ],
+      "answer": 2,
+      "explanation": "After it is essential that, formal English uses the base form (subjunctive): submit."
+    },
+    {
+      "id": "G-C1-03",
+      "section": "grammar",
+      "level": "C1",
+      "format": "mc",
+      "skill": "sentence-structure",
+      "prompt": "Hardly ___ the lecture begun when the fire alarm went off.",
+      "options": [
+        "has",
+        "did",
+        "was",
+        "had"
+      ],
+      "answer": 3,
+      "explanation": "Hardly…when with inversion describes a past moment: hardly had + subject + past participle."
+    },
+    {
+      "id": "G-C1-04",
+      "section": "grammar",
+      "level": "C1",
+      "format": "mc",
+      "skill": "agreement",
+      "prompt": "The director, along with two assistants, ___ expected to attend the meeting.",
+      "options": [
+        "are",
+        "is",
+        "were being",
+        "have"
+      ],
+      "answer": 1,
+      "explanation": "Along with two assistants is extra information. The subject is the director, so is."
+    },
+    {
+      "id": "G-C1-05",
+      "section": "grammar",
+      "level": "C1",
+      "format": "mc",
+      "skill": "sentence-structure",
+      "prompt": "___ the long delays, the project was completed on budget.",
+      "options": [
+        "Although",
+        "However",
+        "Despite",
+        "Because"
+      ],
+      "answer": 2,
+      "explanation": "Despite is followed by a noun phrase. Although would need a full clause."
+    },
+    {
+      "id": "G-C1-06",
+      "section": "grammar",
+      "level": "C1",
+      "format": "mc",
+      "skill": "agreement",
+      "prompt": "She is one of the few researchers who ___ studied the region’s ancient languages.",
+      "options": [
+        "have",
+        "has",
+        "having",
+        "is"
+      ],
+      "answer": 0,
+      "explanation": "Who refers to researchers (plural), so the verb is have."
+    },
+    {
+      "id": "G-C1-W1",
+      "section": "grammar",
+      "level": "C1",
+      "format": "written",
+      "skill": "sentence-structure",
+      "prompt": "Rewrite with inversion: Under no circumstances ___ (you / should) open this door.",
+      "accepted": [
+        "should you"
+      ],
+      "explanation": "After a negative phrase at the start, invert: should you."
+    },
+    {
+      "id": "G-C1-W2",
+      "section": "grammar",
+      "level": "C1",
+      "format": "written",
+      "skill": "conditionals",
+      "prompt": "Write the correct form: The professor recommended that he ___ (take) the advanced course.",
+      "accepted": [
+        "take",
+        "should take"
+      ],
+      "explanation": "After recommend that, use the base form (take) or should take."
+    },
+    {
+      "id": "S-01",
+      "section": "sat",
+      "format": "mc",
+      "sat_type": "words-in-context",
+      "domain": "Craft and Structure",
+      "difficulty": "easy",
+      "passage": "Botanist Ana Ruiz found that the seeds of a desert plant can remain ______ for decades, sprouting only after a rare heavy rainfall.",
+      "prompt": "Which choice completes the text with the most logical and precise word or phrase?",
+      "options": [
+        "fragile",
+        "dormant",
+        "visible",
+        "abundant"
+      ],
+      "answer": 1,
+      "explanation": "The seeds wait for decades without sprouting. Dormant means alive but inactive."
+    },
+    {
+      "id": "S-02",
+      "section": "sat",
+      "format": "mc",
+      "sat_type": "boundaries",
+      "domain": "Standard English Conventions",
+      "difficulty": "medium",
+      "passage": "The architect designed the library with large north-facing ______ these let in steady, soft light without heating the reading rooms.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "windows,",
+        "windows",
+        "windows that",
+        "windows;"
+      ],
+      "answer": 3,
+      "explanation": "Two complete sentences are joined. A semicolon can join them; a comma alone or nothing cannot."
+    },
+    {
+      "id": "S-03",
+      "section": "sat",
+      "format": "mc",
+      "sat_type": "form-structure-sense",
+      "domain": "Standard English Conventions",
+      "difficulty": "medium",
+      "passage": "The collection of rare manuscripts, which scholars have studied for more than a century, ______ now available online.",
+      "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      "options": [
+        "is",
+        "are",
+        "were",
+        "have been"
+      ],
+      "answer": 0,
+      "explanation": "The subject is the collection (singular). Ignore the words between commas: the collection is."
+    },
+    {
+      "id": "S-04",
+      "section": "sat",
+      "format": "mc",
+      "sat_type": "transitions",
+      "domain": "Expression of Ideas",
+      "difficulty": "easy",
+      "passage": "Many birds fly south in winter to find food. ______ some species, such as the black-capped chickadee, stay in cold regions all year and survive on seeds they stored in autumn.",
+      "prompt": "Which choice completes the text with the most logical transition?",
+      "options": [
+        "Similarly,",
+        "Therefore,",
+        "However,",
+        "For example,"
+      ],
+      "answer": 2,
+      "explanation": "The second sentence contrasts with the first (leave vs stay), so however."
+    },
+    {
+      "id": "S-05",
+      "section": "sat",
+      "format": "mc",
+      "sat_type": "central-ideas",
+      "domain": "Information and Ideas",
+      "difficulty": "easy",
+      "passage": "Marine biologist Lena Okafor studied coral reefs near two islands. Reefs near the island with strict fishing limits had more fish species and recovered faster after storms than reefs near the island without such limits. Okafor concluded that protecting fish populations may help reefs survive damage.",
+      "prompt": "Which choice best states the main idea of the text?",
+      "options": [
+        "Storms are the main threat to coral reefs.",
+        "The two islands attract different numbers of tourists.",
+        "Coral reefs recover from storms at the same rate everywhere.",
+        "Limits on fishing may help coral reefs recover from damage."
+      ],
+      "answer": 3,
+      "explanation": "The study and the conclusion both point to fishing limits helping reefs recover."
+    },
+    {
+      "id": "S-06",
+      "section": "sat",
+      "format": "mc",
+      "sat_type": "inferences",
+      "domain": "Information and Ideas",
+      "difficulty": "medium",
+      "passage": "Early ship clocks were often inaccurate, gaining or losing several minutes each day. Because sailors needed exact time to calculate how far east or west they had traveled, crews who relied on these clocks frequently ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "arrived at their destinations earlier than planned.",
+        "made errors in determining their ship’s position.",
+        "preferred to sail only during daylight hours.",
+        "built more accurate clocks while at sea."
+      ],
+      "answer": 1,
+      "explanation": "Wrong time leads to wrong position calculations. The other choices are not supported by the text."
+    },
+    {
+      "id": "S-07",
+      "section": "sat",
+      "format": "mc",
+      "sat_type": "command-of-evidence-quantitative",
+      "domain": "Information and Ideas",
+      "difficulty": "medium",
+      "table": {
+        "title": "Average rainfall (mm) by season",
+        "columns": [
+          "Season",
+          "Town A",
+          "Town B"
+        ],
+        "rows": [
+          [
+            "Winter",
+            "120",
+            "150"
+          ],
+          [
+            "Spring",
+            "90",
+            "110"
+          ],
+          [
+            "Summer",
+            "30",
+            "20"
+          ],
+          [
+            "Autumn",
+            "60",
+            "80"
+          ]
+        ]
+      },
+      "passage": "A student claims that Town B receives more rain than Town A in every season of the year.",
+      "prompt": "Which choice best describes data from the table that weaken the student’s claim?",
+      "options": [
+        "In winter, Town B received 150 mm of rain, while Town A received 120 mm.",
+        "In spring, both towns received more rain than in summer.",
+        "In summer, Town A received 30 mm of rain, while Town B received 20 mm.",
+        "In autumn, Town B received 80 mm of rain, while Town A received 60 mm."
+      ],
+      "answer": 2,
+      "explanation": "Only summer shows Town A getting more rain than Town B, which goes against every season."
+    },
+    {
+      "id": "S-08",
+      "section": "sat",
+      "format": "mc",
+      "sat_type": "rhetorical-synthesis",
+      "domain": "Expression of Ideas",
+      "difficulty": "medium",
+      "notes": [
+        "The Registan is a public square in Samarkand.",
+        "It is framed by three madrasas.",
+        "The oldest, the Ulugh Beg Madrasa, was completed in 1420.",
+        "The Sher-Dor Madrasa was completed in 1636."
+      ],
+      "passage": "While researching a topic, a student has taken the notes above.",
+      "prompt": "The student wants to emphasize how much later one madrasa was completed than the other. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      "options": [
+        "The Ulugh Beg Madrasa was completed in 1420, more than two centuries before the Sher-Dor Madrasa was completed in 1636.",
+        "The Registan, a public square in Samarkand, is framed by three madrasas.",
+        "The Sher-Dor Madrasa is one of three madrasas on the Registan in Samarkand.",
+        "The Ulugh Beg Madrasa, completed in 1420, is the oldest madrasa on the Registan."
+      ],
+      "answer": 0,
+      "explanation": "Only this choice compares the two completion dates and shows the gap between them."
+    },
+    {
+      "id": "S-09",
+      "section": "sat",
+      "format": "mc",
+      "sat_type": "text-structure-purpose",
+      "domain": "Craft and Structure",
+      "difficulty": "medium",
+      "passage": "Many people assume that bumblebees find flowers by sight and smell alone. Researchers have shown, however, that bumblebees can also sense the weak electric fields around flowers. These fields change after a bee visits, which may signal to the next bee that the flower’s nectar has already been taken.",
+      "prompt": "Which choice best describes the overall structure of the text?",
+      "options": [
+        "It describes an experiment and then lists problems with its method.",
+        "It presents a common assumption and then describes research that adds to that view.",
+        "It compares two kinds of bees and how each finds food.",
+        "It explains a problem that bees face and then proposes a solution."
+      ],
+      "answer": 1,
+      "explanation": "Sentence 1 gives what many people assume; sentences 2–3 give research showing there is more to it."
+    },
+    {
+      "id": "S-10",
+      "section": "sat",
+      "format": "mc",
+      "sat_type": "cross-text-connections",
+      "domain": "Craft and Structure",
+      "difficulty": "hard",
+      "passage": "Text 1: Some economists argue that a four-day workweek would lower productivity, since employees would have less time to complete their tasks.\n\nText 2: In a trial involving dozens of companies, researchers found that most firms kept the same level of output after moving to a four-day week. Employees in the trial also reported lower stress.",
+      "prompt": "Based on the texts, how would the researchers in Text 2 most likely respond to the economists in Text 1?",
+      "options": [
+        "By agreeing that shorter workweeks give employees too little time.",
+        "By claiming that reducing stress matters more than productivity.",
+        "By recommending that companies return to a five-day week.",
+        "By arguing that the results of their trial challenge the economists’ prediction."
+      ],
+      "answer": 3,
+      "explanation": "Text 1 predicts lower output; Text 2 found output stayed the same, so the trial challenges that prediction."
+    }
+  ],
+  "scoring": {
+    "grammar": {
+      "points": "1 point per correct item, 40 points total.",
+      "written_matching": "Ignore capital letters, extra spaces, and curly vs straight apostrophes. Accept any answer in the item's accepted list.",
+      "cefr_bands": [
+        {
+          "level": "A1",
+          "min": 0,
+          "max": 11
+        },
+        {
+          "level": "A2",
+          "min": 12,
+          "max": 19
+        },
+        {
+          "level": "B1",
+          "min": 20,
+          "max": 27
+        },
+        {
+          "level": "B2",
+          "min": 28,
+          "max": 34
+        },
+        {
+          "level": "C1",
+          "min": 35,
+          "max": 40
+        }
+      ],
+      "admission_minimum_level": "B2"
+    },
+    "sat": {
+      "points": "1 point per correct item, 10 points total."
+    },
+    "current_estimate": {
+      "what": "Estimated current SAT Reading and Writing score, shown as a 60-point range.",
+      "formula": "midpoint = 300 + 6 × grammar_points + 20 × sat_points; round to nearest 10; range = midpoint − 30 to midpoint + 30; clamp to 200–800",
+      "note_for_students": "This is an estimate from a short test. Your first full practice test will give a more exact score."
+    },
+    "projection": {
+      "what": "Projected Reading and Writing range after finishing every lesson and passing all four part exams.",
+      "rules": [
+        {
+          "if_midpoint_below": 450,
+          "gain_min": 90,
+          "gain_max": 130
+        },
+        {
+          "if_midpoint_below": 550,
+          "gain_min": 80,
+          "gain_max": 120
+        },
+        {
+          "if_midpoint_below": 640,
+          "gain_min": 60,
+          "gain_max": 100
+        },
+        {
+          "if_midpoint_below": 710,
+          "gain_min": 40,
+          "gain_max": 70
+        },
+        {
+          "if_midpoint_below": 801,
+          "gain_min": 20,
+          "gain_max": 40
+        }
+      ],
+      "formula": "projected range = (midpoint + gain_min) to (midpoint + gain_max), rounded to nearest 10, capped at 800",
+      "note_for_students": "Projection for students who complete every lesson, practice set and exam. Results depend on your work.",
+      "note_for_team": "Starting assumptions. Recalibrate with real student results after the first groups finish."
+    }
+  },
+  "advice": {
+    "by_level": {
+      "A1": {
+        "admitted": false,
+        "headline": "Let’s build your foundation first",
+        "message": "The SAT course needs B2-level English. Right now your grammar is at A1. Start with everyday grammar and reading, and take this test again when you feel ready.",
+        "uz": "Hozircha kurs uchun erta. Avval grammatika va o‘qishni B2 darajasiga olib chiqing."
+      },
+      "A2": {
+        "admitted": false,
+        "headline": "You’re on your way",
+        "message": "The SAT course needs B2-level English. Your grammar is at A2. Focus on tenses, sentence building and reading short texts every day, then take this test again.",
+        "uz": "Hozircha kurs uchun erta. Avval grammatika va o‘qishni B2 darajasiga olib chiqing."
+      },
+      "B1": {
+        "admitted": false,
+        "headline": "You’re close",
+        "message": "The SAT course needs B2-level English and you are at B1. Work on the weak areas below for a few weeks, read English articles daily, and take the test again.",
+        "uz": "Siz yaqinsiz! B2 darajaga yetish uchun grammatika va o‘qishga e’tibor bering."
+      },
+      "B2": {
+        "admitted": true,
+        "headline": "You’re ready for the SAT course",
+        "message": "Your English is at B2, which is the level this course is built for. Start with Part 1: Grammar, and pay extra attention to the weak areas below.",
+        "uz": "Tabriklaymiz! Siz kursga tayyorsiz."
+      },
+      "C1": {
+        "admitted": true,
+        "headline": "Strong start",
+        "message": "Your grammar is at C1. You will move through Part 1 quickly. Your biggest gains will come from SAT strategy: reading questions precisely and managing time.",
+        "uz": "Ajoyib natija! Endi SAT strategiyasiga e’tibor bering."
+      }
+    },
+    "by_grammar_skill": {
+      "tenses": {
+        "label": "Verb tenses",
+        "advice": "Review when to use present perfect, past simple and past perfect.",
+        "course_link": "Part 1 · Form, Structure and Sense"
+      },
+      "agreement": {
+        "label": "Subject–verb agreement",
+        "advice": "Find the real subject first, then match the verb. Skip words between commas.",
+        "course_link": "Part 1 · Form, Structure and Sense"
+      },
+      "conditionals": {
+        "label": "Conditionals and verb forms",
+        "advice": "Practice all conditional types and formal patterns like it is essential that…",
+        "course_link": "Part 1 · Form, Structure and Sense"
+      },
+      "clauses": {
+        "label": "Clauses",
+        "advice": "Learn the difference between who, which and that, and how reported questions are built.",
+        "course_link": "Part 1 · Clauses"
+      },
+      "verb-patterns": {
+        "label": "Verb patterns and passive",
+        "advice": "Learn which verbs take -ing and which take to + verb, and practice the passive.",
+        "course_link": "Part 1 · Form, Structure and Sense"
+      },
+      "word-forms": {
+        "label": "Word forms",
+        "advice": "Review articles, comparatives and countable vs uncountable nouns.",
+        "course_link": "Self-study before the course"
+      },
+      "sentence-structure": {
+        "label": "Sentence structure",
+        "advice": "Practice inversion (Not only…, Hardly…) and linkers like despite vs although.",
+        "course_link": "Part 1 · Clauses and Part 2 · Transitions"
+      }
+    },
+    "by_sat_type": {
+      "words-in-context": {
+        "label": "Words in Context",
+        "course_link": "Part 4 · Words in Context"
+      },
+      "boundaries": {
+        "label": "Boundaries (punctuation)",
+        "course_link": "Part 1 · Punctuation"
+      },
+      "form-structure-sense": {
+        "label": "Form, Structure and Sense",
+        "course_link": "Part 1 · Form, Structure and Sense"
+      },
+      "transitions": {
+        "label": "Transitions",
+        "course_link": "Part 2 · Transitions"
+      },
+      "central-ideas": {
+        "label": "Central Ideas and Details",
+        "course_link": "Part 3 · Main Idea and Details"
+      },
+      "inferences": {
+        "label": "Inferences",
+        "course_link": "Part 3 · Inference"
+      },
+      "command-of-evidence-quantitative": {
+        "label": "Command of Evidence (graphs and tables)",
+        "course_link": "Part 3 · Command of Evidence"
+      },
+      "rhetorical-synthesis": {
+        "label": "Rhetorical Synthesis",
+        "course_link": "Part 2 · Rhetorical Synthesis"
+      },
+      "text-structure-purpose": {
+        "label": "Text Structure and Purpose",
+        "course_link": "Part 4 · Text Structure and Purpose"
+      },
+      "cross-text-connections": {
+        "label": "Cross-Text Connections",
+        "course_link": "Part 4 · Cross-Text Connections"
+      }
+    },
+    "weak_area_rule": "A grammar skill is weak if the student missed 2 or more of its items. Every missed SAT question type is listed. Show at most 3 grammar skills and 4 SAT types, most-missed first."
+  }
+}

@@ -1,0 +1,218 @@
+{
+  "domain": "Information and Ideas",
+  "skill": "Inferences",
+  "skill_id": "inferences",
+  "about": "Draw the conclusion that logically follows from the information in a text.",
+  "questions": [
+    {
+      "id": "inf-01", "difficulty": "easy",
+      "passage": "A gardener noticed that tomato plants on the sunny side of her yard produced many tomatoes, while identical plants in the shade produced very few. The plants received the same water and soil. This suggests that ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "the shaded plants were given too much water.",
+        "the soil on the sunny side contained more nutrients.",
+        "tomatoes grow best when they are planted close together.",
+        "the amount of sunlight affected how many tomatoes the plants produced."
+      ],
+      "answer": 3,
+      "explanation": "Water and soil were the same, so the only difference mentioned is sunlight. A and B contradict the statement that water and soil were the same, and C is never discussed.",
+      "tip": "If the text says everything else was the same, the conclusion must be about the one thing that was different."
+    },
+    {
+      "id": "inf-02", "difficulty": "easy",
+      "passage": "The school cafeteria began offering fresh fruit next to the cash register instead of at the back of the room. In the following month, students bought nearly twice as much fruit as before, although the price did not change. This suggests that ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "where food is placed can influence what students choose to buy.",
+        "students did not like the fruit that was offered before.",
+        "the cafeteria lowered prices to sell more fruit.",
+        "students stopped buying all other foods."
+      ],
+      "answer": 0,
+      "explanation": "Only the location changed, and sales rose, so placement likely influenced choices. C contradicts \"the price did not change,\" and nothing supports B or D.",
+      "tip": "Find what changed and what happened next. The inference links those two things."
+    },
+    {
+      "id": "inf-03", "difficulty": "easy",
+      "passage": "Desert foxes have very large ears compared with foxes that live in cold regions. Large ears contain many blood vessels close to the skin, which allows heat from the blood to escape into the air. This suggests that the desert fox's large ears probably help it ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "hear predators from far away in the snow.",
+        "stay cool in a hot environment.",
+        "store water for long periods.",
+        "find mates during the winter."
+      ],
+      "answer": 1,
+      "explanation": "The text explains that large ears let heat escape, which would help an animal in a hot desert stay cool. The text says nothing about hearing, water storage or mating.",
+      "tip": "Use the mechanism the text gives you (heat escapes) and connect it to the setting (desert)."
+    },
+    {
+      "id": "inf-04", "difficulty": "easy",
+      "passage": "Every spring, the town's river floods the low fields along its banks. Farmers in the town have learned to plant their crops only after the flood season ends in early summer. If farmers planted in early spring instead, ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "the river would stop flooding.",
+        "their crops would grow faster than usual.",
+        "their crops would likely be damaged by the floodwater.",
+        "the town would need to build a new river."
+      ],
+      "answer": 2,
+      "explanation": "Floods happen in spring, so crops planted in early spring would be in the fields during the floods. Planting time cannot stop the floods (A), and B and D are not reasonable conclusions.",
+      "tip": "\"If... instead\" questions ask you to imagine the opposite of what people do, and why they avoid it."
+    },
+    {
+      "id": "inf-05", "difficulty": "easy",
+      "passage": "In a study, one group of students reviewed vocabulary for ten minutes every day for a week. A second group reviewed the same words for seventy minutes on a single day. On a test the following week, the first group remembered far more words. The results suggest that ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "studying in short sessions spread over several days may help memory more than one long session.",
+        "students should study vocabulary for at least seventy minutes a day.",
+        "the second group studied a more difficult set of words.",
+        "vocabulary tests do not measure what students have learned."
+      ],
+      "answer": 0,
+      "explanation": "Both groups studied the same total time and the same words, but the spread-out group remembered more. C contradicts \"the same words,\" and B and D are not supported.",
+      "tip": "Notice what was equal (total time, words) and what differed (how the time was spread)."
+    },
+    {
+      "id": "inf-06", "difficulty": "medium",
+      "passage": "Pottery fragments found at an ancient settlement in the mountains were made from a type of clay that does not occur anywhere within 300 kilometers of the site. The fragments show no signs of having been made locally, such as kilns or unfinished pieces. Archaeologists therefore think that the people who lived at the settlement ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "made pottery from the clay found near their homes.",
+        "did not use pottery in their daily lives.",
+        "built kilns that were later destroyed.",
+        "obtained pottery through trade or travel with distant communities."
+      ],
+      "answer": 3,
+      "explanation": "The clay came from far away and nothing shows local production, so the pottery was probably brought from elsewhere. A contradicts the text. B is wrong because pottery was found, and C contradicts \"no signs of... kilns.\"",
+      "tip": "Combine the clues: foreign material plus no local workshop means the item came from outside."
+    },
+    {
+      "id": "inf-07", "difficulty": "medium",
+      "passage": "Researchers tracked two groups of trees of the same species. Trees in the first group grew close to many other trees, while trees in the second grew alone in open fields. During a severe drought, the trees growing alone were much more likely to die. Because the researchers also found that the clustered trees were linked underground by networks of fungi that move water between roots, they concluded that ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "trees in open fields receive more rain than trees in forests.",
+        "fungal networks may have helped the clustered trees share water during the drought.",
+        "the fungi caused the trees growing alone to die.",
+        "trees of this species cannot survive any drought."
+      ],
+      "answer": 1,
+      "explanation": "The fungi move water between roots, and the clustered (connected) trees survived better, so the networks may have helped them share water. The text does not say the fungi harmed lone trees (C), and many clustered trees survived, so D is too extreme.",
+      "tip": "A detail introduced right before the blank (here, the fungal networks) usually holds the key to the conclusion."
+    },
+    {
+      "id": "inf-08", "difficulty": "medium",
+      "passage": "In many languages, the words for \"mother\" begin with an m sound, as in the English \"mama,\" the Mandarin \"māma\" and the Swahili \"mama.\" Linguists point out that m is one of the easiest sounds for babies to make, because it only requires closing the lips while making a sound. This suggests that the similarity among these words ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "proves that all languages come from a single ancient language.",
+        "shows that babies learn to speak earlier in some countries.",
+        "may be explained by the sounds babies find easiest to produce, rather than by a shared origin.",
+        "means that words for \"father\" are completely different in every language."
+      ],
+      "answer": 2,
+      "explanation": "The linguists' point links the m sound to how easy it is for babies, which offers an explanation that does not require a common origin. A is too strong (\"proves\"), and B and D are not discussed.",
+      "tip": "The reason the text gives (easy sound) is the reason the answer should use."
+    },
+    {
+      "id": "inf-09", "difficulty": "medium",
+      "passage": "Some historians have argued that a 17th-century merchant's letters were written mainly to impress his business partners. However, many of the letters were addressed to his young daughter and contain detailed advice about her studies, along with jokes and drawings. Such content makes it unlikely that ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "all of the merchant's letters were intended mainly to impress business partners.",
+        "the merchant could read and write.",
+        "the merchant's daughter received any of the letters.",
+        "historians have ever studied the merchant's letters."
+      ],
+      "answer": 0,
+      "explanation": "Letters full of advice, jokes and drawings for a young daughter do not fit the claim that the letters were written mainly to impress business partners. B and D contradict the passage, and C has no support.",
+      "tip": "\"However\" introduces evidence against the first claim. The blank usually states what that evidence weakens."
+    },
+    {
+      "id": "inf-10", "difficulty": "medium",
+      "passage": "A museum tested two versions of its information labels. One version listed facts about each painting; the other asked a question, such as \"What do you think the woman in the window is waiting for?\" Visitors spent an average of 12 seconds at paintings with fact labels and 31 seconds at paintings with question labels. The museum's results suggest that ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "visitors prefer paintings of people to paintings of landscapes.",
+        "labels that ask questions may encourage visitors to look at paintings longer.",
+        "visitors do not read labels at all.",
+        "fact labels contain information that is incorrect."
+      ],
+      "answer": 1,
+      "explanation": "Viewing time nearly tripled with question labels, which suggests the questions kept visitors engaged. The test compared label types, not subjects (A). If visitors did not read labels (C), the labels would not change behavior, and nothing suggests errors (D).",
+      "tip": "Stay with the variable the study tested. Here the only variable is the type of label."
+    },
+    {
+      "id": "inf-11", "difficulty": "hard",
+      "passage": "Sea otters eat sea urchins, which in turn eat kelp. Along stretches of coast where sea otters disappeared because of hunting, urchin populations grew rapidly and large kelp forests shrank. When otters later returned to some of these areas, kelp began to recover there. These observations suggest that ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "kelp forests would grow larger if sea urchins were more common.",
+        "sea otters feed mainly on kelp when urchins are scarce.",
+        "sea otters help protect kelp forests by limiting the number of urchins.",
+        "hunting has no lasting effect on coastal ecosystems."
+      ],
+      "answer": 2,
+      "explanation": "Fewer otters led to more urchins and less kelp; the return of otters helped kelp recover. So otters protect kelp indirectly by eating urchins. A reverses the relationship. B is not stated, and D contradicts the long-term changes described.",
+      "tip": "Trace the chain step by step: otters ↓ → urchins ↑ → kelp ↓. Then reverse it."
+    },
+    {
+      "id": "inf-12", "difficulty": "hard",
+      "passage": "In a series of experiments, people were asked to estimate how long a task would take them and then to complete it. Participants regularly underestimated the time required, even for tasks they had done before. Interestingly, when they estimated how long the same tasks would take other people, their guesses were far more accurate. One possible explanation is that when people plan their own work, they ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "focus on how they hope the task will go and overlook delays they experienced in the past.",
+        "have never completed similar tasks before.",
+        "deliberately exaggerate how long tasks will take.",
+        "are better at judging other people's skills than their own because they work faster than others."
+      ],
+      "answer": 0,
+      "explanation": "People underestimate their own time even for familiar tasks but judge others accurately, which fits the idea that they picture an ideal version of their own work and forget past delays. B contradicts \"tasks they had done before,\" C is the opposite of underestimating, and D adds an unsupported claim about speed.",
+      "tip": "Test each choice against every finding. The right one explains both the error and the accurate guesses."
+    },
+    {
+      "id": "inf-13", "difficulty": "hard",
+      "passage": "A city installed sensors that measure noise levels on two similar streets. On Street A, the city planted a thick row of trees and shrubs; Street B was left unchanged. After a year, residents of Street A reported feeling much less bothered by traffic noise, but the sensors showed that noise levels on the two streets had dropped by almost exactly the same small amount. These findings suggest that the plantings on Street A ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "made the street far quieter than Street B.",
+        "were removed before the year was over.",
+        "caused traffic on Street A to increase.",
+        "changed how residents experienced noise more than they changed the noise itself."
+      ],
+      "answer": 3,
+      "explanation": "The measured noise fell equally on both streets, yet only Street A residents felt less bothered, so the plants likely changed perception rather than actual noise. A contradicts the sensor data, and B and C are not supported.",
+      "tip": "When feelings and measurements disagree, the inference is usually about perception."
+    },
+    {
+      "id": "inf-14", "difficulty": "hard",
+      "passage": "Many early manuscripts of a famous medieval poem contain the same unusual spelling mistake in its third line. Scholars studying the copies noticed that the mistake appears in every manuscript made in one monastery but in none of the manuscripts made elsewhere. Scholars have therefore concluded that ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "the poet originally wrote the poem with the spelling mistake.",
+        "the manuscripts from the monastery were probably copied from a common source that contained the error.",
+        "medieval writers did not care about correct spelling.",
+        "the monastery's manuscripts are the oldest surviving copies of the poem."
+      ],
+      "answer": 1,
+      "explanation": "If the poet had made the mistake (A), it would likely appear in copies from other places too. An error found only in one monastery's copies points to a shared source there. C is too broad, and nothing supports D.",
+      "tip": "A pattern that appears in one group only usually points to something that group shares."
+    },
+    {
+      "id": "inf-15", "difficulty": "hard",
+      "passage": "Some dinosaur fossils show bones that grew in yearly layers, similar to tree rings. Researchers examining a large plant-eating species found that its bones added very thick layers in its first few years of life and much thinner layers afterward. Assuming the thickness of each layer reflects how much the animal grew that year, the researchers concluded that this species ______",
+      "prompt": "Which choice most logically completes the text?",
+      "options": [
+        "grew slowly at first and then very quickly in adulthood.",
+        "grew at the same rate throughout its life.",
+        "grew most rapidly when it was young.",
+        "stopped forming bone after its first year."
+      ],
+      "answer": 2,
+      "explanation": "Thick early layers mean fast early growth; thinner later layers mean slower growth. A reverses this. B ignores the difference in thickness, and D contradicts the later (thinner) layers.",
+      "tip": "Translate the evidence into plain words first: thick layer = big growth. Then the answer is easy to spot."
+    }
+  ]
+}
