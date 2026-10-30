@@ -4,6 +4,7 @@ import { api } from '../../api.js';
 import { useToast } from '../../context.jsx';
 import { Card, Confetti, Confirm, ErrorBox, Gate, Segmented, Spinner, useAsync } from '../../components/ui.jsx';
 import { IconArrow, IconCheck, IconX, Logo } from '../../components/icons.jsx';
+import { BBExam } from '../../components/Bluebook.jsx';
 import { rich } from '../../components/Rich.jsx';
 
 const L = ['A', 'B', 'C', 'D', 'E'];
@@ -34,6 +35,7 @@ function Runner({ c }) {
   const [cur, setCur] = useState(() => Math.max(0, c.questions.findIndex((q) => answers[q.id] == null)));
   const [confirm, setConfirm] = useState(false);
   const [exit, setExit] = useState(false);
+  const [marks, setMarks] = useState({});
   const [busy, setBusy] = useState(false);
   const dirty = useRef(false);
   const q = c.questions[cur];
@@ -78,42 +80,25 @@ function Runner({ c }) {
   });
 
   return (
-    <div className="pr">
-      <header className="pr-top">
-        <Logo size={22} />
-        <div className="row" style={{ gap: 8 }}>
-          {left != null && <span className={`timer-chip ${left <= 300 ? 'low' : ''}`} aria-live="off">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</span>}
-          <span className="timer-chip">Version {c.version}</span>
-          <button className="icon-btn" onClick={() => setExit(true)} aria-label="Save and leave"><IconX /></button>
-        </div>
-      </header>
-      <main className="pr-card" key={q.id}>
-        <div className="pr-meta"><span>{isSession ? 'Session check' : `Level check · ${c.lesson.title.replace(/^Lesson (\d+):.*/, 'Lesson $1')}`}</span><span>{cur + 1} / {c.questions.length}</span></div>
-        <div className="progress"><span style={{ width: `${(done / c.questions.length) * 100}%` }} /></div>
-        {q.kind === 'sat' && <span className="chip domain" style={{ justifySelf: 'start' }}>SAT question</span>}
-        {q.kind === 'vocab' && <span className="chip sun" style={{ justifySelf: 'start' }}>Vocabulary</span>}
-        {q.kind === 'sat' && q.passage && <div className="pr-passage">{rich(q.passage)}</div>}
-        <p className={q.kind === 'sat' ? 'pr-prompt' : 'pt-prompt'}>{rich(q.prompt)}</p>
-        {q.kind !== 'sat' && q.passage && <div className="pr-passage drill">{rich(q.passage)}</div>}
-        <div className="pr-opts" role="radiogroup" aria-label="Answer choices">
-          {q.options.map((o, i) => (
-            <button key={i} type="button" role="radio" aria-checked={answers[q.id] === i} className={`pr-opt ${answers[q.id] === i ? 'sel' : ''}`} onClick={() => pick(i)}>
-              <span className="L">{L[i]})</span><span className="t">{rich(o)}</span>
-            </button>
-          ))}
-        </div>
-        <div className="row between">
-          <button className="btn ghost lg" disabled={cur === 0} onClick={() => go(cur - 1)}>Back</button>
-          {!last ? <button className="btn primary lg" onClick={() => go(cur + 1)}>Next <IconArrow /></button>
-            : <button className="btn sun lg" disabled={busy} onClick={() => setConfirm(true)}>Check my answers</button>}
-        </div>
-      </main>
-      <nav className="pr-dots">{c.questions.map((x, i) => <button key={x.id} className={`${answers[x.id] != null ? 'ans' : ''} ${i === cur ? 'cur' : ''}`} onClick={() => go(i)} aria-label={`Question ${i + 1}`}>{i + 1}</button>)}</nav>
+    <>
+      <BBExam
+        title={isSession ? 'Session check' : `Level check · ${c.lesson.title.replace(/^Lesson (\d+):.*/, 'Lesson $1')}`}
+        directions={<p>Answer every question, then check your answers at the end. You need {c.pass_percent}% to pass. Version {c.version}.</p>}
+        seconds={left} onExit={() => setExit(true)} exitLabel="Save & exit"
+        qid={q.id} n={cur + 1} total={c.questions.length}
+        passage={q.kind === 'sat' && q.passage ? rich(q.passage) : null}
+        before={<div className="bb-meta">{q.kind === 'sat' ? <span className="chip domain">SAT question</span> : q.kind === 'vocab' ? <span className="chip sun">Vocabulary</span> : null}</div>}
+        prompt={<>{rich(q.prompt)}{q.kind !== 'sat' && q.passage && <div className="bb-drill">{rich(q.passage)}</div>}</>}
+        options={q.options.map((o) => rich(o))} choice={answers[q.id]} onChoose={pick}
+        marked={marks[q.id]} onMark={() => setMarks((m) => ({ ...m, [q.id]: !m[q.id] }))}
+        items={c.questions.map((x) => ({ answered: answers[x.id] != null, marked: marks[x.id] }))} onGo={go}
+        onBack={() => go(cur - 1)} onNext={() => (last ? setConfirm(true) : go(cur + 1))} nextLabel={last ? 'Check answers' : 'Next'}
+      />
       {confirm && <Confirm danger={false} title="Check your answers?" confirmLabel="Yes, check" onClose={() => setConfirm(false)} onConfirm={submit}
         text={c.questions.length - done ? `${c.questions.length - done} question(s) are unanswered and will count as wrong. You need ${c.pass_percent}% to pass.` : `All questions are answered. You need ${c.pass_percent}% to pass.`} />}
       {exit && <Confirm danger={false} title="Leave the level check?" confirmLabel="Save and leave" onClose={() => setExit(false)}
         onConfirm={async () => { await save(); nav(`/lesson/${c.lesson.id}`); }} text="Your answers are saved. You will continue with the same version." />}
-    </div>
+    </>
   );
 }
 

@@ -6,6 +6,7 @@ import { Confetti, Ring, Spinner } from '../../components/ui.jsx';
 import { IconArrow, IconCheck, IconClock, IconFlag, IconRefresh, IconX, Logo } from '../../components/icons.jsx';
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
+import { BBExam } from '../../components/Bluebook.jsx';
 import { newSeed } from './site.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
@@ -219,57 +220,21 @@ function Runner({ test, onDone, onQuit }) {
     return () => window.removeEventListener('beforeunload', f);
   }, []);
 
-  const mm = String(Math.max(0, Math.floor(left / 60))).padStart(2, '0');
-  const ss = String(Math.max(0, left % 60)).padStart(2, '0');
   return (
-    <div className="pt-run">
-      <header className="pt-bar">
-        <div className="row" style={{ gap: 12 }}><Logo size={20} /><span className="muted hide-sm">Reading and Writing</span></div>
-        <span className={`pt-timer ${left < 300 ? 'low' : ''}`}><IconClock width={16} height={16} /> {mm}:{ss}</span>
-        <div className="row" style={{ gap: 8 }}>
-          <button className="btn sun sm" onClick={() => setConfirm(true)} disabled={busy}>Finish</button>
-          <button className="icon-btn" onClick={onQuit} aria-label="Leave the test" title="Leave"><IconX /></button>
-        </div>
-      </header>
-
-      <main className="pt-body" key={q.id}>
-        <section className="pt-left">
-          {(q.passage || q.table) ? <Passage text={q.passage} table={q.table} /> : <p className="muted">No passage for this question.</p>}
-        </section>
-        <section className="pt-right">
-          <div className="pt-qhead">
-            <span className="pt-num">{cur + 1}</span>
-            <button className={`pt-mark ${mark[q.id] ? 'on' : ''}`} onClick={() => setMark((m) => ({ ...m, [q.id]: !m[q.id] }))} aria-pressed={!!mark[q.id]}><IconFlag width={15} height={15} /> {mark[q.id] ? 'Marked for review' : 'Mark for review'}</button>
-            <span className="chip hide-sm">{q.skill}</span>
-          </div>
-          <p className="pt-prompt">{rich(q.prompt)}</p>
-          <div className="pr-opts" role="radiogroup" aria-label="Answer choices">
-            {q.options.map((o, i) => (
-              <button key={i} type="button" role="radio" aria-checked={ans[q.id] === i} className={`pr-opt ${ans[q.id] === i ? 'sel' : ''}`} onClick={() => setAns((a) => ({ ...a, [q.id]: i }))}>
-                <span className="pt-L">{L[i]}</span><span className="t">{rich(o)}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-      </main>
-
-      <footer className="pt-foot">
-        <button className="btn ghost" disabled={cur === 0} onClick={() => setCur(cur - 1)}>Back</button>
-        <button className="pt-qbtn" onClick={() => setGrid(!grid)} aria-expanded={grid}>Question {cur + 1} of {qs.length} ▴</button>
-        {cur < qs.length - 1
-          ? <button className="btn primary" onClick={() => setCur(cur + 1)}>Next <IconArrow /></button>
-          : <button className="btn sun" onClick={() => setConfirm(true)}>Finish</button>}
-      </footer>
-
-      {grid && (
-        <div className="pt-grid-pop" role="dialog" aria-label="All questions">
-          <div className="row between"><b>{answered} of {qs.length} answered</b><button className="icon-btn" onClick={() => setGrid(false)} aria-label="Close"><IconX /></button></div>
-          <div className="pt-nums">
-            {qs.map((x, i) => <button key={x.id} className={`${ans[x.id] != null ? 'done' : ''} ${mark[x.id] ? 'marked' : ''} ${i === cur ? 'cur' : ''}`} onClick={() => { setCur(i); setGrid(false); }}>{i + 1}</button>)}
-          </div>
-          <small className="pt-legend"><i className="a" /> answered <i className="m" /> marked <i className="n" /> not answered</small>
-        </div>
-      )}
+    <>
+      <BBExam
+        title="Practice test: Reading and Writing" seconds={Math.max(0, left)} onExit={onQuit} exitLabel="Leave"
+        directions={<><p>The questions in this section address a number of important reading and writing skills. Read each passage and question carefully, and then choose the best answer based on the passage(s). Each question has a single best answer.</p><p>Highlight text in the passage, cross out choices with ABC, and use Mark for Review to come back to a question.</p></>}
+        qid={q.id} n={cur + 1} total={qs.length}
+        passage={(q.passage || q.table) ? <Passage text={q.passage} table={q.table} /> : null}
+        before={<div className="bb-meta"><span>{q.skill}</span></div>}
+        prompt={rich(q.prompt)} options={q.options.map((o) => rich(o))}
+        choice={ans[q.id] ?? null} onChoose={(i) => setAns((a2) => ({ ...a2, [q.id]: i }))}
+        marked={mark[q.id]} onMark={() => setMark((m) => ({ ...m, [q.id]: !m[q.id] }))}
+        items={qs.map((x) => ({ answered: ans[x.id] != null, marked: mark[x.id] }))} onGo={setCur}
+        onBack={() => setCur(cur - 1)} onNext={() => (cur < qs.length - 1 ? setCur(cur + 1) : setConfirm(true))}
+        nextLabel={cur < qs.length - 1 ? 'Next' : 'Finish'}
+      />
 
       {confirm && (
         <div className="pt-modal" role="dialog" aria-modal="true">
@@ -283,7 +248,7 @@ function Runner({ test, onDone, onQuit }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

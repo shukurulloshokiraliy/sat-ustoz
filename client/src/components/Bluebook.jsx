@@ -322,4 +322,43 @@ export function BBPracticeRunner({ title, directions, questions, cur, setCur, ch
   );
 }
 
+const LETTERS = ['A', 'B', 'C', 'D', 'E'];
+/**
+ * One exam screen (answers revealed later): passage | question, tools, navigator, Back / Next.
+ * options: array of nodes (chosen by index) — or pass `input` for a typed answer.
+ * items: [{ answered, marked }] for the navigator.
+ */
+export function BBExam({ title, directions, seconds, countdown = true, onExit, exitLabel = 'Exit', qid, n, total, passage, prompt, before, options, input, choice, onChoose, marked, onMark, items, onGo, onBack, onNext, nextLabel = 'Next', tools }) {
+  const [hl, setHl] = useState(false);
+  const [nav, setNav] = useState(false);
+  const el = useElimination();
+  const opts = options?.map((text, i) => ({ key: LETTERS[i], text }));
+  return (
+    <BBShell title={title} directions={directions} seconds={seconds} countdown={countdown} onExit={onExit} exitLabel={exitLabel} tools={tools}
+      highlight={hl} onHighlight={passage ? () => setHl((x) => !x) : null}
+      footer={(
+        <BBFooter cur={n - 1} total={total} onOpenNav={() => setNav(true)}>
+          {n > 1 && <button className="bb-btn ghost" onClick={onBack}>Back</button>}
+          <button className="bb-btn" onClick={onNext}>{nextLabel}</button>
+        </BBFooter>
+      )}>
+      <BBSplit
+        left={passage ? <Highlightable key={qid} on={hl}>{passage}</Highlightable> : null}
+        right={(
+          <div key={qid}>
+            <BBQuestionBar n={n} marked={marked} onMark={onMark} elim={el.elim} onElim={opts ? el.toggleElim : null} />
+            {before}
+            <div className="bb-prompt">{prompt}</div>
+            {opts
+              ? <BBOptions options={opts} choice={choice == null ? null : LETTERS[choice]} eliminated={el.eliminated(qid)} elim={el.elim}
+                onChoose={(k) => onChoose(LETTERS.indexOf(k))} onEliminate={(k) => el.toggle(qid, k)} />
+              : input}
+          </div>
+        )}
+      />
+      {nav && <BBNavigator title={title} items={items} cur={n - 1} onGo={(i) => { setNav(false); onGo(i); }} onClose={() => setNav(false)} />}
+    </BBShell>
+  );
+}
+
 export { IconEye, IconEyeOff };

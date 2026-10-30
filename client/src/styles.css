@@ -1360,7 +1360,7 @@ a.card:hover, .card.clickable:hover { transform: translateY(-2px); box-shadow: 0
 
 /* ======================= Bluebook-style test player ======================= */
 .bb { --bb-ink: #1E1E1E; --bb-bg: #FFFFFF; --bb-soft: #F3F4F7; --bb-line: #C9CDD6; --bb-blue: #324DC7; --bb-blue-soft: #E8ECFB; --bb-foot: #FFFFFF;
-  position: fixed; inset: 0; z-index: 30; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; background: var(--bb-bg); color: var(--bb-ink); }
+  position: fixed; inset: 0; z-index: 90; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; background: var(--bb-bg); color: var(--bb-ink); }
 :root[data-theme='dark'] .bb { --bb-ink: #EEF1F8; --bb-bg: #0F1330; --bb-soft: #1A2048; --bb-line: #39417A; --bb-blue: #7C9BFF; --bb-blue-soft: #1E2A66; --bb-foot: #0F1330; }
 .bb-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 10px clamp(12px, 2.4vw, 32px); min-height: 64px; }
 .bb-title b { display: block; font: 700 1.02rem/1.25 var(--font); }
@@ -1486,3 +1486,6 @@ a.card:hover, .card.clickable:hover { transform: translateY(-2px); box-shadow: 0
 .arena-duelbar .them i { background: #7C9BFF; }
 .arena-duelbar em { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; }
 .imp-preview { max-height: 300px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; } .imp-preview td { font-size: .85rem; vertical-align: top; }
+.bb-drill { margin-top: 12px; padding: 12px 14px; border-left: 3px solid var(--bb-line); background: var(--bb-soft); border-radius: 0 10px 10px 0; }
+.bb .pt-notes, .bb .pt-table { font-family: var(--font); font-size: .95rem; }
+.bb .field input { font-size: 1.05rem; }

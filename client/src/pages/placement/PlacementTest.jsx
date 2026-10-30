@@ -5,6 +5,7 @@ import { useAuth, useToast } from '../../context.jsx';
 import { Confirm, ErrorBox, Spinner } from '../../components/ui.jsx';
 import { IconArrow, IconX, Logo } from '../../components/icons.jsx';
 import { withBlanks } from '../../lib.js';
+import { BBExam } from '../../components/Bluebook.jsx';
 
 const L = ['A', 'B', 'C', 'D', 'E'];
 const pad = (n) => String(n).padStart(2, '0');
@@ -37,6 +38,7 @@ function Runner({ test, initial }) {
   const [phase, setPhase] = useState('questions'); // questions | between
   const [confirm, setConfirm] = useState(false);
   const [exit, setExit] = useState(false);
+  const [marks, setMarks] = useState({});
   const [busy, setBusy] = useState(false);
   const dirty = useRef(false);
   const deadline = useRef(initial.remaining != null ? Date.now() + initial.remaining * 1000 : null);
@@ -138,60 +140,33 @@ function Runner({ test, initial }) {
     );
   }
 
+  const hasLeft = it.passage || it.table || it.notes?.length;
   return (
-    <div className="pr">
-      <header className="pr-top">
-        <Logo size={22} />
-        <div className="row" style={{ gap: 8 }}>
-          {left != null && <span className={`timer-chip ${left < 60 ? 'low' : ''}`} aria-label="Time left in this part">{clock(left)}</span>}
-          <button className="icon-btn" onClick={() => setExit(true)} aria-label="Save and leave"><IconX /></button>
-        </div>
-      </header>
-
-      <main className="pr-card" key={it.id}>
-        <div className="pr-meta">
-          <span>{section.title}</span>
-          <span>Question {cur + 1} of {items.length}</span>
-        </div>
-        <div className="progress" aria-label={`${done} of ${items.length} answered`}><span style={{ width: `${(done / items.length) * 100}%` }} /></div>
-
-        {it.notes?.length > 0 && (
-          <div className="pt-notes"><b>Notes</b><ul>{it.notes.map((n) => <li key={n}>{n}</li>)}</ul></div>
-        )}
-        {it.table && <DataTable table={it.table} />}
-        {it.passage && <div className="pr-passage">{withBlanks(it.passage, blank)}</div>}
-        <p className={it.section === 'grammar' || !it.passage ? 'pt-prompt' : 'pr-prompt'}>{withBlanks(it.prompt, blank)}</p>
-
-        {it.format === 'mc' ? (
-          <div className="pr-opts" role="radiogroup" aria-label="Answer choices">
-            {it.options.map((o, i) => (
-              <button key={i} type="button" role="radio" aria-checked={answers[it.id] === i} className={`pr-opt ${answers[it.id] === i ? 'sel' : ''}`} onClick={() => set(i)}>
-                <span className="L">{L[i]})</span><span className="t">{o}</span>
-              </button>
-            ))}
-          </div>
-        ) : (
+    <>
+      <BBExam
+        title={section.title} seconds={left} onExit={() => setExit(true)} exitLabel="Save & exit"
+        directions={<p>{section.description || 'Answer every question in this part. When you finish a part you cannot come back to it.'}</p>}
+        qid={it.id} n={cur + 1} total={items.length}
+        passage={hasLeft ? <>
+          {it.notes?.length > 0 && <div className="pt-notes"><b>Notes</b><ul>{it.notes.map((x) => <li key={x}>{x}</li>)}</ul></div>}
+          {it.table && <DataTable table={it.table} />}
+          {it.passage && <div>{withBlanks(it.passage, blank)}</div>}
+        </> : null}
+        prompt={withBlanks(it.prompt, blank)}
+        options={it.format === 'mc' ? it.options : null}
+        input={it.format !== 'mc' && (
           <label className="field">
             <span>Your answer</span>
             <input className="pt-input" autoFocus autoComplete="off" autoCapitalize="none" spellCheck={false} value={answers[it.id] ?? ''} onChange={(e) => set(e.target.value)} placeholder="Type the missing words" />
             <small className="muted">Spelling counts. Capital letters and extra spaces don’t.</small>
           </label>
         )}
-
-        <div className="row between">
-          <button className="btn ghost lg" disabled={cur === 0} onClick={() => go(cur - 1)}>Back</button>
-          {!last
-            ? <button className="btn primary lg" onClick={() => go(cur + 1)}>Next <IconArrow /></button>
-            : <button className="btn sun lg" onClick={() => setConfirm(true)}>{nextSection ? `Finish Part ${secIndex + 1}` : 'Finish test'}</button>}
-        </div>
-      </main>
-
-      <nav className="pr-dots" aria-label="Questions">
-        {items.map((x, i) => (
-          <button key={x.id} className={`${answered(answers[x.id]) ? 'ans' : ''} ${i === cur ? 'cur' : ''}`} onClick={() => go(i)} aria-label={`Question ${i + 1}${answered(answers[x.id]) ? ' (answered)' : ''}`}>{i + 1}</button>
-        ))}
-      </nav>
-
+        choice={typeof answers[it.id] === 'number' ? answers[it.id] : null} onChoose={set}
+        marked={marks[it.id]} onMark={() => setMarks((m) => ({ ...m, [it.id]: !m[it.id] }))}
+        items={items.map((x) => ({ answered: answered(answers[x.id]), marked: marks[x.id] }))} onGo={go}
+        onBack={() => go(cur - 1)} onNext={() => (last ? setConfirm(true) : go(cur + 1))}
+        nextLabel={last ? (nextSection ? `Finish Part ${secIndex + 1}` : 'Finish test') : 'Next'}
+      />
       {confirm && (
         <Confirm danger={false} title={nextSection ? `Finish ${section.title.split('·')[0].trim()}?` : 'Finish the test?'} confirmLabel={nextSection ? 'Yes, go on' : 'Yes, see my result'}
           onClose={() => setConfirm(false)} onConfirm={endPart}
@@ -202,7 +177,7 @@ function Runner({ test, initial }) {
           onConfirm={async () => { await save(); nav('/placement'); }}
           text="Your answers are saved. The timer keeps running while you are away." />
       )}
-    </div>
+    </>
   );
 }
 
