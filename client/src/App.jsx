@@ -1,4 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import MockTaker from './pages/mock/MockTaker.jsx';
+import MockResult from './pages/mock/MockResult.jsx';
 import { useAuth } from './context.jsx';
 import { Spinner } from './components/ui.jsx';
 import Layout from './components/Layout.jsx';
@@ -69,6 +71,7 @@ export default function App() {
       {user.role === 'student' && <Route path="/placement/test" element={<PlacementTest />} />}
       {user.role === 'student' && <Route path="/lesson/:id/check" element={<LevelCheck />} />}
       {user.role === 'student' && <Route path="/question-bank/practice" element={<QbankPractice />} />}
+      {user.role === 'student' && <Route path="/mock" element={<MockTaker />} />}
       <Route path="/site" element={<PublicLayout />}>
         <Route index element={<Landing />} />
       </Route>
@@ -102,6 +105,7 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="roadmap" element={<Roadmap />} />
             <Route path="quizzes" element={<Quizzes />} />
+            <Route path="mock/:id" element={<MockResult />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="saved" element={<Saved />} />
             <Route path="portfolio" element={<Portfolio />} />

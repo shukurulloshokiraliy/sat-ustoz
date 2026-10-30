@@ -77,6 +77,29 @@ const pub = (q) => ({
   passage: q.passage, table: parse(q.data_table, null), prompt: q.prompt, options: parse(q.options, []),
 });
 
+// A 27-question module in the order of the digital SAT: Craft and Structure → Information and Ideas →
+// Standard English Conventions → Expression of Ideas (transitions, then student notes).
+export const MOCK_BLUEPRINT = [
+  ['words-in-context', 4], ['text-structure', 2], ['cross-text', 1],
+  ['central-ideas', 2], ['command-of-evidence', 3], ['inferences', 2],
+  ['boundaries', 4], ['form-structure-sense', 3],
+  ['transitions', 3], ['rhetorical-synthesis', 3],
+];
+const MOCK_MINUTES = 32;
+const LV = { easy: 0, medium: 1, hard: 2 };
+
+export async function migrateQbankMocks() {
+  await db.exec(`
+CREATE TABLE IF NOT EXISTS qbank_mocks (
+  id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  question_ids TEXT NOT NULL, answers TEXT NOT NULL DEFAULT '{}', score INTEGER, total INTEGER NOT NULL,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT now(), finished_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_qbank_mocks_user ON qbank_mocks(user_id, started_at DESC);
+ALTER TABLE qbank_mocks ENABLE ROW LEVEL SECURITY;
+`);
+}
+
 export function registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor, upload }) {
   const openLevels = async (user) => (user.role === 'master' || (await accessFor(user)).can_practice ? LEVELS : [FREE_LEVEL]);
 
@@ -132,6 +155,81 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
       ON CONFLICT (user_id, question_id) DO UPDATE SET choice = EXCLUDED.choice, correct = EXCLUDED.correct, tries = qbank_answers.tries + 1, answered_at = now()`,
     [req.user.id, q.id, choice, correct, correct]);
     res.json({ choice, answer: q.answer, correct, explanation: q.explanation, tip: q.tip });
+  }));
+
+  // ---------- "Take a quiz": a random SAT-style module from the bank ----------
+  const accuracy = async (uid) => {
+    const r = await db.one('SELECT COUNT(*) AS n, SUM(CASE WHEN correct THEN 1 ELSE 0 END) AS ok FROM qbank_answers WHERE user_id = ?', [uid]);
+    return { answered: Number(r.n), correct: Number(r.ok || 0), percent: Number(r.n) ? Math.round((Number(r.ok || 0) / Number(r.n)) * 100) : null };
+  };
+  const mockState = async (m, withKey) => {
+    const ids = JSON.parse(m.question_ids);
+    const rows = await db.all('SELECT * FROM qbank_questions WHERE id = ANY(?::text[])', [ids]);
+    const by = new Map(rows.map((q) => [q.id, q]));
+    const qs = ids.map((id) => by.get(id)).filter(Boolean);
+    const remaining = Math.max(0, Math.round((new Date(m.started_at).getTime() + MOCK_MINUTES * 60e3 - Date.now()) / 1000));
+    return {
+      id: m.id, minutes: MOCK_MINUTES, remaining, finished: !!m.finished_at, score: m.score, total: m.total, started_at: m.started_at, finished_at: m.finished_at,
+      answers: JSON.parse(m.answers || '{}'),
+      questions: qs.map((q) => (withKey ? { ...pub(q), answer: q.answer, explanation: q.explanation, tip: q.tip } : pub(q))),
+    };
+  };
+
+  app.get('/api/qbank/mocks', requireStudent, h(async (req, res) => {
+    const list = await db.all('SELECT id, score, total, started_at, finished_at FROM qbank_mocks WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 10', [req.user.id]);
+    const open = await db.one(`SELECT id FROM qbank_mocks WHERE user_id = ? AND finished_at IS NULL AND started_at > now() - interval '${MOCK_MINUTES} minutes' ORDER BY id DESC LIMIT 1`, [req.user.id]);
+    const mockAcc = list.length ? Math.round((list.reduce((s, m) => s + m.score, 0) / list.reduce((s, m) => s + m.total, 0)) * 100) : null;
+    res.json({ mocks: list, open: open?.id || null, accuracy: await accuracy(req.user.id), mock_accuracy: mockAcc, questions: MOCK_BLUEPRINT.reduce((s, [, n]) => s + n, 0), minutes: MOCK_MINUTES });
+  }));
+
+  // start a new module (or resume the one still running)
+  app.post('/api/qbank/mock', requireStudent, h(async (req, res) => {
+    const open = await db.one(`SELECT * FROM qbank_mocks WHERE user_id = ? AND finished_at IS NULL AND started_at > now() - interval '${MOCK_MINUTES} minutes' ORDER BY id DESC LIMIT 1`, [req.user.id]);
+    if (open && !req.body?.fresh) return res.json(await mockState(open, false));
+    const levels = await openLevels(req.user);
+    const picked = [];
+    for (const [skill, n] of MOCK_BLUEPRINT) {
+      // questions the student has not seen come first; inside a skill, easier questions first (as on the test)
+      const rows = await db.all(`SELECT q.id, q.difficulty FROM qbank_questions q LEFT JOIN qbank_answers a ON a.question_id = q.id AND a.user_id = ?
+        WHERE q.active AND q.skill_id = ? AND q.difficulty = ANY(?::text[]) ORDER BY (a.question_id IS NOT NULL), random() LIMIT ?`, [req.user.id, skill, levels, n]);
+      picked.push(...rows.sort((a, b) => LV[a.difficulty] - LV[b.difficulty]).map((r) => r.id));
+    }
+    if (picked.length < 10) return bad(res, 'The Question Bank does not have enough questions yet');
+    const m = await db.one('INSERT INTO qbank_mocks (user_id, question_ids, total) VALUES (?,?,?) RETURNING *', [req.user.id, JSON.stringify(picked), picked.length]);
+    res.json(await mockState(m, false));
+  }));
+
+  app.put('/api/qbank/mock/:id/progress', requireStudent, h(async (req, res) => {
+    await db.run('UPDATE qbank_mocks SET answers = ? WHERE id = ? AND user_id = ? AND finished_at IS NULL', [JSON.stringify(req.body?.answers || {}).slice(0, 20000), Number(req.params.id), req.user.id]);
+    res.json({ ok: true });
+  }));
+
+  // finish: grade, remember every answer in the bank stats, return the full review
+  app.post('/api/qbank/mock/:id/submit', requireStudent, h(async (req, res) => {
+    const m = await db.one('SELECT * FROM qbank_mocks WHERE id = ? AND user_id = ?', [Number(req.params.id), req.user.id]);
+    if (!m) return bad(res, 'Quiz not found', 404);
+    if (!m.finished_at) {
+      const ids = JSON.parse(m.question_ids);
+      const answers = {};
+      for (const id of ids) { const c = Number(req.body?.answers?.[id]); if (Number.isInteger(c) && c >= 0 && c <= 3) answers[id] = c; }
+      const keys = await db.all('SELECT id, answer FROM qbank_questions WHERE id = ANY(?::text[])', [ids]);
+      let score = 0;
+      for (const k of keys) {
+        if (answers[k.id] == null) continue;
+        const ok = answers[k.id] === k.answer; score += ok ? 1 : 0;
+        await db.run(`INSERT INTO qbank_answers (user_id, question_id, choice, correct, first_correct, tries, answered_at) VALUES (?,?,?,?,?,1,now())
+          ON CONFLICT (user_id, question_id) DO UPDATE SET choice = EXCLUDED.choice, correct = EXCLUDED.correct, tries = qbank_answers.tries + 1, answered_at = now()`,
+        [req.user.id, k.id, answers[k.id], ok, ok]);
+      }
+      await db.run('UPDATE qbank_mocks SET answers = ?, score = ?, finished_at = now() WHERE id = ? AND finished_at IS NULL', [JSON.stringify(answers), score, m.id]);
+    }
+    res.json(await mockState(await db.one('SELECT * FROM qbank_mocks WHERE id = ?', [m.id]), true));
+  }));
+
+  app.get('/api/qbank/mock/:id', requireStudent, h(async (req, res) => {
+    const m = await db.one('SELECT * FROM qbank_mocks WHERE id = ? AND user_id = ?', [Number(req.params.id), req.user.id]);
+    if (!m) return bad(res, 'Quiz not found', 404);
+    res.json(await mockState(m, !!m.finished_at));
   }));
 
   // teacher: browse every question with the key and class statistics

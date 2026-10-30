@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import TakeQuizCard from '../mock/TakeQuiz.jsx';
 import { Link } from 'react-router-dom';
 import { api, fmtDate } from '../../api.js';
 import { useAuth } from '../../context.jsx';
@@ -23,6 +24,7 @@ export default function Quizzes() {
   return (
     <div className="page">
       <PageHeader title="Quizzes" sub="Practice sets, mocks and your readiness check." />
+      {user.role === 'student' && <TakeQuizCard />}
       {!user.access?.can_practice && <PaywallBanner />}
       <Gate state={st}>{(list) => {
         const shown = list.filter((q) => tab === 'all' || q.status === tab);
