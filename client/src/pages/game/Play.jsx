@@ -3,7 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth } from '../../context.jsx';
 import { Confetti, Spinner } from '../../components/ui.jsx';
-import Character, { CHARACTERS, CHARACTER_KEYS } from '../../components/Character.jsx';
+import Character, { CHARACTERS, CHARACTER_KEYS, CHARACTER_SETS } from '../../components/Character.jsx';
 import { hostKey, playerKey, store } from './GameHub.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
@@ -59,6 +59,7 @@ function Join({ code, room, onJoined }) {
   const [avatar, setAvatar] = useState(CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [set, setSet] = useState('All');
   const join = async (e) => {
     e.preventDefault(); setBusy(true); setError('');
     try { const r = await api.post(`/game/${code}/join`, { name, avatar }); onJoined(r.token); }
@@ -67,11 +68,22 @@ function Join({ code, room, onJoined }) {
   return (
     <form className="arena-card arena-joinform" onSubmit={join}>
       <small className="arena-label">GAME {code} · {room.mode === 'team' ? 'TEAM BATTLE' : room.mode === 'duel' ? 'DUEL' : 'CLASSIC'}</small>
-      <div className="arena-me"><Character kind={avatar} size={120} mood="win" /><b>{CHARACTERS[avatar].name}</b></div>
-      <input value={name} onChange={(e) => setName(e.target.value.slice(0, 18))} placeholder="Your nickname" aria-label="Nickname" required minLength={2} />
-      <div className="arena-pick" role="radiogroup" aria-label="Choose your character">
-        {CHARACTER_KEYS.map((k) => <button type="button" key={k} role="radio" aria-checked={avatar === k} className={avatar === k ? 'on' : ''} onClick={() => setAvatar(k)}><Character kind={k} size={52} /></button>)}
+      <div className={`arena-me r-${CHARACTERS[avatar].rarity}`} style={{ '--glow': CHARACTERS[avatar].body }}>
+        <Character key={avatar} kind={avatar} size={128} mood="win" className="pop" />
+        <b>{CHARACTERS[avatar].name}</b><span className="arena-rarity">{CHARACTERS[avatar].rarity}</span>
       </div>
+      <input value={name} onChange={(e) => setName(e.target.value.slice(0, 18))} placeholder="Your nickname" aria-label="Nickname" required minLength={2} />
+      <div className="arena-groups" role="tablist" aria-label="Character groups">
+        {['All', ...CHARACTER_SETS].map((x) => <button type="button" key={x} role="tab" aria-selected={set === x} className={set === x ? 'on' : ''} onClick={() => setSet(x)}>{x}</button>)}
+      </div>
+      <div className="arena-pick" role="radiogroup" aria-label="Choose your character">
+        {CHARACTER_KEYS.filter((k) => set === 'All' || CHARACTERS[k].set === set).map((k) => (
+          <button type="button" key={k} role="radio" aria-checked={avatar === k} title={CHARACTERS[k].name} className={`r-${CHARACTERS[k].rarity} ${avatar === k ? 'on' : ''}`} onClick={() => setAvatar(k)}>
+            <Character kind={k} size={52} />
+          </button>
+        ))}
+      </div>
+      <button type="button" className="arena-random" onClick={() => setAvatar(CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)])}>Surprise me</button>
       {error && <p className="arena-err">{error}</p>}
       <button className="btn sun lg block" disabled={busy || name.trim().length < 2}>{busy ? 'Joining…' : 'Enter the arena'}</button>
     </form>

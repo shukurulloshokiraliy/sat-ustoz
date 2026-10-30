@@ -11,7 +11,7 @@ import { getSecret } from './auth.js';
 import { gameWords } from './vocab.js';
 
 const MODES = ['classic', 'team', 'duel'];
-export const CHARACTERS = ['owl', 'fox', 'cat', 'bear', 'bunny', 'frog', 'penguin', 'robot', 'dragon', 'ghost', 'chick', 'octo'];
+export const CHARACTERS = ['owl', 'fox', 'cat', 'bear', 'bunny', 'frog', 'penguin', 'chick', 'panda', 'koala', 'lion', 'tiger', 'redpanda', 'raccoon', 'hedgehog', 'monkey', 'octo', 'shark', 'whale', 'axolotl', 'robot', 'ghost', 'dragon', 'unicorn'];
 const TEAMS = ['Blue', 'Sun'];
 
 export async function migrateGame() {

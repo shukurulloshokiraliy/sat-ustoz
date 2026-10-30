@@ -76,7 +76,7 @@ function Hub({ d }) {
           </form>
         </div>
         <div className="arena-parade" aria-hidden="true">
-          {CHARACTER_KEYS.slice(0, 8).map((k, i) => <span key={k} style={{ animationDelay: `${i * 0.18}s` }}><Character kind={k} size={i % 3 === 0 ? 86 : 64} /></span>)}
+          {['owl', 'lion', 'axolotl', 'unicorn', 'panda', 'shark', 'fox', 'dragon'].map((k, i) => <span key={k} style={{ animationDelay: `${i * 0.18}s` }}><Character kind={k} size={i % 3 === 0 ? 86 : 64} /></span>)}
         </div>
       </section>
 

@@ -1526,3 +1526,23 @@ a.card:hover, .card.clickable:hover { transform: translateY(-2px); box-shadow: 0
 .mr-group em { display: block; height: 100%; border-radius: 6px; } .mr-group em.hi { background: #1E8E4E; } .mr-group em.mid { background: #FFCB3D; } .mr-group em.lo { background: #C0392B; }
 @media (max-width: 640px) { .mr-hero { grid-template-columns: 1fr; } .mr-acc { width: 120px; height: 120px; } }
 @media (max-width: 980px) { .sidebar .nav { flex: none; overflow: visible; min-height: auto; } }
+/* character picker: groups, rarity, surprise */
+.arena-groups { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: #F0F3F7; overflow-x: auto; scrollbar-width: none; }
+.arena-groups button { flex: 1; border: 0; background: transparent; border-radius: 9px; padding: 7px 10px; font: 700 .82rem var(--font); color: #5B6380; cursor: pointer; white-space: nowrap; }
+.arena-groups button.on { background: #fff; color: #161B3D; box-shadow: 0 1px 0 #D9DEE5, 0 0 0 1px #D9DEE5; }
+.arena-pick { grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); max-height: 220px; overflow-y: auto; padding: 4px; }
+@media (max-width: 420px) { .arena-pick { grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); } }
+.arena-pick button { position: relative; transition: transform .15s; }
+.arena-pick button::after { content: ''; position: absolute; right: 4px; bottom: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--rc, transparent); }
+.arena-pick button.r-rare { --rc: #2A55E5; } .arena-pick button.r-epic { --rc: #8E5CF7; } .arena-pick button.r-legendary { --rc: #FFB800; background: linear-gradient(160deg, #FFF4D1, #F0F3F7); }
+.arena-pick button:hover { transform: translateY(-2px); }
+.arena-me { position: relative; }
+.arena-me::before { content: ''; position: absolute; top: 4px; left: 50%; width: 140px; height: 140px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--glow, #2A55E5) 35%, transparent), transparent 70%); z-index: 0; }
+.arena-me > * { position: relative; z-index: 1; }
+.arena-me .pop { animation: char-pop .45s cubic-bezier(.2,1.4,.4,1) both, bob 2.4s ease-in-out .45s infinite; }
+@keyframes char-pop { from { transform: scale(.4) rotate(-10deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.arena-rarity { text-transform: uppercase; letter-spacing: .1em; font: 800 .66rem var(--font); padding: 3px 8px; border-radius: 99px; background: #E9EDF3; color: #5B6380; }
+.arena-me.r-rare .arena-rarity { background: #E7EFFE; color: #2A55E5; } .arena-me.r-epic .arena-rarity { background: #EFE7FF; color: #6B3FD6; }
+.arena-me.r-legendary .arena-rarity { background: linear-gradient(90deg, #FFCB3D, #FF9A3D); color: #161B3D; }
+.arena-random { justify-self: center; border: 0; background: none; color: #2A55E5; font: 700 .86rem var(--font); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.arena-join input::placeholder { letter-spacing: normal; font-weight: 600; }
