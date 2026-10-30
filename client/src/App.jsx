@@ -35,6 +35,10 @@ import Practice from './pages/public/Practice.jsx';
 import { AboutPage, PageView, SectionPage } from './pages/public/Pages.jsx';
 import Website from './pages/master/Website.jsx';
 import Support from './pages/master/Support.jsx';
+import VocabHome from './pages/vocab/VocabHome.jsx';
+import VocabUnit, { VocabReview } from './pages/vocab/VocabUnit.jsx';
+import GameHub from './pages/game/GameHub.jsx';
+import Play, { JoinCode } from './pages/game/Play.jsx';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -45,6 +49,8 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Login />} />
+      <Route path="/play/:code" element={<Play />} />
+      <Route path="/game" element={<JoinCode />} />
       <Route element={<PublicLayout />}>
         <Route index element={<Landing />} />
         <Route path="practice" element={<Practice />} />
@@ -69,8 +75,13 @@ export default function App() {
       <Route path="/s/:id" element={<PublicLayout />}><Route index element={<SectionPage />} /></Route>
       <Route path="/p/:slug" element={<PublicLayout />}><Route index element={<PageView />} /></Route>
       <Route path="/about" element={<PublicLayout />}><Route index element={<AboutPage />} /></Route>
+      <Route path="/play/:code" element={<Play />} />
       <Route element={<Layout />}>
         <Route path="practice" element={<Practice />} />
+        <Route path="vocab" element={<VocabHome />} />
+        <Route path="vocab/unit/:id" element={<VocabUnit />} />
+        <Route path="vocab/review" element={<VocabReview />} />
+        <Route path="game" element={<GameHub />} />
         {user.role === 'master' ? (
           <>
             <Route index element={<Overview />} />

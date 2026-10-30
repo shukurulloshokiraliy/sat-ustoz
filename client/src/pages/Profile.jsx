@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth, useToast } from '../context.jsx';
 import { Avatar, Card, Field, PageHeader } from '../components/ui.jsx';
@@ -25,7 +25,10 @@ export default function Profile() {
       <div className="grid g2">
         <Card>
           <form className="stack" onSubmit={saveProfile}>
-            <div className="row"><Avatar name={user.name} size={56} /><div><b>{user.name}</b><div className="muted" style={{ fontSize: '.85rem' }}>{"Login:"} {user.login}{user.group ? ` · ${user.group.name}` : ''}</div></div></div>
+            <div className="row wrap">
+              <PhotoPicker user={user} onDone={refresh} />
+              <div className="grow"><b>{user.name}</b><div className="muted" style={{ fontSize: '.85rem' }}>{"Login:"} {user.login}{user.group ? ` · ${user.group.name}` : ''}</div></div>
+            </div>
             <Field label={"Name"}><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required /></Field>
             {student && (
               <div className="form-grid">
@@ -46,6 +49,47 @@ export default function Profile() {
             <div><button className="btn ghost">{"Update password"}</button></div>
           </form>
         </Card>
+      </div>
+    </div>
+  );
+}
+
+/** Square-crops and shrinks the chosen photo in the browser (256 px JPEG), then uploads it. */
+async function squareJpeg(file, size = 256) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, fail) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => fail(new Error('This file is not a photo')); i.src = url; });
+    const s = Math.min(img.naturalWidth, img.naturalHeight);
+    const c = document.createElement('canvas'); c.width = size; c.height = size;
+    c.getContext('2d').drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
+    return await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.86));
+  } finally { URL.revokeObjectURL(url); }
+}
+
+function PhotoPicker({ user, onDone }) {
+  const toast = useToast();
+  const ref = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const pick = async (file) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const blob = await squareJpeg(file);
+      const form = new FormData(); form.append('file', blob, 'avatar.jpg');
+      await api.upload('/me/avatar', form); await onDone(); toast('Photo updated');
+    } catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); if (ref.current) ref.current.value = ''; }
+  };
+  const remove = async () => { setBusy(true); try { await api.del('/me/avatar'); await onDone(); toast('Photo removed'); } catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); } };
+  return (
+    <div className="photo-pick">
+      <button type="button" className="photo-btn" onClick={() => ref.current?.click()} disabled={busy} aria-label="Change profile photo">
+        <Avatar name={user.name} size={72} src={user.avatar_url} />
+        <span className="photo-cam" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg></span>
+      </button>
+      <input ref={ref} type="file" accept="image/*" hidden onChange={(e) => pick(e.target.files?.[0])} />
+      <div className="photo-acts">
+        <button type="button" className="linkish" disabled={busy} onClick={() => ref.current?.click()}>{busy ? 'Uploading…' : user.avatar_url ? 'Change photo' : 'Add photo'}</button>
+        {user.avatar_url && <button type="button" className="linkish muted" disabled={busy} onClick={remove}>Remove</button>}
       </div>
     </div>
   );

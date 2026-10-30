@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { IconX } from './icons.jsx';
 
 /* ---------- data hook ---------- */
@@ -71,7 +72,8 @@ export function Modal({ title, label, onClose, children, wide, footer }) {
       document.body.style.overflow = '';
     };
   }, [onClose]);
-  return (
+  // rendered into <body> so no animated/transformed parent can trap or clip it
+  return createPortal(
     <div className="modal-back" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className={`modal ${wide ? 'wide' : ''}`} role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : label}>
         <div className="modal-head">
@@ -81,7 +83,8 @@ export function Modal({ title, label, onClose, children, wide, footer }) {
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

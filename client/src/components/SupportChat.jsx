@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context.jsx';
 import { IconSend, IconX } from './icons.jsx';
 
@@ -21,6 +22,8 @@ const IconChat = (p) => (
  */
 export default function SupportChat() {
   const { user } = useAuth();
+  const { pathname } = useLocation();
+  const focus = /^\/(vocab\/(unit|review)|play|game|quiz\/|placement\/test|question-bank\/practice)|\/check$/.test(pathname);
   const [open, setOpen] = useState(false);
   const [guest, setGuest] = useState(readGuest);
   const [d, setD] = useState({ ticket: null, msgs: [], unread: 0 });
@@ -113,7 +116,7 @@ export default function SupportChat() {
           </form>
         </section>
       )}
-      <button className={`sc-fab ${open ? 'on' : ''}`} onClick={() => setOpen((x) => !x)} aria-label={open ? 'Close support chat' : 'Open support chat'}>
+      <button className={`sc-fab ${open ? 'on' : ''} ${focus ? 'focus' : ''}`} onClick={() => setOpen((x) => !x)} aria-label={open ? 'Close support chat' : 'Open support chat'}>
         {open ? <IconX width={22} height={22} /> : <IconChat />}
         {!open && d.unread > 0 && <span className="sc-dot">{d.unread}</span>}
         {!open && <span className="sc-label">Support</span>}

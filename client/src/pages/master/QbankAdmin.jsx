@@ -25,7 +25,7 @@ export default function QbankAdmin() {
     <div className="page">
       <PageHeader title="Question Bank" sub="Original SAT Reading and Writing questions. Students see easy questions for free; medium and hard need a subscription.">
         <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={(e) => importFile(e.target.files?.[0])} />
-        <div className="row" style={{ gap: 8 }}>
+        <div className="row wrap" style={{ gap: 8 }}>
           <Link className="btn ghost" to="/question-bank">Student view</Link>
           <button className="btn primary" onClick={() => fileRef.current?.click()}><IconUpload width={16} height={16} /> Import questions (JSON)</button>
         </div>

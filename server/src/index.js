@@ -15,6 +15,8 @@ import { registerPlacement } from './placement/routes.js';
 import { lessonSummary, syncBundledModules } from './course/modules.js';
 import { registerLessons } from './course/lessons.js';
 import { registerQbank, syncQbank } from './qbank.js';
+import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
+import { migrateGame, registerGame } from './game.js';
 import { migrateSite, seedSite, registerSitePublic, registerSiteAdmin } from './site.js';
 import { getSecret } from './auth.js';
 import { migrateBot, registerBot, registerBotAdmin } from './tgbot.js';
@@ -42,11 +44,14 @@ function contentHash() {
   walk(path.join(__dirname, 'content'));
   hash.update(fs.readFileSync(path.join(__dirname, 'course', 'modules.js')));
   hash.update(fs.readFileSync(path.join(__dirname, 'qbank.js')));
+  hash.update(fs.readFileSync(path.join(__dirname, 'vocab.js')));
   return hash.digest('hex');
 }
 await migrate();
 await migrateSite();
 await migrateBot();
+await migrateVocab();
+await migrateGame();
 await initSecret();
 await seedSite();
 const seeded = await seed();
@@ -55,6 +60,7 @@ const synced = await db.one("SELECT value FROM settings WHERE key = '_content_ha
 if (seeded || synced?.value !== fingerprint) {
   await syncBundledModules();
   await syncQbank();
+  await syncVocab();
   await db.run("INSERT INTO settings (key, value) VALUES ('_content_hash', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [fingerprint]);
 }
 if (seeded) console.log(`[seed] Teacher login: ${seeded.masterLogin}${process.env.VERCEL ? '' : ` / ${seeded.masterPass}  |  demo student: shukurullo / student123`}`);
@@ -198,11 +204,21 @@ app.post('/api/auth/google', h(async (req, res) => {
 // public website: home content, guide pages and free practice tests (no sign-in)
 registerSitePublic(app, { h, bad, secret: getSecret });
 registerBot(app, { h, bad });
+registerGame(app, { h, bad }); // Word Arena: guests can join with a code
+
+// profile photos: public URLs so <img> tags work without a token
+app.get('/api/avatars/:id', h(async (req, res) => {
+  const a = await db.one('SELECT data, type FROM user_avatars WHERE user_id = ?', [Number(req.params.id)]);
+  if (!a) return res.status(404).end();
+  res.set({ 'Content-Type': a.type, 'Cache-Control': 'public, max-age=31536000, immutable' });
+  res.send(Buffer.from(a.data));
+}));
 
 const PUBLIC = new Set(['/auth/login', '/auth/register', '/auth/google', '/config', '/template.xlsx']);
 app.use('/api', (req, res, next) => (PUBLIC.has(req.path) && req.path !== '/template.xlsx' ? next() : requireAuth(req, res, next)));
 registerSiteAdmin(app, { h, bad, requireMaster });
 registerBotAdmin(app, { h, bad, requireMaster, requireStudent });
+registerVocab(app, { h, bad, requireMaster, requireStudent, accessFor: (u) => accessFor(u) });
 
 registerPlacement(app, { h, bad, requireStudent, requireMaster });
 registerLessons(app, { h, bad, requireStudent, requireMaster, roadmapFor: (u) => roadmapFor(u), accessFor: (u) => accessFor(u) });
@@ -219,6 +235,22 @@ app.put('/api/me', h(async (req, res) => {
     exam_date || null,
     req.user.id,
   ]);
+  res.json(await mepayload(await db.one('SELECT * FROM users WHERE id = ?', [req.user.id])));
+}));
+// student / teacher: upload or remove a profile photo (the browser sends a small square JPEG/PNG/WebP)
+app.post('/api/me/avatar', upload.single('file'), h(async (req, res) => {
+  const f = req.file;
+  if (!f) return bad(res, 'Choose a photo');
+  if (!/^image\/(jpeg|png|webp)$/.test(f.mimetype)) return bad(res, 'Use a JPG, PNG or WebP photo');
+  if (f.size > 400 * 1024) return bad(res, 'The photo is too large');
+  await db.run(`INSERT INTO user_avatars (user_id, data, type, updated_at) VALUES (?,?,?, now())
+    ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data, type = EXCLUDED.type, updated_at = now()`, [req.user.id, f.buffer, f.mimetype]);
+  await db.run('UPDATE users SET avatar_url = ? WHERE id = ?', [`/api/avatars/${req.user.id}?v=${Date.now().toString(36)}`, req.user.id]);
+  res.json(await mepayload(await db.one('SELECT * FROM users WHERE id = ?', [req.user.id])));
+}));
+app.delete('/api/me/avatar', h(async (req, res) => {
+  await db.run('DELETE FROM user_avatars WHERE user_id = ?', [req.user.id]);
+  await db.run("UPDATE users SET avatar_url = '' WHERE id = ?", [req.user.id]);
   res.json(await mepayload(await db.one('SELECT * FROM users WHERE id = ?', [req.user.id])));
 }));
 app.put('/api/me/password', h(async (req, res) => {

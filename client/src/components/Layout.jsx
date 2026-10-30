@@ -5,19 +5,33 @@ import { Avatar } from './ui.jsx';
 import SupportChat from './SupportChat.jsx';
 import {
   IconBookmark, IconBriefcase, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
-  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, Logo,
+  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo,
 } from './icons.jsx';
 
 const STUDENT_NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true },
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad },
+  { to: '/vocab', label: 'Vocabulary', icon: IconBook },
+  { to: '/game', label: 'Word Arena', icon: IconGame },
   { to: '/question-bank', label: 'Question Bank', icon: IconTarget },
   { to: '/practice', label: 'Practice Tests', icon: IconBolt },
   { to: '/quizzes', label: 'Quizzes', icon: IconQuiz },
   { to: '/analytics', label: 'Results', icon: IconChart },
   { to: '/saved', label: 'Saved', icon: IconBookmark },
-  { to: '/portfolio', label: 'Portfolio', icon: IconBriefcase },
   { to: '/subscribe', label: 'Subscription', icon: IconCrown },
+];
+// phones: the most used places sit in a bottom tab bar; "More" opens the full menu
+const STUDENT_TABS = [
+  { to: '/', label: 'Home', icon: IconDashboard, end: true },
+  { to: '/roadmap', label: 'Roadmap', icon: IconRoad },
+  { to: '/vocab', label: 'Words', icon: IconBook },
+  { to: '/question-bank', label: 'Practice', icon: IconTarget },
+];
+const MASTER_TABS = [
+  { to: '/', label: 'Overview', icon: IconDashboard, end: true },
+  { to: '/students', label: 'Students', icon: IconUsers },
+  { to: '/roadmap', label: 'Roadmap', icon: IconRoad },
+  { to: '/support', label: 'Support', icon: IconSend },
 ];
 const MASTER_NAV = [
   { to: '/', label: 'Overview', icon: IconDashboard, end: true },
@@ -26,6 +40,8 @@ const MASTER_NAV = [
   { to: '/quizzes', label: 'Quizzes', icon: IconQuiz },
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad },
   { to: '/question-bank/manage', label: 'Question Bank', icon: IconTarget },
+  { to: '/vocab', label: 'Vocabulary', icon: IconBook },
+  { to: '/game', label: 'Word Arena', icon: IconGame },
   { to: '/website', label: 'Website', icon: IconGlobe },
   { to: '/support', label: 'Support', icon: IconSend },
   { to: '/settings', label: 'Settings', icon: IconSettings },
@@ -75,6 +91,12 @@ export default function Layout() {
         </div>
         <main className="main"><Outlet /></main>
         <SupportChat />
+        <nav className="tabbar" aria-label="Quick menu">
+          {(user.role === 'master' ? MASTER_TABS : STUDENT_TABS).map((n) => (
+            <NavLink key={n.to} to={n.to} end={n.end}><n.icon width={22} height={22} /><span>{n.label}</span></NavLink>
+          ))}
+          <button type="button" className={open ? 'active' : ''} onClick={() => setOpen(true)} aria-label="Open the full menu"><IconMore width={22} height={22} /><span>More</span></button>
+        </nav>
       </div>
     </div>
   );

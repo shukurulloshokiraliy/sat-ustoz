@@ -261,6 +261,11 @@ CREATE TABLE IF NOT EXISTS lesson_checks (
 CREATE INDEX IF NOT EXISTS idx_lesson_checks ON lesson_checks(user_id, item_id);
 ALTER TABLE lesson_checks ENABLE ROW LEVEL SECURITY;
 `);
+  // v7: profile photos
+  await db.exec(`
+CREATE TABLE IF NOT EXISTS user_avatars (user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, data BYTEA NOT NULL, type TEXT NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+ALTER TABLE user_avatars ENABLE ROW LEVEL SECURITY;
+`);
   // v6: question bank (original SAT R&W questions by domain and skill)
   await db.exec(`
 CREATE TABLE IF NOT EXISTS qbank_questions (
