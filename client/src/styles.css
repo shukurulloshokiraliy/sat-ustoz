@@ -1345,3 +1345,11 @@ a.card:hover, .card.clickable:hover { transform: translateY(-2px); box-shadow: 0
 .qb-row:hover .qb-radio { border-color: var(--primary); }
 .tabbar a, .tabbar button { transition: color .15s, transform .15s; } .tabbar a:active, .tabbar button:active { transform: scale(.92); }
 @media (prefers-reduced-motion: reduce) { .rv { opacity: 1; transform: none; } .btn::after { display: none; } }
+
+/* mascots */
+.char { display: inline-block; object-fit: contain; flex: none; user-select: none; filter: drop-shadow(0 6px 10px rgba(22,27,61,.18)); transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+.char-sad { filter: grayscale(.55) drop-shadow(0 4px 6px rgba(22,27,61,.15)); transform: rotate(-6deg) translateY(4px); }
+.char-win { animation: char-win 1.6s ease-in-out infinite; }
+@keyframes char-win { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-10px) rotate(-4deg); } 60% { transform: translateY(0) rotate(3deg); } }
+.arena-pick button:hover .char, .arena-mode:hover .char { transform: translateY(-4px) scale(1.06); }
+@media (prefers-reduced-motion: reduce) { .char-win { animation: none; } }
