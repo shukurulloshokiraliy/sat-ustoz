@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Confirm } from '../../components/ui.jsx';
-import { IconArrow, IconCheck, IconX, Logo } from '../../components/icons.jsx';
+import { BBPracticeRunner } from '../../components/Bluebook.jsx';
 import { domainOf, withBlanks } from '../../lib.js';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -75,94 +75,27 @@ export default function PracticeTaker({ initial }) {
     } catch (e) { toast(e.message, 'bad'); }
     finally { setBusy(false); }
   };
-  const next = () => {
-    if (cur < questions.length - 1) { setCur(cur + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    else finish();
-  };
 
-  // keyboard: A–D choose · Enter check / next
-  useEffect(() => {
-    const f = (e) => {
-      if (e.target.closest('input, textarea') || e.metaKey || e.ctrlKey || exit) return;
-      const k = e.key.toUpperCase();
-      if (['A', 'B', 'C', 'D'].includes(k) && q.options.some((o) => o.key === k)) choose(k);
-      else if (e.key === 'Enter') { e.preventDefault(); rv ? next() : check(); }
-    };
-    window.addEventListener('keydown', f);
-    return () => window.removeEventListener('keydown', f);
-  });
-
-  const isRight = rv && sel === rv.correct;
-  const last = cur === questions.length - 1;
-
+  const items = questions.map((x) => ({
+    id: x.id,
+    passage: x.passage ? <>{withBlanks(x.passage, blank)}</> : null,
+    prompt: x.prompt,
+    meta: <><span>{x.topic}</span>{domainOf(x.topic) && <span className="chip domain">{domainOf(x.topic)}</span>}{xp > 0 && <span className="chip sun">+{xp} XP</span>}</>,
+    options: x.options,
+  }));
   return (
-    <div className="pr">
-      <header className="pr-top">
-        <Logo size={22} />
-        <div className="row" style={{ gap: 8 }}>
-          {xp > 0 && <span className="chip sun" title="XP earned in this set">+{xp} XP</span>}
-          <span className={`timer-chip ${countdown && secs < 60 ? 'low' : ''}`} aria-label={countdown ? 'Time left' : 'Time spent'}>{clock(secs)}</span>
-          <button className="icon-btn" onClick={() => setExit(true)} aria-label="Leave practice"><IconX /></button>
-        </div>
-      </header>
-
-      <main className="pr-card" key={q.id}>
-        <div className="pr-meta">
-          <span>{q.topic} · {cur + 1} / {questions.length}</span>
-          {domain && <span className="chip domain">{domain}</span>}
-        </div>
-        <div className="progress" aria-label={`${done} of ${questions.length} checked`}><span style={{ width: `${(done / questions.length) * 100}%` }} /></div>
-
-        {rv && (
-          <div className={`pr-verdict ${isRight ? 'right' : 'wrong'}`} role="status">
-            <h2>{isRight ? 'Correct — nice work!' : 'Not quite — almost!'}</h2>
-            <span className="chip sun">{isRight ? `+${XP_RIGHT} XP` : `+${XP_TRY} XP for trying`}</span>
-          </div>
-        )}
-
-        {q.passage && <div className="pr-passage">{withBlanks(q.passage, blank)}</div>}
-        <p className="pr-prompt">{q.prompt}</p>
-
-        <div className="pr-opts" role="radiogroup" aria-label="Answer choices">
-          {q.options.map((o) => {
-            const mine = sel === o.key;
-            const state = rv ? (o.key === rv.correct ? 'correct' : mine ? 'wrong' : 'dim') : mine ? 'sel' : '';
-            return (
-              <button key={o.key} type="button" role="radio" aria-checked={mine} disabled={!!rv} className={`pr-opt ${state}`} onClick={() => choose(o.key)}>
-                <span className="L">{o.key})</span>
-                <span className="t">{o.text}</span>
-                {state === 'wrong' && <span className="tag">· your answer</span>}
-                {state === 'correct' && <span className="tag">{mine ? '· your answer · correct' : '· correct'}</span>}
-                {state === 'correct' && <IconCheck className="ok" width={18} height={18} />}
-              </button>
-            );
-          })}
-        </div>
-
-        {rv && (
-          <div className="pr-explain">
-            {rv.explanation && <p>{rv.explanation}</p>}
-            {rv.tip && <div className="tip"><b>Ustoz tip:</b> {rv.tip}</div>}
-          </div>
-        )}
-
-        {!rv
-          ? <button className="btn primary lg block" disabled={!sel || busy} onClick={check}>{busy ? 'Checking…' : 'Check answer'}</button>
-          : <button className="btn primary lg block" onClick={next}>{last ? 'See my results' : 'Next question'} <IconArrow /></button>}
-        <p className="pr-hint">{!rv ? (sel ? 'Press Enter to check' : 'Choose an answer — keys A–D work too') : 'Press Enter to continue'}</p>
-      </main>
-
-      <nav className="pr-dots" aria-label="Questions">
-        {questions.map((x, i) => {
-          const r = revealed[x.id];
-          const st = r ? (answers[x.id]?.choice === r.correct ? 'right' : 'wrong') : '';
-          return <button key={x.id} className={`${st} ${i === cur ? 'cur' : ''}`} onClick={() => setCur(i)} aria-label={`Question ${i + 1}${st ? ` (${st})` : ''}`}>{i + 1}</button>;
-        })}
-        {done === questions.length && cur !== questions.length - 1 && <button className="btn sun sm" onClick={finish}>Finish</button>}
-      </nav>
-
+    <>
+      <BBPracticeRunner
+        title={quiz.title} questions={items} cur={cur} setCur={setCur} busy={busy} seconds={secs} countdown={countdown}
+        directions={<p>Choose the best answer, then press Check to see if you are right and read the explanation. Checked answers are saved and cannot be changed. Keys: A–D choose, Enter checks.</p>}
+        choice={(id) => answers[id]?.choice || null}
+        onChoose={(id, k) => { if (!revealed[id]) setAnswers((a) => ({ ...a, [id]: { ...(a[id] || {}), choice: k } })); }}
+        reveal={(id) => { const r = revealed[id]; if (!r) return null; const ok = answers[id]?.choice === r.correct; return { correct: r.correct, ok, explanation: r.explanation, tip: r.tip, note: ok ? `+${XP_RIGHT} XP` : `+${XP_TRY} XP for trying` }; }}
+        onCheck={(x) => { if (questions[cur].id === x.id) check(); }}
+        onExit={() => setExit(true)} onFinish={finish} finishLabel="See my results"
+      />
       {exit && <Confirm danger={false} title="Leave practice?" confirmLabel="Leave" onClose={() => setExit(false)}
         onConfirm={() => nav(-1)} text={`Your checked answers are saved, ${user.name.split(' ')[0]}. You can continue “${quiz.title}” later from where you stopped.`} />}
-    </div>
+    </>
   );
 }
