@@ -55,6 +55,7 @@ export const IconCrown = P(<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z" />)
 export const IconGlobe = P(<><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" /></>);
 export const IconInstagram = P(<><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r=".8" fill="currentColor" /></>);
 export const IconTelegram = P(<path d="M21 4 3 11l6 2.2M21 4l-3 16-6.5-5.3M21 4 9 13.2m0 0V19l2.5-4.3" />);
+export const IconRefresh = P(<><path d="M20 11a8 8 0 0 0-14.6-4.5M4 4v4h4" /><path d="M4 13a8 8 0 0 0 14.6 4.5M20 20v-4h-4" /></>);
 export const IconSend = P(<path d="M21 3 3 10.5l7 2.5 2.5 7L21 3zM10 13l4-4" />);
 export const IconGoogle = (props) => (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" {...props}>

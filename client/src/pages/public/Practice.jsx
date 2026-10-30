@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Confetti, Ring, Spinner } from '../../components/ui.jsx';
-import { IconArrow, IconCheck, IconClock, IconFlag, IconX, Logo } from '../../components/icons.jsx';
+import { IconArrow, IconCheck, IconClock, IconFlag, IconRefresh, IconX, Logo } from '../../components/icons.jsx';
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
 import { newSeed } from './site.jsx';
@@ -84,7 +84,7 @@ export default function Practice() {
           <h1>Reading &amp; Writing practice test</h1>
           <p className="muted">{meta ? <>{meta.test_size} questions · {meta.minutes} minutes · score estimate. Today you see <b>{meta.visible}</b> fresh questions ({meta.percent}% of the bank) — come back for a new set.</> : 'Picking today’s questions…'}</p>
         </div>
-        <button className="btn ghost" onClick={() => setSeed(newSeed())} title="Show a different set of questions">🔄 New set</button>
+        <button className="btn ghost" onClick={() => setSeed(newSeed())} title="Show a different set of questions"><IconRefresh width={16} height={16} /> New set</button>
       </section>
 
       {err && <div className="error-box">{err}</div>}
@@ -154,7 +154,7 @@ const untilText = (iso) => {
 
 /** Free daily allowance: guests and free accounts — N questions per 24 hours; subscribers are unlimited. */
 function Quota({ q, signedIn }) {
-  if (q.unlimited) return <div className="pt-quota pro">⚡ Unlimited practice</div>;
+  if (q.unlimited) return <div className="pt-quota pro">Unlimited practice</div>;
   const pct = Math.min(100, Math.round((q.used / Math.max(1, q.limit)) * 100));
   return (
     <div className="pt-quota">
@@ -167,7 +167,7 @@ function Quota({ q, signedIn }) {
 function LimitCard({ q, signedIn }) {
   return (
     <div className="pt-start">
-      <span style={{ fontSize: '2.4rem' }}>⏳</span>
+      <IconClock width={34} height={34} />
       <h2 style={{ color: '#fff' }}>Today’s free questions are used</h2>
       <p>You answered {Math.min(q.used, q.limit)} questions in the last 24 hours — great work! New free questions open in <b>{untilText(q.resets_at)}</b>.</p>
       <Link className="btn sun lg block" to={signedIn ? '/subscribe' : '/signup'}>{signedIn ? 'Get unlimited practice' : 'Start free trial'}</Link>
@@ -267,7 +267,7 @@ function Runner({ test, onDone, onQuit }) {
           <div className="pt-nums">
             {qs.map((x, i) => <button key={x.id} className={`${ans[x.id] != null ? 'done' : ''} ${mark[x.id] ? 'marked' : ''} ${i === cur ? 'cur' : ''}`} onClick={() => { setCur(i); setGrid(false); }}>{i + 1}</button>)}
           </div>
-          <small className="muted">■ answered · ⚑ marked · ◻ not answered</small>
+          <small className="pt-legend"><i className="a" /> answered <i className="m" /> marked <i className="n" /> not answered</small>
         </div>
       )}
 
@@ -309,7 +309,7 @@ function Result({ r, onAgain }) {
 
       {!user && (
         <div className="pt-nudge">
-          <b>🔥 Want to know exactly what to study next?</b>
+          <b>Want to know exactly what to study next?</b>
           <span>Create a free account: your results are saved, you get a readiness check and a roadmap to 800.</span>
           <Link className="btn sun" to="/signup">Start free trial</Link>
         </div>

@@ -22,7 +22,6 @@ export function SectionPage() {
         <div className="pub-cards">
           {pages.map((p) => (
             <Link key={p.slug} to={`/p/${p.slug}`} className="pub-card">
-              <span className="em">{p.emoji || '📘'}</span>
               <b>{p.title}</b>
               {p.summary && <p>{p.summary}</p>}
               <em>Read <IconArrow width={14} height={14} /></em>
@@ -49,7 +48,7 @@ export function PageView() {
   return (
     <article className="pub-wrap pub-page pub-article">
       {sec && <Link to={`/s/${sec.id}`} className="eyebrow">← {sec.label}</Link>}
-      <h1>{p.emoji && <span className="em">{p.emoji}</span>} {p.title}</h1>
+      <h1>{p.title}</h1>
       {p.summary && <p className="lead">{p.summary}</p>}
       <Video url={p.video_url} />
       <Markdown text={p.body} />
@@ -58,7 +57,7 @@ export function PageView() {
         <>
           <h2 className="pub-h3">Read next</h2>
           <div className="pub-cards">
-            {more.map((x) => <Link key={x.slug} to={`/p/${x.slug}`} className="pub-card"><span className="em">{x.emoji || '📘'}</span><b>{x.title}</b>{x.summary && <p>{x.summary}</p>}</Link>)}
+            {more.map((x) => <Link key={x.slug} to={`/p/${x.slug}`} className="pub-card"><b>{x.title}</b>{x.summary && <p>{x.summary}</p>}<em>Read <IconArrow width={14} height={14} /></em></Link>)}
           </div>
         </>
       )}
@@ -70,7 +69,7 @@ function Cta() {
   const { user } = useAuth();
   return (
     <div className="pt-nudge" style={{ marginTop: 28 }}>
-      <b>📝 Try it on real questions</b>
+      <b>Try it on real questions</b>
       <span>A free 27-question practice test with a score estimate — no sign-up.</span>
       <div className="row wrap" style={{ gap: 8 }}>
         <Link className="btn sun" to="/practice">Take a practice test</Link>
@@ -111,8 +110,8 @@ export function AboutPage() {
           </div>
           <div className="ab-portrait">
             <Avatar a={a} />
-            <span className="ab-badge b1">🎓 {a.founder_role}</span>
-            <span className="ab-badge b2">📚 SAT Reading &amp; Writing</span>
+            <span className="ab-badge b1">{a.founder_role}</span>
+            <span className="ab-badge b2">SAT Reading &amp; Writing</span>
           </div>
         </div>
       </section>
@@ -130,7 +129,7 @@ export function AboutPage() {
         <section className="pub-wrap">
           <h2 className="pub-h2">Why SAT Ustoz</h2>
           <div className="pub-features">
-            {a.points.map((pt, i) => <div key={i} className="pub-feature"><span className="em">{pt.emoji}</span><b>{pt.title}</b><p>{pt.text}</p></div>)}
+            {a.points.map((pt, i) => <div key={i} className="pub-feature"><span className="fnum">{String(i + 1).padStart(2, '0')}</span><b>{pt.title}</b><p>{pt.text}</p></div>)}
           </div>
         </section>
       )}

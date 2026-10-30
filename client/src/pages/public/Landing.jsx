@@ -93,7 +93,7 @@ export default function Landing() {
         <h2 className="pub-h2">All essentials included</h2>
         <div className="pub-features">
           {h.features?.map((f, i) => (
-            <div key={i} className="pub-feature"><span className="em">{f.emoji}</span><b>{f.title}</b><p>{f.text}</p></div>
+            <div key={i} className="pub-feature"><span className="fnum">{String(i + 1).padStart(2, '0')}</span><b>{f.title}</b><p>{f.text}</p></div>
           ))}
         </div>
       </section>

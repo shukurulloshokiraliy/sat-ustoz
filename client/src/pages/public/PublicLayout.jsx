@@ -35,7 +35,7 @@ export default function PublicLayout() {
     },
     ...sections.map((s) => ({
       label: s.label, to: `/s/${s.id}`,
-      cols: [{ title: s.label, items: pagesOf(s.id).slice(0, 8).map((p) => ({ to: `/p/${p.slug}`, label: `${p.emoji ? p.emoji + ' ' : ''}${p.title}`, sub: p.summary })) }],
+      cols: [{ title: s.label, items: pagesOf(s.id).slice(0, 8).map((p) => ({ to: `/p/${p.slug}`, label: p.title, sub: p.summary })) }],
       callout: null,
     })),
   ];

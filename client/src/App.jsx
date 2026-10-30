@@ -54,8 +54,7 @@ export default function App() {
       </Route>
     </Routes>
   );
-  // every new student takes the readiness check first
-  if (user.role === 'student' && user.access?.needs_placement && !/^\/(welcome|placement)/.test(loc.pathname)) return <Navigate to="/placement" replace />;
+  // the placement test is optional: new students see an invitation on the dashboard, nothing is blocked
 
   return (
     <Routes>

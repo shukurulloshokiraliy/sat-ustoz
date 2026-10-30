@@ -34,6 +34,12 @@ export default function Dashboard() {
             </div>
 
             {!user.access?.can_practice && <PaywallBanner />}
+            {!pl.results.length && (
+              <Link to="/placement" className="pl-invite">
+                <span className="grow"><b>Find your level — optional</b><span className="muted"> · a short placement test shows your SAT estimate and what to study first (about 40 min).</span></span>
+                <span className="btn soft sm">Take it <IconArrow width={16} height={16} /></span>
+              </Link>
+            )}
 
             <div className="grid g-main stagger">
               <Card>

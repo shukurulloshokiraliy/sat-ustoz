@@ -105,12 +105,11 @@ function HomeEditor({ block, reload }) {
         </div>
       </Card>
       <Card className="stack">
-        <div className="row between"><h2>Features</h2><button className="btn soft sm" onClick={() => setH({ ...h, features: [...(h.features || []), { emoji: '⭐', title: '', text: '' }] })}><IconPlus /> Add</button></div>
+        <div className="row between"><h2>Features</h2><button className="btn soft sm" onClick={() => setH({ ...h, features: [...(h.features || []), { title: '', text: '' }] })}><IconPlus /> Add</button></div>
         <div className="grid g3">
           {(h.features || []).map((f, i) => (
             <div key={i} className="stack sm web-mini">
               <div className="row" style={{ gap: 8 }}>
-                <input style={{ width: 56 }} value={f.emoji} onChange={setArr('features', i, 'emoji')} aria-label="Emoji" />
                 <input className="grow" value={f.title} onChange={setArr('features', i, 'title')} placeholder="Title" />
                 <button className="icon-btn" onClick={() => setH({ ...h, features: h.features.filter((_, j) => j !== i) })} aria-label="Remove"><IconTrash /></button>
               </div>
@@ -177,13 +176,12 @@ function PagesEditor({ pages, sections, reload }) {
       <Card className="stack">
         <div className="row between wrap">
           <div><h2>Pages</h2><p className="muted">Guides, course descriptions, news… Each page gets its own link and appears in its menu section.</p></div>
-          <button className="btn primary" onClick={() => setEdit({ section: secs[0]?.id || 'guides', title: '', summary: '', body: '', emoji: '📘', video_url: '', published: true, position: pages.length })}><IconPlus /> New page</button>
+          <button className="btn primary" onClick={() => setEdit({ section: secs[0]?.id || 'guides', title: '', summary: '', body: '', emoji: '', video_url: '', published: true, position: pages.length })}><IconPlus /> New page</button>
         </div>
         {!pages.length ? <Empty title="No pages yet" text="Create the first one — for example a guide about the SAT format." /> : (
           <div className="web-pages">
             {pages.map((p) => (
               <div key={p.id} className={`web-page ${p.published ? '' : 'off'}`}>
-                <span className="em">{p.emoji || '📘'}</span>
                 <div className="grow"><b>{p.title}</b><small className="muted">{secs.find((s) => s.id === p.section)?.label || p.section} · /p/{p.slug}{p.published ? '' : ' · draft'}</small></div>
                 <a className="icon-btn" href={`/p/${p.slug}`} target="_blank" rel="noreferrer" aria-label="Open"><IconEye /></a>
                 <button className="icon-btn" onClick={() => togglePub(p)} aria-label={p.published ? 'Hide' : 'Publish'} title={p.published ? 'Hide (make a draft)' : 'Publish'}>{p.published ? <IconEyeOff /> : <IconEye />}</button>
@@ -218,9 +216,8 @@ function PageForm({ page, sections, onClose, reload }) {
       footer={<><label className="row" style={{ gap: 8, marginRight: 'auto' }}><input type="checkbox" checked={p.published} onChange={(e) => setP({ ...p, published: e.target.checked })} /> Published</label>
         <button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn primary" disabled={busy || !p.title.trim()} onClick={save}>{busy ? 'Saving…' : 'Save page'}</button></>}>
       <div className="stack">
-        <div className="grid g3">
+        <div className="grid g2">
           <label className="field"><span>Section</span><select value={p.section} onChange={set('section')}>{sections.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select></label>
-          <label className="field"><span>Emoji</span><input value={p.emoji} onChange={set('emoji')} /></label>
           <label className="field"><span>Order</span><input type="number" value={p.position} onChange={set('position')} /></label>
         </div>
         <label className="field"><span>Title</span><input autoFocus value={p.title} onChange={set('title')} placeholder="e.g. How the Digital SAT is scored" /></label>
@@ -282,12 +279,11 @@ function AboutEditor({ block, reload }) {
         <div className="row between wrap"><h2>About the platform</h2><a className="btn ghost sm" href="/about" target="_blank" rel="noreferrer"><IconEye /> Open the page</a></div>
         <label className="field"><span>Title</span><input value={a.title} onChange={set('title')} /></label>
         <label className="field"><span>Text</span><textarea rows={4} value={a.intro} onChange={set('intro')} /></label>
-        <div className="row between"><h3>Why SAT Ustoz</h3><button className="btn soft sm" onClick={() => setA({ ...a, points: [...(a.points || []), { emoji: '⭐', title: '', text: '' }] })}><IconPlus /> Add</button></div>
+        <div className="row between"><h3>Why SAT Ustoz</h3><button className="btn soft sm" onClick={() => setA({ ...a, points: [...(a.points || []), { title: '', text: '' }] })}><IconPlus /> Add</button></div>
         <div className="grid g3">
           {(a.points || []).map((pt, i) => (
             <div key={i} className="stack sm web-mini">
               <div className="row" style={{ gap: 8 }}>
-                <input style={{ width: 56 }} value={pt.emoji} onChange={setPt(i, 'emoji')} aria-label="Emoji" />
                 <input className="grow" value={pt.title} onChange={setPt(i, 'title')} placeholder="Title" />
                 <button className="icon-btn" onClick={() => setA({ ...a, points: a.points.filter((_, j) => j !== i) })} aria-label="Remove"><IconTrash /></button>
               </div>

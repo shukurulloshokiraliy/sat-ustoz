@@ -28,7 +28,11 @@ export default function Welcome() {
                 <span><IconClock width={16} height={16} /> about {minutes} minutes</span>
                 <span>Two parts, separate timers</span>
               </div>
-              <Link className="btn primary lg" to="/placement/test">{open ? 'Continue the test' : isNew ? 'Start the placement test' : 'Retake the test'} <IconArrow /></Link>
+              <div className="row wrap" style={{ gap: 10 }}>
+                <Link className="btn primary lg" to="/placement/test">{open ? 'Continue the test' : isNew ? 'Start the placement test' : 'Retake the test'} <IconArrow /></Link>
+                {isNew && <Link className="btn on-dark lg" to="/">Skip for now</Link>}
+              </div>
+              {isNew && <small style={{ display: 'block', marginTop: 10, color: 'rgba(255,255,255,.6)' }}>The test is optional — you can take it any time from your dashboard.</small>}
             </section>
 
             <div className="grid g2 stagger">
