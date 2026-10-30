@@ -5,6 +5,7 @@ import { useAuth, useToast } from '../../context.jsx';
 import { Gate, useAsync } from '../../components/ui.jsx';
 import { IconArrow } from '../../components/icons.jsx';
 import Character, { CHARACTER_KEYS } from '../../components/Character.jsx';
+import { BOT_LEVELS, ZONES, isVip } from './zones.jsx';
 
 export const hostKey = (code) => `arena-host-${code}`;
 export const playerKey = (code) => `arena-${code}`;
@@ -34,6 +35,12 @@ function Hub({ d }) {
   const [chosen, setChosen] = useState(() => new Set(sets.slice(0, 1).map((s) => s.id)));
   const [count, setCount] = useState(15);
   const [minutes, setMinutes] = useState(3);
+  const vip = isVip(user);
+  const [zone, setZone] = useState('classic');
+  const [bots, setBots] = useState(0);
+  const [botLevel, setBotLevel] = useState('easy');
+  const pickZone = (z) => (z.free || vip ? setZone(z.id) : nav('/subscribe'));
+  const pickLevel = (l) => (l.free || vip ? setBotLevel(l.id) : nav('/subscribe'));
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [quick, setQuick] = useState(false);
@@ -52,7 +59,7 @@ function Hub({ d }) {
   const host = async () => {
     setBusy(true);
     try {
-      const r = await api.post('/game/rooms', { mode, questions: count, minutes, set_ids: [...chosen] });
+      const r = await api.post('/game/rooms', { mode, questions: count, minutes, set_ids: [...chosen], zone, bots: mode === 'duel' ? Math.min(1, bots) : bots, bot_level: botLevel });
       store.set(hostKey(r.code), r.host_token);
       // students and duel hosts play too; a teacher usually just shows the board
       nav(`/play/${r.code}${user.role === 'master' && mode !== 'duel' ? '?screen=1' : ''}`);
@@ -89,6 +96,34 @@ function Hub({ d }) {
               <b>{m.title}</b><small>{m.text}</small>
             </button>
           ))}
+        </div>
+        <div className="arena-field">
+          <b>Zone</b>
+          <div className="arena-zones">
+            {ZONES.map((z) => (
+              <button key={z.id} type="button" className={`arena-zone z-${z.id} ${zone === z.id ? 'on' : ''} ${!z.free && !vip ? 'locked' : ''}`} onClick={() => pickZone(z)} aria-pressed={zone === z.id}>
+                {!z.free && <span className="vip">{vip ? 'VIP' : 'VIP · locked'}</span>}
+                <b>{z.name}</b><small>{z.text}</small>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="arena-field">
+          <b>Bots</b>
+          <div className="arena-bots">
+            <select value={bots} onChange={(e) => setBots(Number(e.target.value))} aria-label="Number of bots">
+              {(mode === 'duel' ? [0, 1] : [0, 1, 2, 3, 4, 5, 6]).map((n) => <option key={n} value={n}>{n === 0 ? 'No bots' : `${n} bot${n > 1 ? 's' : ''}`}</option>)}
+            </select>
+            <div className="arena-lvls" style={{ opacity: bots ? 1 : 0.5 }}>
+              {BOT_LEVELS.map((l) => (
+                <button key={l.id} type="button" className={`arena-lvl l-${l.id} ${botLevel === l.id ? 'on' : ''} ${!l.free && !vip ? 'locked' : ''}`} onClick={() => pickLevel(l)} aria-pressed={botLevel === l.id}>
+                  {!l.free && !vip && <span className="vip">VIP</span>}
+                  <b>{l.name}</b><small>{l.text}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+          <small className="muted">Bots play alongside real players, so you can practise even when you are alone.{!vip && ' Easy bots and the Classic zone are free; the rest come with VIP.'}</small>
         </div>
         <div className="arena-opts">
           <div>

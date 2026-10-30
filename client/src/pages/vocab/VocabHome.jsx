@@ -4,7 +4,6 @@ import { api } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Confirm, Field, Gate, Modal, useAsync } from '../../components/ui.jsx';
 import { IconArrow, IconCrown, IconEdit, IconGame, IconLock, IconPlay, IconPlus, IconTrash, IconUpload } from '../../components/icons.jsx';
-import Character from '../../components/Character.jsx';
 import { VideoPlayer } from '../student/Roadmap.jsx';
 import ImportWords from './ImportWords.jsx';
 
@@ -52,7 +51,6 @@ function Home({ d, reload }) {
           <div><b>{t.seen - t.learned}</b><span>learning</span></div>
           <div><b>{t.due}</b><span>due now</span></div>
         </div>
-        <div className="v-hero-chars" aria-hidden="true"><Character kind="owl" size={96} /><Character kind="fox" size={70} /><Character kind="chick" size={58} /></div>
       </section>
 
       {!d.full && (

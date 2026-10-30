@@ -33,6 +33,8 @@ ALTER TABLE game_rooms ENABLE ROW LEVEL SECURITY; ALTER TABLE game_players ENABL
 ALTER TABLE game_rooms ADD COLUMN IF NOT EXISTS quick BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE game_players ADD COLUMN IF NOT EXISTS is_bot BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE game_players ADD COLUMN IF NOT EXISTS bot_level REAL NOT NULL DEFAULT 0;
+ALTER TABLE game_players ADD COLUMN IF NOT EXISTS bot_speed REAL NOT NULL DEFAULT 1;
+ALTER TABLE game_rooms ADD COLUMN IF NOT EXISTS zone TEXT NOT NULL DEFAULT 'classic';
 `);
 }
 
@@ -89,7 +91,16 @@ async function finishIfDone(room) {
 }
 
 // ---------- bots: answer at a human pace, right about `bot_level` of the time ----------
-const BOT_NAMES = ['Lexi', 'Wordy', 'Nova', 'Quill', 'Echo', 'Pixel', 'Sage', 'Zippy', 'Mochi', 'Rio'];
+const BOT_NAMES = ['Lexi', 'Wordy', 'Nova', 'Quill', 'Echo', 'Pixel', 'Sage', 'Zippy', 'Mochi', 'Rio', 'Juno', 'Kiwi', 'Taro', 'Blip'];
+// accuracy and seconds per question (min + random spread)
+export const BOT_LEVELS = {
+  easy: { acc: 0.45, base: 6, spread: 5 },
+  medium: { acc: 0.68, base: 4.5, spread: 3.5 },
+  hard: { acc: 0.85, base: 3, spread: 2.5 },
+  insane: { acc: 0.97, base: 1.6, spread: 1.4 },
+};
+export const ZONES = ['classic', 'race', 'space', 'ocean', 'jungle'];
+const FREE_BOT = 'easy';
 const rnd = (seed) => { const x = Math.sin(seed * 9301 + 49297) * 233280; return x - Math.floor(x); }; // stable 0..1
 async function runBots(room) {
   if (room.status !== 'playing' || !room.started_at) return;
@@ -99,7 +110,8 @@ async function runBots(room) {
   const elapsed = (Date.now() - new Date(room.started_at).getTime()) / 1000;
   for (const b of bots) {
     let t = 0; let target = 0;
-    for (let i = 0; i < total; i++) { t += 3.5 + rnd(b.id * 101 + i) * 4.5; if (t <= elapsed) target = i + 1; else break; }
+    const L = BOT_LEVELS[Object.keys(BOT_LEVELS).find((k) => BOT_LEVELS[k].base === b.bot_speed) || 'medium'];
+    for (let i = 0; i < total; i++) { t += L.base + rnd(b.id * 101 + i) * L.spread; if (t <= elapsed) target = i + 1; else break; }
     let { answered, streak, score, correct, best_streak: best } = b;
     while (answered < target) {
       const ok = rnd(b.id * 7919 + answered * 31) < b.bot_level;
@@ -113,21 +125,38 @@ async function runBots(room) {
     }
   }
 }
-async function addBot(room, avoid) {
-  const name = BOT_NAMES[crypto.randomInt(BOT_NAMES.length)] + ' (bot)';
-  const avatar = shuffle(CHARACTERS.filter((c) => c !== avoid))[0];
-  await db.run('INSERT INTO game_players (code, token, name, avatar, is_bot, bot_level) VALUES (?,?,?,?, true, ?)',
-    [room.code, 'bot-' + crypto.randomBytes(12).toString('hex'), name, avatar, 0.55 + crypto.randomInt(30) / 100]);
+async function addBot(room, avoid, level = 'medium') {
+  const L = BOT_LEVELS[level] || BOT_LEVELS.medium;
+  const taken = new Set((await db.all('SELECT name, avatar FROM game_players WHERE code = ?', [room.code])).flatMap((p) => [p.name, p.avatar]));
+  const free = BOT_NAMES.filter((n) => !taken.has(`${n} (bot)`));
+  const name = `${(free.length ? free : BOT_NAMES)[crypto.randomInt((free.length ? free : BOT_NAMES).length)]} (bot)`;
+  const avatar = shuffle(CHARACTERS.filter((c) => c !== avoid && !taken.has(c)))[0] || CHARACTERS[0];
+  let team = '';
+  if (room.mode === 'team') {
+    const ps = await db.all('SELECT team FROM game_players WHERE code = ?', [room.code]);
+    team = ps.filter((p) => p.team === TEAMS[0]).length <= ps.filter((p) => p.team === TEAMS[1]).length ? TEAMS[0] : TEAMS[1];
+  }
+  await db.run('INSERT INTO game_players (code, token, name, avatar, team, is_bot, bot_level, bot_speed) VALUES (?,?,?,?,?, true, ?, ?)',
+    [room.code, 'bot-' + crypto.randomBytes(12).toString('hex'), name, avatar, team, L.acc, L.base]);
 }
 const startRoom = (code) => db.run("UPDATE game_rooms SET status = 'playing', started_at = now(), ends_at = now() + (minutes || ' minutes')::interval WHERE code = ? AND status = 'lobby'", [code]);
 
-export function registerGame(app, { h, bad }) {
+export function registerGame(app, { h, bad, accessFor }) {
+  // VIP = an active subscription (the teacher always): themed zones and stronger bots
+  const isVip = async (uid) => {
+    if (!uid) return false;
+    const u = await db.one('SELECT * FROM users WHERE id = ?', [uid]);
+    return !!u && (u.role === 'master' || !!(await accessFor(u)).sub_active || !(await accessFor(u)).subscription_required);
+  };
+  const vipError = (res) => bad(res, 'Themed zones and Medium, Hard and Insane bots are part of the VIP plan', 402, { code: 'vip_required' });
   // quick duel: join someone who is waiting, or open a room and wait (a bot can join after a while)
   app.post('/api/game/quick', h(async (req, res) => {
     const me = tokenUser(req);
     if (!me) return bad(res, 'Please sign in to play a duel', 401);
     const name = cleanName(req.body?.name) || 'Player';
     const avatar = CHARACTERS.includes(req.body?.avatar) ? req.body.avatar : CHARACTERS[crypto.randomInt(CHARACTERS.length)];
+    const zone = ZONES.includes(req.body?.zone) ? req.body.zone : 'classic';
+    if (zone !== 'classic' && !(await isVip(me.id))) return vipError(res);
     await db.run("UPDATE game_rooms SET status = 'finished', finished_at = now() WHERE quick AND status = 'lobby' AND created_at < now() - interval '3 minutes'");
     const waiting = await db.all(`SELECT r.code FROM game_rooms r WHERE r.quick AND r.status = 'lobby' AND r.mode = 'duel' AND (r.host_user IS NULL OR r.host_user <> ?)
       AND (SELECT COUNT(*) FROM game_players p WHERE p.code = r.code) = 1
@@ -151,8 +180,8 @@ export function registerGame(app, { h, bad }) {
     const code = await newCode();
     const host_token = crypto.randomBytes(18).toString('hex');
     const token = crypto.randomBytes(18).toString('hex');
-    await db.run("INSERT INTO game_rooms (code, host_user, host_token, mode, minutes, questions, title, quick) VALUES (?,?,?, 'duel', 2, ?, 'Quick duel', true)",
-      [code, me.id, host_token, JSON.stringify(buildQuestions(pool, 10))]);
+    await db.run("INSERT INTO game_rooms (code, host_user, host_token, mode, minutes, questions, title, quick, zone) VALUES (?,?,?, 'duel', 2, ?, 'Quick duel', true, ?)",
+      [code, me.id, host_token, JSON.stringify(buildQuestions(pool, 10)), zone]);
     await db.run('INSERT INTO game_players (code, token, user_id, name, avatar) VALUES (?,?,?,?,?)', [code, token, me.id, name, avatar]);
     res.json({ code, token, host_token, matched: false });
   }));
@@ -162,9 +191,12 @@ export function registerGame(app, { h, bad }) {
     const room = await db.one('SELECT * FROM game_rooms WHERE code = ?', [String(req.params.code)]);
     if (!room || req.body?.host_token !== room.host_token) return bad(res, 'Only the host can call a bot', 403);
     if (room.status !== 'lobby') return bad(res, 'The game has already started', 409);
-    const players = await db.all('SELECT avatar FROM game_players WHERE code = ?', [room.code]);
+    const level = BOT_LEVELS[req.body?.level] ? req.body.level : FREE_BOT;
+    if (level !== FREE_BOT && !(await isVip(room.host_user))) return vipError(res);
+    const players = await db.all('SELECT avatar, is_bot FROM game_players WHERE code = ?', [room.code]);
     if (room.mode === 'duel' && players.length >= 2) return bad(res, 'This duel already has two players', 409);
-    await addBot(room, players[0]?.avatar);
+    if (players.filter((p) => p.is_bot).length >= 8) return bad(res, 'Up to 8 bots per game');
+    await addBot(room, players[0]?.avatar, level);
     if (room.mode === 'duel') await startRoom(room.code);
     res.json({ ok: true });
   }));
@@ -177,14 +209,20 @@ export function registerGame(app, { h, bad }) {
     const count = Math.min(30, Math.max(5, Number(req.body?.questions) || 15));
     const minutes = Math.min(15, Math.max(1, Number(req.body?.minutes) || 3));
     const setIds = (Array.isArray(req.body?.set_ids) ? req.body.set_ids : []).map(Number).filter(Boolean).slice(0, 20);
+    const zone = ZONES.includes(req.body?.zone) ? req.body.zone : 'classic';
+    const botLevel = BOT_LEVELS[req.body?.bot_level] ? req.body.bot_level : FREE_BOT;
+    const bots = Math.min(mode === 'duel' ? 1 : 8, Math.max(0, Number(req.body?.bots) || 0));
+    if ((zone !== 'classic' || (bots && botLevel !== FREE_BOT)) && !(await isVip(me.id))) return vipError(res);
     const pool = await gameWords(setIds, Math.max(40, count * 3));
     if (pool.length < 4) return bad(res, 'Not enough words in the chosen sets');
     const questions = buildQuestions(pool, count);
     await db.run("DELETE FROM game_rooms WHERE created_at < now() - interval '2 days'");
     const code = await newCode();
     const host_token = crypto.randomBytes(18).toString('hex');
-    await db.run('INSERT INTO game_rooms (code, host_user, host_token, mode, minutes, questions, title) VALUES (?,?,?,?,?,?,?)',
-      [code, me.id, host_token, mode, minutes, JSON.stringify(questions), String(req.body?.title || '').slice(0, 60)]);
+    await db.run('INSERT INTO game_rooms (code, host_user, host_token, mode, minutes, questions, title, zone) VALUES (?,?,?,?,?,?,?,?)',
+      [code, me.id, host_token, mode, minutes, JSON.stringify(questions), String(req.body?.title || '').slice(0, 60), zone]);
+    const room = await db.one('SELECT * FROM game_rooms WHERE code = ?', [code]);
+    for (let i = 0; i < bots; i++) await addBot(room, null, botLevel);
     res.json({ code, host_token, mode, questions: questions.length, minutes });
   }));
 
@@ -222,7 +260,7 @@ export function registerGame(app, { h, bad }) {
     const me = players.find((p) => p.token === token);
     const teams = room.mode === 'team' ? TEAMS.map((t) => { const ps = players.filter((p) => p.team === t); return { name: t, score: ps.reduce((s, p) => s + p.score, 0), players: ps.length }; }) : [];
     res.json({
-      code: room.code, mode: room.mode, quick: !!room.quick, status: room.status, minutes: room.minutes, title: room.title, total: questions.length,
+      code: room.code, mode: room.mode, quick: !!room.quick, zone: room.zone || 'classic', status: room.status, minutes: room.minutes, title: room.title, total: questions.length,
       seconds_left: room.ends_at ? Math.max(0, Math.round((new Date(room.ends_at) - Date.now()) / 1000)) : room.minutes * 60,
       host: isHost, players: players.map(({ token: _t, ...p }) => ({ ...p, me: p.id === me?.id })), teams,
       me: me ? { id: me.id, name: me.name, avatar: me.avatar, team: me.team, score: me.score, answered: me.answered, correct: me.correct, streak: me.streak } : null,
@@ -230,6 +268,13 @@ export function registerGame(app, { h, bad }) {
       questions: me && room.status === 'playing' ? questions.map((q) => ({ kind: q.kind, prompt: q.prompt, uz: q.uz, options: q.options })) : undefined,
       review: room.status === 'finished' ? questions.map((q) => ({ kind: q.kind, prompt: q.prompt, answer: q.options[q.answer], word: q.word })) : undefined,
     });
+  }));
+
+  app.post('/api/game/:code/bot/remove', h(async (req, res) => {
+    const room = await db.one('SELECT * FROM game_rooms WHERE code = ?', [String(req.params.code)]);
+    if (!room || req.body?.host_token !== room.host_token) return bad(res, 'Only the host can remove bots', 403);
+    await db.run("DELETE FROM game_players WHERE code = ? AND id = ? AND is_bot AND ? = 'lobby'", [room.code, Number(req.body?.id), room.status]);
+    res.json({ ok: true });
   }));
 
   app.post('/api/game/:code/start', h(async (req, res) => {

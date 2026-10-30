@@ -5,6 +5,7 @@ import { useAuth } from '../../context.jsx';
 import { Confetti, Spinner } from '../../components/ui.jsx';
 import Character, { CHARACTERS, CHARACTER_KEYS, CHARACTER_SETS } from '../../components/Character.jsx';
 import { hostKey, playerKey, store } from './GameHub.jsx';
+import { BOT_LEVELS, ZONE, ZoneTrack, isVip } from './zones.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
 const ASK = { meaning: 'What does it mean?', word: 'Which word fits this meaning?', blank: 'Fill the gap' };
@@ -31,10 +32,10 @@ export default function Play() {
   const isHost = !!hostToken;
   const playing = !!room.me;
   if (!playing && !(isHost && screen) && room.status !== 'finished') {
-    return <Shell><Join code={code} room={room} onJoined={(t) => { store.set(playerKey(code), t); setToken(t); }} /></Shell>;
+    return <Shell zone={room.zone}><Join code={code} room={room} onJoined={(t) => { store.set(playerKey(code), t); setToken(t); }} /></Shell>;
   }
   return (
-    <Shell>
+    <Shell zone={room.zone}>
       {room.status === 'lobby' && <Lobby room={room} isHost={isHost} hostToken={hostToken} reload={load} />}
       {room.status === 'playing' && (playing && room.me.answered < room.total
         ? <Questions room={room} token={token} reload={load} />
@@ -44,9 +45,9 @@ export default function Play() {
   );
 }
 
-function Shell({ children }) {
+function Shell({ children, zone = 'classic' }) {
   return (
-    <div className="arena">
+    <div className={`arena z-${zone}`}>
       <header className="arena-top"><Link to="/game" className="arena-brand"><Character kind="owl" size={34} /> <b>Word Arena</b></Link></header>
       <main className="arena-main">{children}</main>
     </div>
@@ -92,15 +93,18 @@ function Join({ code, room, onJoined }) {
 
 /** Quick duel: wait for a random opponent; after a while a bot can take the seat (automatically at 25 s). */
 function Searching({ room, isHost, hostToken, reload }) {
+  const { user } = useAuth() || {};
+  const vip = isVip(user);
   const [secs, setSecs] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [level, setLevel] = useState(vip ? 'medium' : 'easy');
   const me = room.players.find((p) => p.me) || room.players[0];
   const bot = useCallback(async () => {
     if (busy || !isHost) return;
     setBusy(true);
-    try { await api.post(`/game/${room.code}/bot`, { host_token: hostToken }); } catch { /* an opponent may have just joined */ }
+    try { await api.post(`/game/${room.code}/bot`, { host_token: hostToken, level }); } catch { /* an opponent may have just joined */ }
     reload();
-  }, [busy, isHost, room.code, hostToken, reload]);
+  }, [busy, isHost, room.code, hostToken, reload, level]);
   useEffect(() => { const t = setInterval(() => setSecs((x) => x + 1), 1000); return () => clearInterval(t); }, []);
   useEffect(() => { if (secs === 25) bot(); }, [secs, bot]);
   return (
@@ -113,6 +117,11 @@ function Searching({ room, isHost, hostToken, reload }) {
       <h2>Looking for an opponent</h2>
       <p>{secs < 25 ? `Any student who presses Quick duel now joins you. ${25 - secs}s until a bot takes the seat.` : 'Calling a bot…'}</p>
       <div className="arena-actions">
+        {isHost && (
+          <select className="arena-lvlsel" value={level} onChange={(e) => setLevel(e.target.value)} aria-label="Bot level">
+            {BOT_LEVELS.map((l) => <option key={l.id} value={l.id} disabled={!l.free && !vip}>{l.name} bot{!l.free && !vip ? ' (VIP)' : ''}</option>)}
+          </select>
+        )}
         {isHost && <button className="btn sun lg" onClick={bot} disabled={busy}>Play against a bot now</button>}
         <Link className="btn on-dark lg" to="/game">Cancel</Link>
       </div>
@@ -120,45 +129,74 @@ function Searching({ room, isHost, hostToken, reload }) {
   );
 }
 
-function Lobby({ room, isHost, hostToken, reload }) {
-  if (room.quick && room.mode === 'duel' && room.players.length < 2) return <Searching room={room} isHost={isHost} hostToken={hostToken} reload={reload} />;
+function Lobby(props) {
+  const { room } = props;
+  if (room.quick && room.mode === 'duel' && room.players.length < 2) return <Searching {...props} />;
+  return <RoomLobby {...props} />;
+}
+
+/** Host: add a bot (Easy is free, the others are VIP). */
+function BotAdder({ room, hostToken, reload, onError }) {
+  const { user } = useAuth() || {};
+  const vip = isVip(user);
+  const [level, setLevel] = useState('easy');
+  const add = async () => {
+    try { await api.post(`/game/${room.code}/bot`, { host_token: hostToken, level }); reload(); }
+    catch (e) { onError(e.message); }
+  };
+  return (
+    <div className="arena-lobby-bots">
+      <select value={level} onChange={(e) => setLevel(e.target.value)} aria-label="Bot level">
+        {BOT_LEVELS.map((l) => <option key={l.id} value={l.id} disabled={!l.free && !vip}>{l.name} bot{!l.free && !vip ? ' (VIP)' : ''}</option>)}
+      </select>
+      <button className="btn on-dark lg" onClick={add}>Add a bot</button>
+    </div>
+  );
+}
+
+function RoomLobby({ room, isHost, hostToken, reload }) {
   const [error, setError] = useState('');
   const start = async () => { try { await api.post(`/game/${room.code}/start`, { host_token: hostToken }); reload(); } catch (e) { setError(e.message); } };
   const url = `${window.location.host}/play/${room.code}`;
+  const rm = async (p) => { try { await api.post(`/game/${room.code}/bot/remove`, { host_token: hostToken, id: p.id }); reload(); } catch (e) { setError(e.message); } };
   const group = (team) => room.players.filter((p) => !team || p.team === team);
   return (
     <div className="arena-lobby">
       <div className="arena-code">
         <small>Join at <b>{url.replace(/\/play\/\d+$/, '/game')}</b> with code</small>
         <strong>{room.code.slice(0, 3)} {room.code.slice(3)}</strong>
-        <small>{room.total} questions · {room.minutes} min · {room.mode === 'team' ? 'Team battle' : room.mode === 'duel' ? 'Duel' : 'Classic'}</small>
+        <small>{room.total} questions · {room.minutes} min · {room.mode === 'team' ? 'Team battle' : room.mode === 'duel' ? 'Duel' : 'Classic'}{room.zone && room.zone !== 'classic' ? ` · ${ZONE[room.zone]?.name}` : ''}</small>
       </div>
+      {room.zone !== 'classic' && room.players.length > 0 && <ZoneTrack room={room} />}
       {room.mode === 'team' ? (
         <div className="arena-teams">
           {room.teams.map((t) => (
             <div key={t.name} className={`arena-team ${t.name.toLowerCase()}`}>
               <h3>Team {t.name}</h3>
-              <div className="arena-crowd">{group(t.name).map((p) => <Player key={p.id} p={p} />)}</div>
+              <div className="arena-crowd">{group(t.name).map((p) => <Player key={p.id} p={p} onRemove={isHost && p.is_bot ? rm : null} />)}</div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="arena-crowd big">{group().map((p) => <Player key={p.id} p={p} />)}{!room.players.length && <p className="muted">Waiting for players…</p>}</div>
+        <div className="arena-crowd big">{group().map((p) => <Player key={p.id} p={p} onRemove={isHost && p.is_bot ? rm : null} />)}{!room.players.length && <p className="muted">Waiting for players…</p>}</div>
       )}
       <div className="arena-actions">
         <span className="arena-count">{room.players.length} player{room.players.length === 1 ? '' : 's'}{room.mode === 'duel' ? ' / 2' : ''}</span>
         {isHost ? <button className="btn sun lg" onClick={start}>Start the game</button> : <span className="arena-wait">Waiting for the host to start…</span>}
       </div>
+      {isHost && !(room.mode === 'duel' && room.players.length >= 2) && <BotAdder room={room} hostToken={hostToken} reload={reload} onError={setError} />}
       {error && <p className="arena-err">{error}</p>}
     </div>
   );
 }
 
-function Player({ p, score }) {
+function Player({ p, score, onRemove }) {
   return (
     <div className={`arena-player ${p.me ? 'me' : ''}`}>
+      {onRemove && <button className="rm" onClick={() => onRemove(p)} aria-label={`Remove ${p.name}`}>×</button>}
       <Character kind={p.avatar} size={56} />
       <b>{p.name}</b>
+      {p.is_bot && <span className="bot">BOT</span>}
       {score && <small>{p.score}</small>}
     </div>
   );
@@ -177,7 +215,7 @@ function Questions({ room, token, reload }) {
     try {
       const r = await api.post(`/game/${room.code}/answer`, { token, qi, choice: k });
       setFb({ pick: k, ...r });
-      setMe((m) => ({ ...m, score: r.score, streak: r.streak }));
+      setMe((m) => ({ ...m, score: r.score, streak: r.streak, correct: (m.correct || 0) + (r.correct ? 1 : 0) }));
       setTimeout(() => { setFb(null); setQi((i) => i + 1); busy.current = false; if (r.done) reload(); }, r.correct ? 700 : 1400);
     } catch { busy.current = false; reload(); }
   };
@@ -194,7 +232,8 @@ function Questions({ room, token, reload }) {
         <span className={`arena-streak ${me.streak >= 2 ? 'hot' : ''}`}>{me.streak >= 2 ? `${me.streak} in a row` : 'Streak 0'}</span>
         <span className="arena-score"><Character kind={me.avatar} size={30} /> {me.score}</span>
       </div>
-      {room.mode === 'duel' && (() => {
+      {room.zone !== 'classic' && <ZoneTrack room={{ ...room, players: room.players.map((p) => (p.me ? { ...p, correct: Math.max(me.correct || 0, p.correct) } : p)) }} limit={5} compact />}
+      {room.mode === 'duel' && room.zone === 'classic' && (() => {
         const opp = room.players.find((p) => !p.me);
         if (!opp) return null;
         const max = Math.max(1, me.score, opp.score);
@@ -238,7 +277,8 @@ function Board({ room, isHost, hostToken, reload }) {
           })}
         </div>
       )}
-      <ol className="arena-rank">
+      {room.zone !== 'classic' && <ZoneTrack room={room} />}
+      <ol className={`arena-rank ${room.zone !== 'classic' ? 'slim' : ''}`}>
         {room.players.map((p, i) => (
           <li key={p.id} className={p.me ? 'me' : ''}>
             <span className="pos">{i + 1}</span><Character kind={p.avatar} size={40} />

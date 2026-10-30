@@ -205,7 +205,7 @@ app.post('/api/auth/google', h(async (req, res) => {
 // public website: home content, guide pages and free practice tests (no sign-in)
 registerSitePublic(app, { h, bad, secret: getSecret });
 registerBot(app, { h, bad });
-registerGame(app, { h, bad }); // Word Arena: guests can join with a code
+registerGame(app, { h, bad, accessFor: (u) => accessFor(u) }); // Word Arena: guests can join with a code
 
 // profile photos: public URLs so <img> tags work without a token
 app.get('/api/avatars/:id', h(async (req, res) => {
