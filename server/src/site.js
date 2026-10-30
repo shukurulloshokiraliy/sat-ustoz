@@ -12,6 +12,7 @@ import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { db } from './db.js';
 import { DOMAINS } from './qbank.js';
+import { subActive } from './auth.js';
 
 export async function migrateSite() {
   await db.exec(`
@@ -43,6 +44,8 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
   finished_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_practice_user ON practice_sessions(user_id, started_at);
+ALTER TABLE practice_sessions ADD COLUMN IF NOT EXISTS ip TEXT;
+CREATE INDEX IF NOT EXISTS idx_practice_ip ON practice_sessions(ip, started_at);
 ALTER TABLE site_blocks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE site_pages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE practice_sessions ENABLE ROW LEVEL SECURITY;
@@ -95,7 +98,7 @@ export const DEFAULT_BLOCKS = {
     { id: 'courses', label: 'Courses', enabled: true },
     { id: 'community', label: 'Community', enabled: false },
   ],
-  practice: { pool_percent: 40, test_size: 27, minutes: 32 },
+  practice: { pool_percent: 40, test_size: 27, minutes: 32, daily_limit: 100 },
   about: {
     title: 'About SAT Ustoz',
     intro: 'SAT Ustoz is an online platform for SAT Reading & Writing. Students from Uzbekistan learn step by step — from 200 to 800 — with video lessons, clear notes, practice with instant feedback and real exam-style tests.',
@@ -166,6 +169,29 @@ function optionalUser(SECRET) {
 /** Rough SAT R&W scaled score from the share of correct answers (estimate only). */
 const estimate = (pct) => Math.round((200 + 600 * Math.pow(pct, 0.9)) / 10) * 10;
 
+/**
+ * Free daily limit: guests and free accounts may answer `daily_limit` practice questions in any 24 hours
+ * (rolling window). Subscribers and the teacher are unlimited. Accounts are counted per account (students in one
+ * classroom share an IP), guests by a hashed IP.
+ */
+const ipKey = (req) => crypto.createHash('sha256').update(String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim() + ':sat-ustoz').digest('hex').slice(0, 24);
+async function quota(req, u, cfg) {
+  const limit = Number(cfg.daily_limit) || 0;
+  let unlimited = limit <= 0;
+  if (u && !unlimited) {
+    const row = await db.one('SELECT role, sub_until FROM users WHERE id = ?', [u.id]);
+    unlimited = row?.role === 'master' || subActive(row);
+  }
+  if (unlimited) return { unlimited: true, limit, used: 0, left: Infinity };
+  const ip = ipKey(req);
+  const r = await db.one(`SELECT COALESCE(SUM(total), 0) AS used, MIN(started_at) AS first FROM practice_sessions
+    WHERE started_at > now() - interval '24 hours' AND ${u ? 'user_id = ?' : 'ip = ? AND user_id IS NULL'}`, [u ? u.id : ip]);
+  const used = Number(r.used || 0);
+  const resets_at = r.first ? new Date(new Date(r.first).getTime() + 24 * 3600e3).toISOString() : null;
+  return { unlimited: false, limit, used, left: Math.max(0, limit - used), resets_at };
+}
+const pubQuota = (q) => ({ unlimited: q.unlimited, limit: q.limit, used: q.used, left: q.unlimited ? null : q.left, resets_at: q.resets_at || null });
+
 export function registerSitePublic(app, { h, bad, secret }) {
   const who = optionalUser(secret);
 
@@ -200,7 +226,7 @@ export function registerSitePublic(app, { h, bad, secret }) {
     }));
     const u = who(req);
     const recent = u ? await db.all('SELECT id, score, total, finished_at FROM practice_sessions WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 5', [u.id]) : [];
-    res.json({ seed, visible: ids.length, total, percent: cfg.pool_percent, test_size: cfg.test_size, minutes: cfg.minutes, domains, recent });
+    res.json({ seed, visible: ids.length, total, percent: cfg.pool_percent, test_size: cfg.test_size, minutes: cfg.minutes, domains, recent, quota: pubQuota(await quota(req, u, cfg)), signed_in: !!u });
   }));
 
   // start a test: up to test_size random questions from this visit's pool, after filters
@@ -210,18 +236,22 @@ export function registerSitePublic(app, { h, bad, secret }) {
     const { ids } = await poolIds(seed, cfg);
     const skills = (Array.isArray(req.body?.skills) ? req.body.skills : []).map(String).slice(0, 20);
     const levels = (Array.isArray(req.body?.levels) ? req.body.levels : []).filter((l) => ['easy', 'medium', 'hard'].includes(l));
+    const u = who(req);
+    const q = await quota(req, u, cfg);
+    const size = q.unlimited ? cfg.test_size : Math.min(cfg.test_size, q.left);
+    if (size < 3) return bad(res, 'You have used today’s free questions. The limit resets 24 hours after your first test — or get unlimited practice with a subscription.', 429, { code: 'daily_limit', quota: pubQuota(q) });
     const rows = await db.all(`SELECT * FROM qbank_questions WHERE active AND id = ANY(?::text[])
       ${skills.length ? 'AND skill_id = ANY(?::text[])' : ''} ${levels.length ? 'AND difficulty = ANY(?::text[])' : ''}
-      ORDER BY random() LIMIT ?`, [ids, ...(skills.length ? [skills] : []), ...(levels.length ? [levels] : []), cfg.test_size]);
+      ORDER BY random() LIMIT ?`, [ids, ...(skills.length ? [skills] : []), ...(levels.length ? [levels] : []), size]);
     if (rows.length < 3) return bad(res, 'Not enough questions for these filters today — choose more skills or levels.');
     // SAT order: by domain the way the real module goes
     const order = new Map(DOMAINS.map((d, i) => [d.domain, i]));
     rows.sort((a, b) => (order.get(a.domain) ?? 9) - (order.get(b.domain) ?? 9));
     const id = crypto.randomBytes(9).toString('base64url');
-    const u = who(req);
-    await db.run('INSERT INTO practice_sessions (id, user_id, question_ids, filters, total) VALUES (?,?,?,?,?)',
-      [id, u?.id || null, JSON.stringify(rows.map((r) => r.id)), JSON.stringify({ skills, levels }), rows.length]);
-    res.json({ id, minutes: Math.max(5, Math.round((cfg.minutes * rows.length) / cfg.test_size)), questions: rows.map(pubQ) });
+    await db.run('INSERT INTO practice_sessions (id, user_id, question_ids, filters, total, ip) VALUES (?,?,?,?,?,?)',
+      [id, u?.id || null, JSON.stringify(rows.map((r) => r.id)), JSON.stringify({ skills, levels }), rows.length, ipKey(req)]);
+    res.json({ id, minutes: Math.max(5, Math.round((cfg.minutes * rows.length) / cfg.test_size)), questions: rows.map(pubQ),
+      quota: q.unlimited ? pubQuota(q) : pubQuota({ ...q, used: q.used + rows.length, left: q.left - rows.length }) });
   }));
 
   // finish: answers → score, estimate, per-skill result and the full review
@@ -266,7 +296,7 @@ export function registerSiteAdmin(app, { h, bad, requireMaster }) {
     let data = req.body?.data;
     if (key === 'practice') {
       const n = (v, lo, hi, d) => Math.min(hi, Math.max(lo, Math.round(Number(v) || d)));
-      data = { pool_percent: n(data?.pool_percent, 10, 100, 40), test_size: n(data?.test_size, 5, 60, 27), minutes: n(data?.minutes, 5, 120, 32) };
+      data = { pool_percent: n(data?.pool_percent, 10, 100, 40), test_size: n(data?.test_size, 5, 60, 27), minutes: n(data?.minutes, 5, 120, 32), daily_limit: Math.min(5000, Math.max(0, Math.round(Number(data?.daily_limit ?? 100)))) };
     }
     if (key === 'about' && data) {
       for (const f of ['instagram', 'telegram', 'photo_url']) {

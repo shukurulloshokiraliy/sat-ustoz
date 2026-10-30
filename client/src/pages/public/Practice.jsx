@@ -54,13 +54,21 @@ export default function Practice() {
     try {
       const t = await api.post('/public/practice/start', { seed, skills, levels });
       setResult(null); setTest(t);
-    } catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); }
+      setMeta((m) => (m ? { ...m, quota: t.quota } : m));
+    } catch (e) {
+      toast(e.message, 'bad');
+      if (e.status === 429) api.get(`/public/practice?seed=${seed}`).then(setMeta).catch(() => {});
+    } finally { setBusy(false); }
   };
   const again = () => { setTest(null); setResult(null); setSeed(newSeed()); window.scrollTo({ top: 0 }); };
 
   if (test && !result) return <Runner test={test} onDone={setResult} onQuit={() => setTest(null)} />;
   if (result) return <Result r={result} onAgain={again} />;
 
+  const q = meta?.quota;
+  const cap = meta ? Math.min(meta.test_size, q && !q.unlimited ? q.left : Infinity) : 0;
+  const size = Math.min(count, cap);
+  const blocked = q && !q.unlimited && q.left < 3;
   const toggleSkill = (id) => setSkills((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   const toggleDomain = (d) => {
     const ids = d.skills.map((s) => s.id);
@@ -112,13 +120,16 @@ export default function Practice() {
             })}
           </div>
           <aside className="pt-side">
+            {q && <Quota q={q} signedIn={meta.signed_in} />}
+            {blocked ? <LimitCard q={q} signedIn={meta.signed_in} /> : (
             <div className="pt-start">
-              <Ring value={Math.min(100, Math.round((Math.min(count, meta.test_size) / meta.test_size) * 100))} size={130} label={`${Math.min(count, meta.test_size)}`} sub="questions" />
+              <Ring value={Math.min(100, Math.round((size / meta.test_size) * 100))} size={130} label={`${size}`} sub="questions" />
               <p>{skills.length ? `${skills.length} skill${skills.length > 1 ? 's' : ''}` : 'All 10 skills'} · {levels.length ? levels.map((l) => LEVEL[l]).join(', ') : 'mixed levels'}</p>
               {count < 3 && <p className="bad-text">Not enough questions in today’s set for these filters — add skills or press “New set”.</p>}
-              <button className="btn sun lg block" disabled={busy || count < 3} onClick={start}>{busy ? 'Preparing…' : 'Start the test'} <IconArrow /></button>
-              <small className="muted">Timer: {Math.max(5, Math.round((meta.minutes * Math.min(count, meta.test_size)) / meta.test_size))} min · you can mark questions for review</small>
-            </div>
+              <button className="btn sun lg block" disabled={busy || size < 3} onClick={start}>{busy ? 'Preparing…' : 'Start the test'} <IconArrow /></button>
+              <small className="muted">Timer: {Math.max(5, Math.round((meta.minutes * size) / meta.test_size))} min · you can mark questions for review</small>
+              {cap < meta.test_size && <small className="muted">A shorter test — {q.left} free questions left today.</small>}
+            </div>)}
             {meta.recent?.length > 0 && (
               <div className="pt-box">
                 <h2>Your last tests</h2>
@@ -128,6 +139,39 @@ export default function Practice() {
           </aside>
         </div>
       )}
+    </div>
+  );
+}
+
+const untilText = (iso) => {
+  if (!iso) return '24 hours';
+  const ms = new Date(iso) - Date.now();
+  if (ms <= 0) return 'a moment';
+  const mins = Math.ceil(ms / 60e3);
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h ? `${h} h ${m} min` : `${m} min`;
+};
+
+/** Free daily allowance: guests and free accounts — N questions per 24 hours; subscribers are unlimited. */
+function Quota({ q, signedIn }) {
+  if (q.unlimited) return <div className="pt-quota pro">⚡ Unlimited practice</div>;
+  const pct = Math.min(100, Math.round((q.used / Math.max(1, q.limit)) * 100));
+  return (
+    <div className="pt-quota">
+      <div className="row between"><b>Free today</b><span>{q.left} / {q.limit} questions left</span></div>
+      <i><em style={{ width: `${100 - pct}%` }} /></i>
+      <small className="muted">Resets {q.used ? `in ${untilText(q.resets_at)}` : '24 hours after your first test'}. {signedIn ? <Link to="/subscribe">Unlimited with a subscription →</Link> : <Link to="/signup">Save your progress →</Link>}</small>
+    </div>
+  );
+}
+function LimitCard({ q, signedIn }) {
+  return (
+    <div className="pt-start">
+      <span style={{ fontSize: '2.4rem' }}>⏳</span>
+      <h2 style={{ color: '#fff' }}>Today’s free questions are used</h2>
+      <p>You answered {Math.min(q.used, q.limit)} questions in the last 24 hours — great work! New free questions open in <b>{untilText(q.resets_at)}</b>.</p>
+      <Link className="btn sun lg block" to={signedIn ? '/subscribe' : '/signup'}>{signedIn ? 'Get unlimited practice' : 'Start free trial'}</Link>
+      <small>{signedIn ? 'Subscribers practise without limits.' : 'Create an account to save your results; subscribers practise without limits.'}</small>
     </div>
   );
 }

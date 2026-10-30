@@ -332,6 +332,8 @@ function PracticeEditor({ block, bank, reload }) {
         <label className="field"><span>Questions per test</span><input type="number" min={5} max={60} value={p.test_size} onChange={set('test_size')} /><small className="muted">Real SAT module: 27</small></label>
         <label className="field"><span>Minutes per test</span><input type="number" min={5} max={120} value={p.minutes} onChange={set('minutes')} /><small className="muted">Real SAT module: 32</small></label>
       </div>
+      <label className="field" style={{ maxWidth: 420 }}><span>Free questions per 24 hours</span><input type="number" min={0} max={5000} value={p.daily_limit ?? 100} onChange={set('daily_limit')} />
+        <small className="muted">For guests and free accounts (≈ {Math.floor((Number(p.daily_limit ?? 100) || 0) / (Number(p.test_size) || 27))} full tests). Subscribers are unlimited. 0 = no limit.</small></label>
       <p className="muted">Hidden questions (Question Bank → eye icon) never appear in practice tests.</p>
       <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn primary" disabled={busy} onClick={() => save(p)}>{busy ? 'Saving…' : 'Save'}</button></div>
     </Card>
