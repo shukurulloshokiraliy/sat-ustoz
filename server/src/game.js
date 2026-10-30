@@ -157,12 +157,15 @@ export function registerGame(app, { h, bad, accessFor }) {
     const avatar = CHARACTERS.includes(req.body?.avatar) ? req.body.avatar : CHARACTERS[crypto.randomInt(CHARACTERS.length)];
     const zone = ZONES.includes(req.body?.zone) ? req.body.zone : 'classic';
     if (zone !== 'classic' && !(await isVip(me.id))) return vipError(res);
+    const vsBot = req.body?.opponent === 'bot';
+    const level = BOT_LEVELS[req.body?.level] ? req.body.level : FREE_BOT;
+    if (vsBot && level !== FREE_BOT && !(await isVip(me.id))) return vipError(res);
     await db.run("UPDATE game_rooms SET status = 'finished', finished_at = now() WHERE quick AND status = 'lobby' AND created_at < now() - interval '3 minutes'");
     const waiting = await db.all(`SELECT r.code FROM game_rooms r WHERE r.quick AND r.status = 'lobby' AND r.mode = 'duel' AND (r.host_user IS NULL OR r.host_user <> ?)
       AND (SELECT COUNT(*) FROM game_players p WHERE p.code = r.code) = 1
       AND (SELECT MAX(p.seen_at) FROM game_players p WHERE p.code = r.code) > now() - interval '8 seconds'
       ORDER BY r.created_at LIMIT 3`, [me.id]);
-    for (const w of waiting) {
+    for (const w of vsBot ? [] : waiting) {
       const token = crypto.randomBytes(18).toString('hex');
       const other = await db.one('SELECT name FROM game_players WHERE code = ?', [w.code]);
       const nick = other && other.name.toLowerCase() === name.toLowerCase() ? `${name} 2` : name;
@@ -183,7 +186,12 @@ export function registerGame(app, { h, bad, accessFor }) {
     await db.run("INSERT INTO game_rooms (code, host_user, host_token, mode, minutes, questions, title, quick, zone) VALUES (?,?,?, 'duel', 2, ?, 'Quick duel', true, ?)",
       [code, me.id, host_token, JSON.stringify(buildQuestions(pool, 10)), zone]);
     await db.run('INSERT INTO game_players (code, token, user_id, name, avatar) VALUES (?,?,?,?,?)', [code, token, me.id, name, avatar]);
-    res.json({ code, token, host_token, matched: false });
+    if (vsBot) {
+      // straight into a duel with the chosen bot
+      await addBot(await db.one('SELECT * FROM game_rooms WHERE code = ?', [code]), avatar, level);
+      await startRoom(code);
+    }
+    res.json({ code, token, host_token, matched: vsBot });
   }));
 
   // no opponent came: the host adds a bot and the duel starts

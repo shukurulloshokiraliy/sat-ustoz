@@ -9,6 +9,19 @@ import { BOT_LEVELS, ZONES, isVip } from './zones.jsx';
 
 export const hostKey = (code) => `arena-host-${code}`;
 export const playerKey = (code) => `arena-${code}`;
+/** Small pill buttons used instead of native selects. options: [{ value, label, lock }] */
+export function Chips({ value, onChange, options, label, dark }) {
+  return (
+    <div className={`chips ${dark ? 'dark' : ''}`} role="radiogroup" aria-label={label}>
+      {options.map((o) => (
+        <button key={o.value} type="button" role="radio" aria-checked={value === o.value} className={`${value === o.value ? 'on' : ''} ${o.lock ? 'locked' : ''}`} onClick={() => onChange(o.value)}>
+          {o.label}{o.lock && <span className="vip">VIP</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+export const DUEL_KEY = 'arena-duel';
 export const store = {
   get: (k) => { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
@@ -44,11 +57,17 @@ function Hub({ d }) {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [quick, setQuick] = useState(false);
+  const saved = (() => { try { return JSON.parse(store.get(DUEL_KEY) || '{}'); } catch { return {}; } })();
+  const [opp, setOpp] = useState(saved.opp === 'bot' ? 'bot' : 'player');
+  const [duelLevel, setDuelLevel] = useState(saved.level && (vip || saved.level === 'easy') ? saved.level : 'easy');
+  const levelOpts = BOT_LEVELS.map((l) => ({ value: l.id, label: l.name, lock: !l.free && !vip }));
+  const pickDuelLevel = (v) => (BOT_LEVELS.find((l) => l.id === v).free || vip ? setDuelLevel(v) : nav('/subscribe'));
   const quickDuel = async () => {
     setQuick(true);
+    store.set(DUEL_KEY, JSON.stringify({ opp, level: duelLevel }));
     try {
       const avatar = CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)];
-      const r = await api.post('/game/quick', { name: (user.name || 'Player').split(' ')[0], avatar, set_ids: sets.map((x) => x.id) });
+      const r = await api.post('/game/quick', { name: (user.name || 'Player').split(' ')[0], avatar, set_ids: sets.map((x) => x.id), opponent: opp, level: duelLevel });
       store.set(playerKey(r.code), r.token);
       if (r.host_token) store.set(hostKey(r.code), r.host_token);
       nav(`/play/${r.code}`);
@@ -73,9 +92,12 @@ function Hub({ d }) {
           <small>WORD ARENA</small>
           <h1>Battle with words.</h1>
           <p>Host a live vocabulary game for your class or challenge a friend to a duel. Players join from any phone with a 6-digit code.</p>
-          <div className="arena-quick">
-            <button className="btn sun lg" onClick={quickDuel} disabled={quick}>{quick ? 'Finding a player…' : 'Quick duel'} <IconArrow /></button>
-            <small>Play 1-on-1 with a random student. If nobody is free, a bot takes the seat.</small>
+          <div className="duel-box">
+            <b>Quick duel</b>
+            <Chips dark label="Opponent" value={opp} onChange={setOpp} options={[{ value: 'player', label: 'Random player' }, { value: 'bot', label: 'Bot' }]} />
+            <Chips dark label="Bot level" value={duelLevel} onChange={pickDuelLevel} options={levelOpts} />
+            <small>{opp === 'bot' ? 'Starts right away against this bot.' : 'Plays a free student; if nobody comes in 25 s, this bot takes the seat.'}</small>
+            <button className="btn sun lg" onClick={quickDuel} disabled={quick}>{quick ? 'Starting…' : 'Play'} <IconArrow /></button>
           </div>
           <form className="arena-join" onSubmit={(e) => { e.preventDefault(); if (/^\d{6}$/.test(code)) nav(`/play/${code}`); }}>
             <input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="Game code" aria-label="Game code" />
@@ -111,17 +133,15 @@ function Hub({ d }) {
         <div className="arena-field">
           <b>Bots</b>
           <div className="arena-bots">
-            <select value={bots} onChange={(e) => setBots(Number(e.target.value))} aria-label="Number of bots">
-              {(mode === 'duel' ? [0, 1] : [0, 1, 2, 3, 4, 5, 6]).map((n) => <option key={n} value={n}>{n === 0 ? 'No bots' : `${n} bot${n > 1 ? 's' : ''}`}</option>)}
-            </select>
-            <div className="arena-lvls" style={{ opacity: bots ? 1 : 0.5 }}>
+            <Chips label="Number of bots" value={bots} onChange={setBots} options={(mode === 'duel' ? [0, 1] : [0, 1, 2, 3, 4, 6]).map((n) => ({ value: n, label: n === 0 ? 'None' : String(n) }))} />
+            {bots > 0 && <div className="arena-lvls">
               {BOT_LEVELS.map((l) => (
                 <button key={l.id} type="button" className={`arena-lvl l-${l.id} ${botLevel === l.id ? 'on' : ''} ${!l.free && !vip ? 'locked' : ''}`} onClick={() => pickLevel(l)} aria-pressed={botLevel === l.id}>
                   {!l.free && !vip && <span className="vip">VIP</span>}
                   <b>{l.name}</b><small>{l.text}</small>
                 </button>
               ))}
-            </div>
+            </div>}
           </div>
           <small className="muted">Bots play alongside real players, so you can practise even when you are alone.{!vip && ' Easy bots and the Classic zone are free; the rest come with VIP.'}</small>
         </div>
@@ -134,8 +154,8 @@ function Hub({ d }) {
             {!d.full && <small className="muted">Subscribe to play with all 15 sets.</small>}
           </div>
           <div className="arena-nums">
-            <label>Questions<select value={count} onChange={(e) => setCount(Number(e.target.value))}>{[10, 15, 20, 30].map((n) => <option key={n}>{n}</option>)}</select></label>
-            <label>Time<select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}>{[2, 3, 5, 8].map((n) => <option key={n} value={n}>{n} min</option>)}</select></label>
+            <div><b>Questions</b><Chips label="Questions" value={count} onChange={setCount} options={[10, 15, 20, 30].map((n) => ({ value: n, label: String(n) }))} /></div>
+            <div><b>Time</b><Chips label="Time" value={minutes} onChange={setMinutes} options={[2, 3, 5, 8].map((n) => ({ value: n, label: `${n} min` }))} /></div>
           </div>
         </div>
         <button className="btn primary lg block" disabled={busy || !chosen.size} onClick={host}>{busy ? 'Creating…' : 'Create game'} <IconArrow /></button>

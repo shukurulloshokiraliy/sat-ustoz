@@ -1628,3 +1628,23 @@ a.card:hover, .card.clickable:hover { transform: translateY(-2px); box-shadow: 0
 @media (max-width: 640px) { .arena-bots { grid-template-columns: 1fr; } }
 .arena-rank.slim li { padding-top: 6px; padding-bottom: 6px; }
 .arena-lvlsel { width: auto; height: 48px; border-radius: 14px; }
+/* pill choices instead of native selects */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 99px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font: 700 .88rem var(--font); cursor: pointer; transition: background .15s, border-color .15s, transform .15s; }
+.chips button:hover { transform: translateY(-1px); border-color: var(--primary); }
+.chips button.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.chips button .vip { padding: 1px 6px; border-radius: 99px; background: linear-gradient(90deg, #FFCB3D, #FF9A3D); color: #161B3D; font: 800 .58rem var(--font); letter-spacing: .05em; }
+.chips button.locked { opacity: .75; }
+.chips.dark button { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); color: #fff; }
+.chips.dark button:hover { border-color: #FFCB3D; } .chips.dark button.on { background: #FFCB3D; border-color: #FFCB3D; color: #161B3D; }
+.duel-box { display: grid; gap: 10px; justify-items: start; padding: 16px; margin: 6px 0 14px; border-radius: 18px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); max-width: 520px; }
+.duel-box > b { font: 700 1.05rem var(--display); color: #fff; } .duel-box small { color: #C9CFE6; font-size: .84rem; }
+.arena-nums { display: grid; gap: 12px; } .arena-nums b { display: block; font-size: .9rem; margin-bottom: 6px; }
+.arena-lobby-bots { color: #C9CFE6; font-weight: 700; }
+.arena-bots { grid-template-columns: 1fr; }
+/* searching screen on large screens */
+.arena-search { align-content: center; min-height: 70vh; max-width: 640px; margin: 0 auto; }
+.arena-search .arena-actions { justify-content: center; }
+.duel-box small { letter-spacing: normal; text-transform: none; font-weight: 500; line-height: 1.45; }
+.arena-join input { font-size: 1.05rem; letter-spacing: .2em; } .arena-join input::placeholder { letter-spacing: normal; font-size: .95rem; }
+@media (min-width: 1100px) { .arena-hero { align-items: center; } }

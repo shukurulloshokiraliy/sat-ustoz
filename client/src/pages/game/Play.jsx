@@ -4,7 +4,7 @@ import { api } from '../../api.js';
 import { useAuth } from '../../context.jsx';
 import { Confetti, Spinner } from '../../components/ui.jsx';
 import Character, { CHARACTERS, CHARACTER_KEYS, CHARACTER_SETS } from '../../components/Character.jsx';
-import { hostKey, playerKey, store } from './GameHub.jsx';
+import { Chips, DUEL_KEY, hostKey, playerKey, store } from './GameHub.jsx';
 import { BOT_LEVELS, ZONE, ZoneTrack, isVip } from './zones.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
@@ -97,7 +97,8 @@ function Searching({ room, isHost, hostToken, reload }) {
   const vip = isVip(user);
   const [secs, setSecs] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [level, setLevel] = useState(vip ? 'medium' : 'easy');
+  const level = (() => { try { const l = JSON.parse(store.get(DUEL_KEY) || '{}').level; return l && (vip || l === 'easy') ? l : 'easy'; } catch { return 'easy'; } })();
+  const levelName = BOT_LEVELS.find((l) => l.id === level)?.name;
   const me = room.players.find((p) => p.me) || room.players[0];
   const bot = useCallback(async () => {
     if (busy || !isHost) return;
@@ -115,14 +116,9 @@ function Searching({ room, isHost, hostToken, reload }) {
         <div className="arena-vs-side unknown"><span className="arena-radar" aria-hidden="true"><i /><i /><i /></span><b>Searching…</b></div>
       </div>
       <h2>Looking for an opponent</h2>
-      <p>{secs < 25 ? `Any student who presses Quick duel now joins you. ${25 - secs}s until a bot takes the seat.` : 'Calling a bot…'}</p>
+      <p>{secs < 25 ? `Waiting for a free student. In ${25 - secs} s the ${levelName} bot takes the seat.` : 'Calling the bot…'}</p>
       <div className="arena-actions">
-        {isHost && (
-          <select className="arena-lvlsel" value={level} onChange={(e) => setLevel(e.target.value)} aria-label="Bot level">
-            {BOT_LEVELS.map((l) => <option key={l.id} value={l.id} disabled={!l.free && !vip}>{l.name} bot{!l.free && !vip ? ' (VIP)' : ''}</option>)}
-          </select>
-        )}
-        {isHost && <button className="btn sun lg" onClick={bot} disabled={busy}>Play against a bot now</button>}
+        {isHost && <button className="btn sun lg" onClick={bot} disabled={busy}>Play the {levelName} bot now</button>}
         <Link className="btn on-dark lg" to="/game">Cancel</Link>
       </div>
     </div>
@@ -139,17 +135,14 @@ function Lobby(props) {
 function BotAdder({ room, hostToken, reload, onError }) {
   const { user } = useAuth() || {};
   const vip = isVip(user);
-  const [level, setLevel] = useState('easy');
-  const add = async () => {
+  const add = async (level) => {
     try { await api.post(`/game/${room.code}/bot`, { host_token: hostToken, level }); reload(); }
     catch (e) { onError(e.message); }
   };
   return (
     <div className="arena-lobby-bots">
-      <select value={level} onChange={(e) => setLevel(e.target.value)} aria-label="Bot level">
-        {BOT_LEVELS.map((l) => <option key={l.id} value={l.id} disabled={!l.free && !vip}>{l.name} bot{!l.free && !vip ? ' (VIP)' : ''}</option>)}
-      </select>
-      <button className="btn on-dark lg" onClick={add}>Add a bot</button>
+      <span>Add a bot</span>
+      <Chips dark label="Add a bot" value={null} onChange={add} options={BOT_LEVELS.filter((l) => l.free || vip).map((l) => ({ value: l.id, label: `+ ${l.name}` }))} />
     </div>
   );
 }
