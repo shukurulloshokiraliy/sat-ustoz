@@ -15,6 +15,8 @@ import { registerPlacement } from './placement/routes.js';
 import { lessonSummary, syncBundledModules } from './course/modules.js';
 import { registerLessons } from './course/lessons.js';
 import { registerQbank, syncQbank } from './qbank.js';
+import { migrateSite, seedSite, registerSitePublic, registerSiteAdmin } from './site.js';
+import { getSecret } from './auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -42,7 +44,9 @@ function contentHash() {
   return hash.digest('hex');
 }
 await migrate();
+await migrateSite();
 await initSecret();
+await seedSite();
 const seeded = await seed();
 const fingerprint = contentHash();
 const synced = await db.one("SELECT value FROM settings WHERE key = '_content_hash'");
@@ -171,8 +175,12 @@ app.post('/api/auth/google', h(async (req, res) => {
   res.json({ token: signToken(u) });
 }));
 
+// public website: home content, guide pages and free practice tests (no sign-in)
+registerSitePublic(app, { h, bad, secret: getSecret });
+
 const PUBLIC = new Set(['/auth/login', '/auth/register', '/auth/google', '/config', '/template.xlsx']);
 app.use('/api', (req, res, next) => (PUBLIC.has(req.path) && req.path !== '/template.xlsx' ? next() : requireAuth(req, res, next)));
+registerSiteAdmin(app, { h, bad, requireMaster });
 
 registerPlacement(app, { h, bad, requireStudent, requireMaster });
 registerLessons(app, { h, bad, requireStudent, requireMaster, roadmapFor: (u) => roadmapFor(u), accessFor: (u) => accessFor(u) });

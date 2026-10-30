@@ -43,6 +43,11 @@ All tokens live at the top of `client/src/styles.css`; the logo and app icon are
 - Result analysis with explanations and tips, SAT domain labels, saved questions, analytics, portfolio.
 - **Subscription**: quizzes, lessons and mocks need an active subscription (can be switched off in Settings). Telegram-bot payments are the next stage; until then the teacher activates access by hand.
 
+**Website (no sign-in)**
+- Visitors land on a product home page (menu with dropdowns, “Start free trial”, “Log in”), not on the login form.
+- **Free practice tests** (`/practice`): 27 questions, 32 minutes, score estimate, skill breakdown and full review with explanations. Questions come from the Question Bank (read only — the bank is never changed). Every visit opens a new random 40% of the bank; students filter by domain, skill and level. Settings: Website → Practice tests.
+- **Website editor** (teacher → Website): home page texts, menu sections and pages (guides, courses, news…), student wins, FAQ — create, edit, hide, delete. Server code: `server/src/site.js`, client: `client/src/pages/public/`.
+
 **Teacher (admin)**
 - Overview: students, new sign-ups, subscribers, recent attempts, hardest topics.
 - Students: filters (subscribed / not / new this week), readiness score, activate/extend/cancel subscription, payment history, reset password, create accounts manually.

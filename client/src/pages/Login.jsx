@@ -38,14 +38,14 @@ export default function Login() {
   return (
     <div className="login">
       <div className="login-hero">
-        <Logo size={40} tone="white" />
+        <a href="/" aria-label="Home"><Logo size={40} tone="white" /></a>
         <div className="hero-copy">
           <h2>Every student needs an <em>ustoz.</em></h2>
           <p>SAT Reading &amp; Writing from 200 to 800: a step-by-step roadmap, video lessons, practice with instant feedback and timed mock tests.</p>
         </div>
       </div>
       <div className="login-form">
-        <div className="login-top row" style={{ gap: 8 }}><button className="icon-btn" onClick={toggle} aria-label="Toggle theme">{theme === 'dark' ? <IconSun /> : <IconMoon />}</button></div>
+        <div className="login-top row" style={{ gap: 8 }}><a className="btn ghost sm" href="/">← Home</a><button className="icon-btn" onClick={toggle} aria-label="Toggle theme">{theme === 'dark' ? <IconSun /> : <IconMoon />}</button></div>
         <form className="login-card" onSubmit={submit}>
           <div className="login-mark"><Logo size={30} /></div>
           <div>

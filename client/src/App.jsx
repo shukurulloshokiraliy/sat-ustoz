@@ -29,12 +29,30 @@ import QuestionBank from './pages/qbank/QuestionBank.jsx';
 import QbankPractice from './pages/qbank/QbankPractice.jsx';
 import QbankAdmin from './pages/master/QbankAdmin.jsx';
 import LevelCheck, { LevelCheckResult } from './pages/lesson/LevelCheck.jsx';
+import PublicLayout from './pages/public/PublicLayout.jsx';
+import Landing from './pages/public/Landing.jsx';
+import Practice from './pages/public/Practice.jsx';
+import { PageView, SectionPage } from './pages/public/Pages.jsx';
+import Website from './pages/master/Website.jsx';
 
 export default function App() {
   const { user, loading } = useAuth();
   const loc = useLocation();
   if (loading) return <div style={{ height: '100vh', display: 'grid', placeItems: 'center' }}><Spinner /></div>;
-  if (!user) return <Login />;
+  // visitors: the website (home, free practice tests, guides) — sign-in only when they want it
+  if (!user) return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Login />} />
+      <Route element={<PublicLayout />}>
+        <Route index element={<Landing />} />
+        <Route path="practice" element={<Practice />} />
+        <Route path="s/:id" element={<SectionPage />} />
+        <Route path="p/:slug" element={<PageView />} />
+        <Route path="*" element={<Landing />} />
+      </Route>
+    </Routes>
+  );
   // every new student takes the readiness check first
   if (user.role === 'student' && user.access?.needs_placement && !/^\/(welcome|placement)/.test(loc.pathname)) return <Navigate to="/placement" replace />;
 
@@ -44,7 +62,13 @@ export default function App() {
       {user.role === 'student' && <Route path="/placement/test" element={<PlacementTest />} />}
       {user.role === 'student' && <Route path="/lesson/:id/check" element={<LevelCheck />} />}
       {user.role === 'student' && <Route path="/question-bank/practice" element={<QbankPractice />} />}
+      <Route path="/site" element={<PublicLayout />}>
+        <Route index element={<Landing />} />
+      </Route>
+      <Route path="/s/:id" element={<PublicLayout />}><Route index element={<SectionPage />} /></Route>
+      <Route path="/p/:slug" element={<PublicLayout />}><Route index element={<PageView />} /></Route>
       <Route element={<Layout />}>
+        <Route path="practice" element={<Practice />} />
         {user.role === 'master' ? (
           <>
             <Route index element={<Overview />} />
@@ -57,6 +81,7 @@ export default function App() {
             <Route path="roadmap" element={<RoadmapEditor />} />
             <Route path="settings" element={<Settings />} />
             <Route path="question-bank/manage" element={<QbankAdmin />} />
+            <Route path="website" element={<Website />} />
           </>
         ) : (
           <>
@@ -77,6 +102,8 @@ export default function App() {
         <Route path="lesson-check/:id" element={<LevelCheckResult />} />
         <Route path="profile" element={<Profile />} />
         <Route path="question-bank" element={<QuestionBank />} />
+        <Route path="login" element={<Navigate to="/" replace />} />
+        <Route path="signup" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
