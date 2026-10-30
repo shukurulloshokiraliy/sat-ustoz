@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Confirm, Field, Gate, Modal, useAsync } from '../../components/ui.jsx';
-import { IconArrow, IconCrown, IconEdit, IconGame, IconLock, IconPlay, IconPlus, IconTrash } from '../../components/icons.jsx';
+import { IconArrow, IconCrown, IconEdit, IconGame, IconLock, IconPlay, IconPlus, IconTrash, IconUpload } from '../../components/icons.jsx';
 import Character from '../../components/Character.jsx';
 import { VideoPlayer } from '../student/Roadmap.jsx';
+import ImportWords from './ImportWords.jsx';
 
 /** Vocabulary home: review button, sets of five units, a video per set. */
 export default function VocabHome() {
@@ -30,6 +31,7 @@ function Home({ d, reload }) {
   const [edit, setEdit] = useState(null);
   const [form, setForm] = useState(null); // { kind: 'deck'|'set'|'unit', mode: 'new'|'edit', parent, row }
   const [del, setDel] = useState(null); // { kind, row }
+  const [imp, setImp] = useState(null); // set
   const toast = useToast();
   const t = d.totals;
   return (
@@ -84,6 +86,7 @@ function Home({ d, reload }) {
                   <div className="grow"><b>{s.title}</b><small>{s.units.length} units · {words} words · {learned} learned</small></div>
                   {s.video_url && <button className="btn soft sm" onClick={() => setVideo(s)}><IconPlay width={16} height={16} /> Set video</button>}
                   {teacher && <>
+                    <button className="btn soft sm" onClick={() => setImp(s)}><IconUpload width={16} height={16} /> Import</button>
                     <button className="btn ghost sm" onClick={() => setEdit(s)}>{s.video_url ? 'Change video' : 'Add video'}</button>
                     <button className="icon-btn" aria-label={`Rename ${s.title}`} onClick={() => setForm({ kind: 'set', mode: 'edit', row: s })}><IconEdit width={18} height={18} /></button>
                     <button className="icon-btn danger" aria-label={`Delete ${s.title}`} onClick={() => setDel({ kind: 'set', row: s })}><IconTrash width={18} height={18} /></button>
@@ -117,6 +120,7 @@ function Home({ d, reload }) {
 
       {teacher && <button className="btn ghost block v-add-deck" onClick={() => setForm({ kind: 'deck', mode: 'new' })}><IconPlus width={18} height={18} /> New word book</button>}
 
+      {imp && <ImportWords setId={imp.id} units={imp.units} onClose={() => setImp(null)} onSaved={() => { setImp(null); reload(); }} />}
       {form && <ItemForm {...form} onClose={() => setForm(null)} onSaved={() => { setForm(null); reload(); }} />}
       {del && <Confirm title={`Delete ${del.row.title}`}
         text={del.kind === 'deck' ? 'The whole word book, with its sets, units and words, disappears for every student.' : del.kind === 'set' ? 'This set, its units and words disappear for every student.' : 'This unit and its words disappear for every student.'}

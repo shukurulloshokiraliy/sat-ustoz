@@ -1485,3 +1485,4 @@ a.card:hover, .card.clickable:hover { transform: translateY(-2px); box-shadow: 0
 .arena-duelbar i { height: 8px; border-radius: 8px; background: #FFCB3D; transition: width .5s cubic-bezier(.2,.8,.2,1); min-width: 4px; }
 .arena-duelbar .them i { background: #7C9BFF; }
 .arena-duelbar em { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; }
+.imp-preview { max-height: 300px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; } .imp-preview td { font-size: .85rem; vertical-align: top; }

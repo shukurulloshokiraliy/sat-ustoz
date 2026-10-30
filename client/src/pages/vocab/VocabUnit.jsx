@@ -3,11 +3,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Confirm, Field, Gate, Modal, Segmented, useAsync } from '../../components/ui.jsx';
-import { IconArrow, IconBack, IconBook, IconEdit, IconFlip, IconPlay, IconPlus, IconQuiz, IconTrash, IconVolume } from '../../components/icons.jsx';
+import { IconArrow, IconBack, IconBook, IconEdit, IconFlip, IconPlay, IconPlus, IconQuiz, IconTrash, IconUpload, IconVolume } from '../../components/icons.jsx';
 import { ItemForm, Ring } from './VocabHome.jsx';
 import { VideoPlayer } from '../student/Roadmap.jsx';
 import Flashcards, { highlight, speak } from './Flashcards.jsx';
 import VocabTest from './VocabTest.jsx';
+import ImportWords from './ImportWords.jsx';
 
 const STATE = { new: 'New', learning: 'Learning', review: 'Learned' };
 
@@ -133,10 +134,12 @@ function WordEditor({ u, reload }) {
   const [edit, setEdit] = useState(null);
   const [del, setDel] = useState(null);
   const [bulk, setBulk] = useState(false);
+  const [imp, setImp] = useState(false);
   return (
     <>
       <div className="row wrap" style={{ gap: 8 }}>
         <button className="btn primary sm" onClick={() => setEdit({ ...BLANK })}><IconPlus width={16} height={16} /> Add word</button>
+        <button className="btn soft sm" onClick={() => setImp(true)}><IconUpload width={16} height={16} /> Import CSV / Excel</button>
         <button className="btn ghost sm" onClick={() => setBulk(true)}>Paste many words</button>
       </div>
       <div className="v-words">
@@ -152,6 +155,7 @@ function WordEditor({ u, reload }) {
         ))}
       </div>
       {edit && <WordModal unitId={u.id} w={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); }} />}
+      {imp && <ImportWords unitId={u.id} onClose={() => setImp(false)} onSaved={() => { setImp(false); reload(); }} />}
       {bulk && <BulkModal unitId={u.id} onClose={() => setBulk(false)} onSaved={() => { setBulk(false); reload(); }} />}
       {del && <Confirm title="Remove word" text={`“${del.word}” will be removed from this unit for all students.`} confirmLabel="Remove" onClose={() => setDel(null)}
         onConfirm={async () => { try { await api.del(`/vocab/words/${del.id}`); toast('Word removed'); setDel(null); reload(); } catch (e) { toast(e.message, 'bad'); } }} />}
