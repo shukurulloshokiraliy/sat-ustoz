@@ -920,3 +920,9 @@ input[type='checkbox'], input[type='radio'] { width: auto; }
 .pt-quota i { display: block; height: 8px; border-radius: 99px; background: var(--track); overflow: hidden; } .pt-quota em { display: block; height: 100%; background: var(--mint); border-radius: 99px; transition: width .4s; }
 .pt-quota.pro { background: var(--sun-50); border-color: var(--sun); font-weight: 700; color: var(--sun-ink); }
 @media (max-width: 860px) { .ab-badge.b2 { display: none; } .ab-badge.b1 { left: 50%; bottom: -12px; transform: translateX(-50%); animation: none; } }
+
+/* telegram bot settings */
+.tg-steps { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; font-size: .92rem; } .tg-steps code { background: var(--surface-2); padding: 2px 8px; border-radius: 8px; color: var(--ink); font-weight: 700; }
+.tg-reqs { display: grid; gap: 8px; }
+.tg-req { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; padding: 12px; border: 1px solid var(--line); border-radius: 14px; } .tg-req.pending { border-color: var(--sun); background: var(--sun-50); }
+.tg-img { display: block; max-width: 260px; max-height: 360px; margin-top: 8px; border-radius: 12px; border: 1px solid var(--line); }

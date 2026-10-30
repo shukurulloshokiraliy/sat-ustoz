@@ -17,6 +17,7 @@ import { registerLessons } from './course/lessons.js';
 import { registerQbank, syncQbank } from './qbank.js';
 import { migrateSite, seedSite, registerSitePublic, registerSiteAdmin } from './site.js';
 import { getSecret } from './auth.js';
+import { migrateBot, registerBot, registerBotAdmin } from './tgbot.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -45,6 +46,7 @@ function contentHash() {
 }
 await migrate();
 await migrateSite();
+await migrateBot();
 await initSecret();
 await seedSite();
 const seeded = await seed();
@@ -177,10 +179,12 @@ app.post('/api/auth/google', h(async (req, res) => {
 
 // public website: home content, guide pages and free practice tests (no sign-in)
 registerSitePublic(app, { h, bad, secret: getSecret });
+registerBot(app, { h, bad });
 
 const PUBLIC = new Set(['/auth/login', '/auth/register', '/auth/google', '/config', '/template.xlsx']);
 app.use('/api', (req, res, next) => (PUBLIC.has(req.path) && req.path !== '/template.xlsx' ? next() : requireAuth(req, res, next)));
 registerSiteAdmin(app, { h, bad, requireMaster });
+registerBotAdmin(app, { h, bad, requireMaster, requireStudent });
 
 registerPlacement(app, { h, bad, requireStudent, requireMaster });
 registerLessons(app, { h, bad, requireStudent, requireMaster, roadmapFor: (u) => roadmapFor(u), accessFor: (u) => accessFor(u) });
@@ -219,6 +223,8 @@ app.put('/api/settings', requireMaster, h(async (req, res) => {
   if ('price_month' in b) patch.price_month = digits(b.price_month);
   if ('price_quarter' in b) patch.price_quarter = digits(b.price_quarter);
   if ('currency' in b) patch.currency = String(b.currency || 'UZS').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || 'UZS';
+  if ('pay_card' in b) patch.pay_card = String(b.pay_card || '').replace(/[^\d ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 23);
+  if ('pay_holder' in b) patch.pay_holder = String(b.pay_holder || '').trim().slice(0, 60);
   if ('telegram_bot' in b) patch.telegram_bot = String(b.telegram_bot || '').trim().replace(/^@/, '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 64);
   res.json(await setSettings(patch));
 }));

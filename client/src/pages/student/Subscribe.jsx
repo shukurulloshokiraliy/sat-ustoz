@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../context.jsx';
-import { fmtDate } from '../../api.js';
+import { useAuth, useToast } from '../../context.jsx';
+import { api, fmtDate } from '../../api.js';
 import { getConfig } from '../../config.js';
 import { Card, PageHeader } from '../../components/ui.jsx';
 import { IconCheck, IconCrown, IconSend } from '../../components/icons.jsx';
@@ -13,8 +13,16 @@ export default function Subscribe() {
   const [cfg, setCfg] = useState(null);
   useEffect(() => { getConfig().then(setCfg); }, []);
   const active = user.sub_active;
+  const toast = useToast();
   const bot = cfg?.telegram_bot;
-  const link = (plan) => (bot ? `https://t.me/${bot}?start=sub_${user.id}_${plan}` : null);
+  const [opening, setOpening] = useState(false);
+  // a signed link that opens the bot already connected to this account
+  const pay = async () => {
+    setOpening(true);
+    const w = window.open('', '_blank');
+    try { const r = await api.get('/telegram/link'); if (w) w.location.href = r.url; else window.location.href = r.url; }
+    catch (e) { w?.close(); toast(e.message, 'bad'); } finally { setOpening(false); }
+  };
   const plans = [
     { id: 'month', name: '1 month', price: cfg?.prices?.month, note: 'Billed monthly' },
     { id: 'quarter', name: '3 months', price: cfg?.prices?.quarter, note: 'Best value', best: true },
@@ -40,14 +48,14 @@ export default function Subscribe() {
             <b>{p.name}</b>
             <div className="price">{cfg ? fmtMoney(p.price, cfg.prices.currency) : '…'}</div>
             <ul className="check-list">{PERKS.map((x) => <li key={x}><IconCheck width={16} height={16} />{x}</li>)}</ul>
-            {link(p.id)
-              ? <a className="btn primary" href={link(p.id)} target="_blank" rel="noreferrer"><IconSend width={18} height={18} /> Pay via Telegram</a>
+            {bot
+              ? <button className="btn primary" disabled={opening} onClick={pay}><IconSend width={18} height={18} /> {opening ? 'Opening…' : 'Pay via Telegram'}</button>
               : <button className="btn primary" disabled><IconSend width={18} height={18} /> Telegram payments — coming soon</button>}
           </Card>
         ))}
       </div>
       <p className="muted" style={{ fontSize: '.86rem' }}>
-        After payment the bot activates your subscription automatically. Until the bot is live, your teacher can activate your access manually — tell them the email you signed up with: <b style={{ color: 'var(--ink)' }}>{user.email || user.login}</b>.
+        In the bot choose a plan, pay by card (send a photo of the receipt) or by Click / Payme. The subscription turns on as soon as the payment is confirmed. Questions? Tell your teacher the email you signed up with: <b style={{ color: 'var(--ink)' }}>{user.email || user.login}</b>.
       </p>
     </div>
   );

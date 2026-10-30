@@ -328,6 +328,8 @@ const DEFAULT_SETTINGS = {
   price_quarter: '399000',
   currency: 'UZS',
   telegram_bot: process.env.TELEGRAM_BOT || '',
+  pay_card: '',
+  pay_holder: '',
 };
 export async function getSettings() {
   const rows = await db.all('SELECT key, value FROM settings');
