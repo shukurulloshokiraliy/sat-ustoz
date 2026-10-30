@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth } from '../../context.jsx';
-import { Card, Gate, PageHeader, Segmented, useAsync } from '../../components/ui.jsx';
-import { IconArrow, IconCheck, IconCrown, IconLock } from '../../components/icons.jsx';
+import { Gate, PageHeader, Segmented, useAsync } from '../../components/ui.jsx';
+import { IconArrow, IconLock } from '../../components/icons.jsx';
 
 const LEVELS = [['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard']];
 
@@ -40,77 +40,68 @@ function Bank({ d }) {
     nav('/question-bank/practice?' + q.toString());
   };
 
+  const doneAll = allSkills.reduce((n, s) => n + s.answered, 0);
+  const isOn = (k, id) => scope.kind === k && (k === 'all' || scope.id === id);
+  const startBtn = user.role === 'student'
+    ? <button className="btn primary lg block" disabled={!available} onClick={start}>Start {Math.min(available, Number(count))} questions <IconArrow /></button>
+    : <Link className="btn soft block" to="/question-bank/manage">Manage questions <IconArrow width={16} height={16} /></Link>;
+
   return (
     <>
-      <PageHeader title="Question Bank" sub="Original SAT-style Reading and Writing questions, sorted by the skills the digital SAT tests.">
-        {user.role === 'student' && <div className="row" style={{ gap: 8 }}>
-          <span className="chip">{answered}/{d.total} answered</span>
-          {answered > 0 && <span className="chip primary">{Math.round((correct / answered) * 100)}% correct</span>}
-        </div>}
+      <PageHeader title="Question Bank" sub="Choose a skill, set the level and practise. Every answer comes with an explanation.">
+        {user.role === 'student' && <span className="qb-done"><b>{doneAll}</b> of {d.total} done{answered > 0 && <> · {Math.round((correct / answered) * 100)}% right</>}</span>}
       </PageHeader>
 
       {!d.open_levels.includes('medium') && (
-        <div className="banner" style={{ marginBottom: 18 }}>
-          <span className="item-ic"><IconCrown /></span>
-          <div className="grow"><b>Easy questions are free</b><small>Subscribe to open the medium and hard questions in every skill.</small></div>
-          <Link className="btn primary sm" to="/subscribe">See plans <IconArrow width={16} height={16} /></Link>
+        <div className="qb-note">
+          <span><b>Easy questions are free.</b> Medium and hard open with a subscription.</span>
+          <Link to="/subscribe">See plans</Link>
         </div>
       )}
 
       <div className="qb-layout">
-        <Card className="qb-bank">
-          <button type="button" className={`qb-all ${scope.kind === 'all' ? 'on' : ''}`} onClick={() => setScope({ kind: 'all' })}>
-            <span><b>Reading and Writing</b><small>{d.total} questions</small></span>
-            {scope.kind === 'all' && <IconCheck width={18} height={18} />}
+        <div className="qb-list">
+          <button type="button" className={`qb-row qb-row-all ${isOn('all') ? 'on' : ''}`} onClick={() => setScope({ kind: 'all' })} aria-pressed={isOn('all')}>
+            <i className="qb-radio" /><span className="nm">All skills, mixed</span><span className="ct">{d.total}</span>
           </button>
-          {d.domains.map((dm) => (
-            <section key={dm.domain} className="qb-domain">
-              <button type="button" className={`qb-dhead ${scope.kind === 'domain' && scope.id === dm.domain ? 'on' : ''}`} onClick={() => setScope({ kind: 'domain', id: dm.domain })}>
-                <b>{dm.domain}</b><span>{dm.total}</span>
+          {d.domains.map((dm, k) => (
+            <section key={dm.domain} className={`qb-group c${k % 4}`}>
+              <button type="button" className={`qb-row qb-ghead ${isOn('domain', dm.domain) ? 'on' : ''}`} onClick={() => setScope({ kind: 'domain', id: dm.domain })} aria-pressed={isOn('domain', dm.domain)}>
+                <i className="qb-radio" /><span className="nm">{dm.domain}</span><span className="ct">{dm.total}</span>
               </button>
-              <div className="qb-skills">
-                {dm.skills.map((s) => {
-                  const on = scope.kind === 'skill' && scope.id === s.id;
-                  const pct = s.total ? (s.answered / s.total) * 100 : 0;
-                  return (
-                    <button type="button" key={s.id} className={`qb-skill ${on ? 'on' : ''}`} onClick={() => setScope({ kind: 'skill', id: s.id })}>
-                      <span className="nm">{s.name}</span>
-                      <span className="ct">{s.total}</span>
-                      {user.role === 'student' && <span className="bar" title={`${s.answered} answered · ${s.correct} correct`}><i style={{ width: `${pct}%` }} /></span>}
-                    </button>
-                  );
-                })}
-              </div>
+              {dm.skills.map((s) => (
+                <button type="button" key={s.id} className={`qb-row ${isOn('skill', s.id) ? 'on' : ''}`} onClick={() => setScope({ kind: 'skill', id: s.id })} aria-pressed={isOn('skill', s.id)}>
+                  <i className="qb-radio" /><span className="nm">{s.name}</span>
+                  <span className="ct">{user.role === 'student' ? `${s.answered}/${s.total}` : s.total}</span>
+                </button>
+              ))}
             </section>
           ))}
-        </Card>
+        </div>
 
-        <Card className="qb-setup">
-          <small className="muted">PRACTICE SET</small>
+        <aside className="card qb-panel">
           <h2>{scopeLabel}</h2>
           <div className="qb-field">
-            <b>Difficulty</b>
+            <b>Level</b>
             <div className="qb-levels">
               {LEVELS.map(([l, name]) => (
                 <button key={l} type="button" disabled={locked(l)} className={`qb-level ${levels.has(l) ? 'on' : ''}`} onClick={() => toggleLevel(l)} aria-pressed={levels.has(l)}>
-                  {locked(l) ? <IconLock width={14} height={14} /> : levels.has(l) && <IconCheck width={14} height={14} />} {name}
+                  {locked(l) && <IconLock width={14} height={14} />}{name}
                 </button>
               ))}
             </div>
           </div>
           <div className="qb-field">
-            <b>Questions</b>
-            <Segmented value={status} onChange={setStatus} options={[{ value: 'new', label: 'New' }, { value: 'mistakes', label: 'My mistakes' }, { value: 'all', label: 'All' }]} />
+            <b>Which questions</b>
+            <Segmented value={status} onChange={setStatus} options={[{ value: 'new', label: 'Not done yet' }, { value: 'mistakes', label: 'My mistakes' }, { value: 'all', label: 'All' }]} />
           </div>
           <div className="qb-field">
             <b>How many</b>
             <Segmented value={count} onChange={setCount} options={[{ value: '5', label: '5' }, { value: '10', label: '10' }, { value: '20', label: '20' }]} />
           </div>
-          <p className="muted" style={{ fontSize: '.86rem' }}>{available} questions match. You check each answer and see the explanation right away.</p>
-          {user.role === 'student'
-            ? <button className="btn primary lg block" disabled={!available} onClick={start}>Start practice <IconArrow /></button>
-            : <Link className="btn soft block" to="/question-bank/manage">Manage questions <IconArrow width={16} height={16} /></Link>}
-        </Card>
+          {!available && <p className="qb-empty">No questions here yet. Try another level or “All”.</p>}
+          <div className="qb-go">{startBtn}</div>
+        </aside>
       </div>
     </>
   );

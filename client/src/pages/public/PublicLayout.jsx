@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useReveal } from '../../components/reveal.js';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth, useTheme } from '../../context.jsx';
 import { IconChevron, IconMenu, IconMoon, IconSun, IconX, Logo } from '../../components/icons.jsx';
@@ -7,6 +8,7 @@ import { useSite } from './site.jsx';
 
 /** Website header (like a product site): menu with dropdowns, Log in, Start free trial. No sign-in needed. */
 export default function PublicLayout() {
+  useReveal('.pub-main');
   const { site } = useSite();
   const { user } = useAuth();
   const { theme, toggle } = useTheme();

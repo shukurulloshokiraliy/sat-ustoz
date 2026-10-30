@@ -23,7 +23,7 @@ const IconChat = (p) => (
 export default function SupportChat() {
   const { user } = useAuth();
   const { pathname } = useLocation();
-  const focus = /^\/(vocab\/(unit|review)|play|game|quiz\/|placement\/test|question-bank\/practice)|\/check$/.test(pathname);
+  const focus = /^\/(vocab\/(unit|review)|play|game|quiz\/|placement\/test|question-bank)|\/check$/.test(pathname);
   const [open, setOpen] = useState(false);
   const [guest, setGuest] = useState(readGuest);
   const [d, setD] = useState({ ticket: null, msgs: [], unread: 0 });
@@ -71,24 +71,17 @@ export default function SupportChat() {
   return (
     <>
       {open && (
-        <section className="sc-panel" role="dialog" aria-label="Support chat">
+        <section className={`sc-panel ${d.msgs.length ? 'has-msgs' : ''}`} role="dialog" aria-label="Support chat">
           <header className="sc-head">
             <div>
-              <b>SAT Ustoz support</b>
-              <small>Questions about lessons, payment or your account. The teacher usually answers within a few hours.</small>
+              <b>Ask the teacher</b>
+              <small>Usually answers within a few hours</small>
             </div>
             <button className="sc-x" onClick={() => setOpen(false)} aria-label="Close chat"><IconX width={18} height={18} /></button>
           </header>
 
           <div className="sc-body">
-            {!d.msgs.length && (
-              <div className="sc-intro">
-                <p>Write your question and we will answer here.{!user && ' Leave your contact so we can also reach you if you close this page.'}</p>
-                <div className="sc-cats" role="radiogroup" aria-label="Topic">
-                  {CATS.map(([k, label]) => <button key={k} type="button" role="radio" aria-checked={cat === k} className={cat === k ? 'on' : ''} onClick={() => setCat(k)}>{label}</button>)}
-                </div>
-              </div>
-            )}
+            {!d.msgs.length && <p className="sc-hello">Hi! Write about lessons, payment or your account, and the answer will appear right here.{!user && ' Leave a phone or Telegram so we can reach you too.'}</p>}
             {d.msgs.map((m) => (
               <div key={m.id} className={`sc-msg ${m.author}`}>
                 <p>{m.text}</p>
@@ -106,6 +99,11 @@ export default function SupportChat() {
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" aria-label="Your name" maxLength={80} />
                 <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Phone, Telegram or email" aria-label="Phone, Telegram or email" maxLength={120} />
               </div>
+            )}
+            {!active && (
+              <label className="sc-topic">Topic
+                <select value={cat} onChange={(e) => setCat(e.target.value)}>{CATS.map(([k, label]) => <option key={k} value={k}>{label}</option>)}</select>
+              </label>
             )}
             <div className="sc-row">
               <textarea rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a message…" aria-label="Message" maxLength={2000}

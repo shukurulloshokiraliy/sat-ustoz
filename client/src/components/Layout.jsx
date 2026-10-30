@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useReveal } from './reveal.js';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth, useTheme } from '../context.jsx';
 import { Avatar } from './ui.jsx';
@@ -48,6 +49,7 @@ const MASTER_NAV = [
 ];
 
 export default function Layout() {
+  useReveal('.main');
   const { user, logout } = useAuth();
   const { theme, toggle } = useTheme();
   const [open, setOpen] = useState(false);
