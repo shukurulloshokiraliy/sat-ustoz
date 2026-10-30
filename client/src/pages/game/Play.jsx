@@ -78,7 +78,38 @@ function Join({ code, room, onJoined }) {
   );
 }
 
+/** Quick duel: wait for a random opponent; after a while a bot can take the seat (automatically at 25 s). */
+function Searching({ room, isHost, hostToken, reload }) {
+  const [secs, setSecs] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const me = room.players.find((p) => p.me) || room.players[0];
+  const bot = useCallback(async () => {
+    if (busy || !isHost) return;
+    setBusy(true);
+    try { await api.post(`/game/${room.code}/bot`, { host_token: hostToken }); } catch { /* an opponent may have just joined */ }
+    reload();
+  }, [busy, isHost, room.code, hostToken, reload]);
+  useEffect(() => { const t = setInterval(() => setSecs((x) => x + 1), 1000); return () => clearInterval(t); }, []);
+  useEffect(() => { if (secs === 25) bot(); }, [secs, bot]);
+  return (
+    <div className="arena-search">
+      <div className="arena-vs">
+        {me && <div className="arena-vs-side"><Character kind={me.avatar} size={120} mood="win" /><b>{me.name}</b></div>}
+        <span className="arena-vs-mid">VS</span>
+        <div className="arena-vs-side unknown"><span className="arena-radar" aria-hidden="true"><i /><i /><i /></span><b>Searching…</b></div>
+      </div>
+      <h2>Looking for an opponent</h2>
+      <p>{secs < 25 ? `Any student who presses Quick duel now joins you. ${25 - secs}s until a bot takes the seat.` : 'Calling a bot…'}</p>
+      <div className="arena-actions">
+        {isHost && <button className="btn sun lg" onClick={bot} disabled={busy}>Play against a bot now</button>}
+        <Link className="btn on-dark lg" to="/game">Cancel</Link>
+      </div>
+    </div>
+  );
+}
+
 function Lobby({ room, isHost, hostToken, reload }) {
+  if (room.quick && room.mode === 'duel' && room.players.length < 2) return <Searching room={room} isHost={isHost} hostToken={hostToken} reload={reload} />;
   const [error, setError] = useState('');
   const start = async () => { try { await api.post(`/game/${room.code}/start`, { host_token: hostToken }); reload(); } catch (e) { setError(e.message); } };
   const url = `${window.location.host}/play/${room.code}`;
@@ -151,6 +182,17 @@ function Questions({ room, token, reload }) {
         <span className={`arena-streak ${me.streak >= 2 ? 'hot' : ''}`}>{me.streak >= 2 ? `${me.streak} in a row` : 'Streak 0'}</span>
         <span className="arena-score"><Character kind={me.avatar} size={30} /> {me.score}</span>
       </div>
+      {room.mode === 'duel' && (() => {
+        const opp = room.players.find((p) => !p.me);
+        if (!opp) return null;
+        const max = Math.max(1, me.score, opp.score);
+        return (
+          <div className="arena-duelbar" aria-label={`You ${me.score}, ${opp.name} ${opp.score}`}>
+            <span className="you"><b>You</b><i style={{ width: `${(me.score / max) * 100}%` }} /><em>{me.score}</em></span>
+            <span className="them"><Character kind={opp.avatar} size={28} /><b>{opp.name}</b><i style={{ width: `${(opp.score / max) * 100}%` }} /><em>{opp.score} · {opp.answered}/{room.total}</em></span>
+          </div>
+        );
+      })()}
       <div className={`arena-q ${fb ? (fb.correct ? 'ok' : 'no') : ''}`} key={qi}>
         <small>{ASK[q.kind]}</small>
         <p className={q.kind === 'meaning' ? 'word' : ''}>{q.prompt}</p>

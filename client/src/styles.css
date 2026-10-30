@@ -1466,3 +1466,22 @@ a.card:hover, .card.clickable:hover { transform: translateY(-2px); box-shadow: 0
 .bb-sync { align-self: center; font: 600 .72rem var(--font); color: var(--muted); padding: 0 6px; } .bb-sync.off { color: #C0392B; }
 .bb-passage .qb-passage, .bb-passage .qb-notes, .bb-passage p, .bb-passage li { font: inherit; color: inherit; background: none; border: 0; padding: 0; }
 .bb-passage > *:first-child { margin-top: 0; }
+/* quick duel */
+.arena-quick { display: grid; gap: 6px; justify-items: start; margin: 4px 0 14px; } .arena-quick small { color: #C9CFE6; font-size: .84rem; }
+.arena-search { display: grid; justify-items: center; gap: 14px; text-align: center; color: #fff; padding-top: 10px; }
+.arena-search h2 { color: #fff; font-size: clamp(1.4rem, 1.1rem + 1.5vw, 2rem); } .arena-search p { color: #C9CFE6; max-width: 420px; }
+.arena-vs { display: flex; align-items: center; gap: clamp(16px, 5vw, 48px); }
+.arena-vs-side { display: grid; justify-items: center; gap: 8px; min-width: 130px; } .arena-vs-side b { font: 700 1rem var(--display); color: #fff; }
+.arena-vs-mid { font: 800 clamp(1.8rem, 1.2rem + 3vw, 3rem) var(--display); color: var(--sun); text-shadow: 0 6px 20px rgba(255,203,61,.4); animation: bob 1.6s ease-in-out infinite; }
+.arena-radar { position: relative; width: 120px; height: 120px; display: block; }
+.arena-radar i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,.55); animation: radar 2.4s ease-out infinite; opacity: 0; }
+.arena-radar i:nth-child(2) { animation-delay: .8s; } .arena-radar i:nth-child(3) { animation-delay: 1.6s; }
+@keyframes radar { 0% { transform: scale(.2); opacity: .9; } 100% { transform: scale(1); opacity: 0; } }
+.arena-quick small { letter-spacing: normal; font-weight: 500; text-transform: none; }
+.arena-duelbar { display: grid; gap: 6px; padding: 10px 12px; border-radius: 16px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); }
+.arena-duelbar > span { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 8px; color: #fff; font-size: .82rem; }
+.arena-duelbar .you { grid-template-columns: auto 1fr auto; }
+.arena-duelbar b { font-weight: 700; white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+.arena-duelbar i { height: 8px; border-radius: 8px; background: #FFCB3D; transition: width .5s cubic-bezier(.2,.8,.2,1); min-width: 4px; }
+.arena-duelbar .them i { background: #7C9BFF; }
+.arena-duelbar em { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; }

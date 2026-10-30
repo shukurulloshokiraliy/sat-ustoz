@@ -36,6 +36,17 @@ function Hub({ d }) {
   const [minutes, setMinutes] = useState(3);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [quick, setQuick] = useState(false);
+  const quickDuel = async () => {
+    setQuick(true);
+    try {
+      const avatar = CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)];
+      const r = await api.post('/game/quick', { name: (user.name || 'Player').split(' ')[0], avatar, set_ids: sets.map((x) => x.id) });
+      store.set(playerKey(r.code), r.token);
+      if (r.host_token) store.set(hostKey(r.code), r.host_token);
+      nav(`/play/${r.code}`);
+    } catch (e) { toast(e.message, 'bad'); setQuick(false); }
+  };
   const toggle = (id) => setChosen((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const host = async () => {
@@ -55,9 +66,13 @@ function Hub({ d }) {
           <small>WORD ARENA</small>
           <h1>Battle with words.</h1>
           <p>Host a live vocabulary game for your class or challenge a friend to a duel. Players join from any phone with a 6-digit code.</p>
+          <div className="arena-quick">
+            <button className="btn sun lg" onClick={quickDuel} disabled={quick}>{quick ? 'Finding a player…' : 'Quick duel'} <IconArrow /></button>
+            <small>Play 1-on-1 with a random student. If nobody is free, a bot takes the seat.</small>
+          </div>
           <form className="arena-join" onSubmit={(e) => { e.preventDefault(); if (/^\d{6}$/.test(code)) nav(`/play/${code}`); }}>
             <input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="Game code" aria-label="Game code" />
-            <button className="btn sun lg" disabled={code.length !== 6}>Join <IconArrow /></button>
+            <button className="btn on-dark lg" disabled={code.length !== 6}>Join with code</button>
           </form>
         </div>
         <div className="arena-parade" aria-hidden="true">
