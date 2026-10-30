@@ -107,7 +107,7 @@ export const DEFAULT_BLOCKS = {
     founder_name: 'Axror Alimjon',
     founder_role: 'Founder · SAT teacher',
     founder_bio: 'I created SAT Ustoz so that every student in Uzbekistan can prepare for the SAT with a real teacher’s method — not just random tests. Follow me on Instagram and Telegram for SAT tips, results of my students and news about new lessons.',
-    photo_url: '',
+    photo_url: '/founder.jpg',
     instagram: 'https://www.instagram.com/ahroralimjon',
     telegram: 'https://t.me/ahroralimjon_life',
     show_on_home: true,
@@ -271,7 +271,7 @@ export function registerSiteAdmin(app, { h, bad, requireMaster }) {
     if (key === 'about' && data) {
       for (const f of ['instagram', 'telegram', 'photo_url']) {
         const v = String(data[f] || '').trim();
-        if (v && !/^https?:\/\//i.test(v)) return bad(res, `${{ instagram: 'Instagram', telegram: 'Telegram', photo_url: 'Photo' }[f]} link must start with https://`);
+        if (v && !/^(https?:\/\/|\/[\w./-]+$)/i.test(v)) return bad(res, `${{ instagram: 'Instagram', telegram: 'Telegram', photo_url: 'Photo' }[f]} link must start with https://`);
         data[f] = v;
       }
     }
