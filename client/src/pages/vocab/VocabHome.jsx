@@ -13,12 +13,12 @@ export default function VocabHome() {
   return <div className="page"><Gate state={st}>{(d) => <Home d={d} reload={st.reload} />}</Gate></div>;
 }
 
-function Ring({ value, size = 44 }) {
+export function Ring({ value, size = 44, stroke = 5 }) {
   const r = (size - 6) / 2; const c = 2 * Math.PI * r;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="v-ring" aria-hidden="true">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--track)" strokeWidth="5" />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--good)" strokeWidth="5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - value)} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--track)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--good)" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - value)} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
     </svg>
   );
 }

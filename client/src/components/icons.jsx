@@ -1,62 +1,67 @@
-const P = (d, extra) => (props) => (
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-    {d}
-    {extra}
-  </svg>
-);
+// Icons: Phosphor (https://phosphoricons.com), wrapped so the app keeps one naming scheme.
+// <IconX width={18} /> sets the size; pass weight="duotone" | "bold" | "fill" where a heavier mark fits.
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowsClockwise, BookOpenText, BookmarkSimple, Briefcase, Cards, CaretDown, ChartLineUp, Check, Clock, Copy, Crown, DotsThree, DownloadSimple, Eye, EyeSlash, FileText, Fire, Flag, GameController, GearSix, Globe, InstagramLogo, Key, Lightning, Link, List, ListChecks, Lock, MagnifyingGlass, Medal, Moon, PaperPlaneRight, Path, PencilSimple, Play, Plus, Printer, Prohibit, SignOut, SpeakerHigh, SquaresFour, Stack, Sun, Target, TelegramLogo, Trash, UploadSimple, User, UsersThree, X } from '@phosphor-icons/react';
 
-export const IconDashboard = P(<><rect x="3" y="3" width="7" height="9" rx="2" /><rect x="14" y="3" width="7" height="5" rx="2" /><rect x="14" y="12" width="7" height="9" rx="2" /><rect x="3" y="16" width="7" height="5" rx="2" /></>);
-export const IconRoad = P(<><path d="M4 20 8 4M20 20 16 4M12 5v3M12 11v3M12 17v3" /></>);
-export const IconQuiz = P(<><path d="M9 11l2 2 4-4" /><rect x="4" y="3" width="16" height="18" rx="3" /></>);
-export const IconChart = P(<><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6" /></>);
-export const IconBookmark = P(<path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z" />);
-export const IconBookmarkFill = (p) => (
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" {...p}><path d="M7 3h10a2 2 0 0 1 2 2v16l-7-4.5L5 21V5a2 2 0 0 1 2-2z" /></svg>
-);
-export const IconBriefcase = P(<><rect x="3" y="7" width="18" height="13" rx="3" /><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18" /></>);
-export const IconUsers = P(<><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.8-3.5 3.4-5 6.5-5s5.7 1.5 6.5 5" /><circle cx="17" cy="9" r="2.5" /><path d="M17.5 14.5c2.2.2 3.6 1.6 4 4.5" /></>);
-export const IconLayers = P(<><path d="m12 3 9 5-9 5-9-5 9-5z" /><path d="m3 13 9 5 9-5" /></>);
-export const IconUser = P(<><circle cx="12" cy="8" r="4" /><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6" /></>);
-export const IconSun = P(<><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>);
-export const IconMoon = P(<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z" />);
-export const IconLogout = P(<><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9" /></>);
-export const IconPlus = P(<path d="M12 5v14M5 12h14" />);
-export const IconUpload = P(<><path d="M12 16V4M7 9l5-5 5 5" /><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" /></>);
-export const IconDownload = P(<><path d="M12 4v12M7 11l5 5 5-5" /><path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" /></>);
-export const IconTrash = P(<><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></>);
-export const IconEdit = P(<><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z" /></>);
-export const IconCheck = P(<path d="m5 12.5 4.5 4.5L19 7.5" />);
-export const IconX = P(<path d="M6 6l12 12M18 6 6 18" />);
-export const IconEye = P(<><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>);
-export const IconEyeOff = P(<><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.9M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7c1.7 0 3.2-.4 4.5-1" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></>);
-export const IconFlame = P(<path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.2 2-4.2.2 1.2.8 1.9 1.6 2.2C10.4 8 11 5.5 12 3z" />);
-export const IconTarget = P(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></>);
-export const IconClock = P(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>);
-export const IconChevron = P(<path d="m6 9 6 6 6-6" />);
-export const IconArrow = P(<path d="M5 12h14M13 6l6 6-6 6" />);
-export const IconMenu = P(<path d="M4 7h16M4 12h16M4 17h16" />);
-export const IconFlag = P(<path d="M5 21V4M5 4h11l-2 4 2 4H5" />);
-export const IconStrike = P(<><circle cx="12" cy="12" r="8.5" /><path d="M5 12h14" /></>);
-export const IconCopy = P(<><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h8" /></>);
-export const IconKey = P(<><circle cx="8" cy="15" r="4" /><path d="m11 12 9-9M16 7l3 3" /></>);
-export const IconAward = P(<><circle cx="12" cy="9" r="6" /><path d="m8.5 14 -1.5 7 5-3 5 3-1.5-7" /></>);
-export const IconPrint = P(<><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" /><rect x="7" y="14" width="10" height="7" rx="1" /></>);
-export const IconBolt = P(<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z" />);
-export const IconSearch = P(<><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>);
-export const IconLink = P(<><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></>);
+const ph = (C, base = 'regular') => function Icon({ width, height, size, weight, strokeWidth, ...rest }) {
+  return <C size={size || width || height || 20} weight={weight || base} aria-hidden="true" {...rest} />;
+};
 
-export const IconLock = P(<><rect x="5" y="11" width="14" height="10" rx="2.5" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>);
-export const IconPlay = P(<><circle cx="12" cy="12" r="9" /><path d="M10 8.5v7l6-3.5-6-3.5z" fill="currentColor" stroke="none" /></>);
-export const IconDoc = P(<><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M14 3v5h5M9 13h6M9 17h6" /></>);
-export const IconUp = P(<path d="m6 15 6-6 6 6" />);
-export const IconDown = P(<path d="m6 9 6 6 6-6" />);
-export const IconSettings = P(<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></>);
-export const IconCrown = P(<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z" />);
-export const IconGlobe = P(<><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" /></>);
-export const IconInstagram = P(<><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r=".8" fill="currentColor" /></>);
-export const IconTelegram = P(<path d="M21 4 3 11l6 2.2M21 4l-3 16-6.5-5.3M21 4 9 13.2m0 0V19l2.5-4.3" />);
-export const IconRefresh = P(<><path d="M20 11a8 8 0 0 0-14.6-4.5M4 4v4h4" /><path d="M4 13a8 8 0 0 0 14.6 4.5M20 20v-4h-4" /></>);
-export const IconSend = P(<path d="M21 3 3 10.5l7 2.5 2.5 7L21 3zM10 13l4-4" />);
+export const IconDashboard = ph(SquaresFour);
+export const IconRoad = ph(Path);
+export const IconQuiz = ph(ListChecks);
+export const IconChart = ph(ChartLineUp);
+export const IconBookmark = ph(BookmarkSimple);
+export const IconBookmarkFill = ph(BookmarkSimple, 'fill');
+export const IconBriefcase = ph(Briefcase);
+export const IconUsers = ph(UsersThree);
+export const IconLayers = ph(Stack);
+export const IconUser = ph(User);
+export const IconSun = ph(Sun);
+export const IconMoon = ph(Moon);
+export const IconLogout = ph(SignOut);
+export const IconPlus = ph(Plus);
+export const IconUpload = ph(UploadSimple);
+export const IconDownload = ph(DownloadSimple);
+export const IconTrash = ph(Trash);
+export const IconEdit = ph(PencilSimple);
+export const IconCheck = ph(Check);
+export const IconX = ph(X);
+export const IconEye = ph(Eye);
+export const IconEyeOff = ph(EyeSlash);
+export const IconFlame = ph(Fire);
+export const IconTarget = ph(Target);
+export const IconClock = ph(Clock);
+export const IconChevron = ph(CaretDown);
+export const IconBack = ph(ArrowLeft);
+export const IconArrow = ph(ArrowRight);
+export const IconMenu = ph(List);
+export const IconFlag = ph(Flag);
+export const IconStrike = ph(Prohibit);
+export const IconCopy = ph(Copy);
+export const IconKey = ph(Key);
+export const IconAward = ph(Medal);
+export const IconPrint = ph(Printer);
+export const IconBolt = ph(Lightning);
+export const IconSearch = ph(MagnifyingGlass);
+export const IconLink = ph(Link);
+export const IconLock = ph(Lock);
+export const IconPlay = ph(Play);
+export const IconDoc = ph(FileText);
+export const IconUp = ph(ArrowUp);
+export const IconDown = ph(ArrowDown);
+export const IconSettings = ph(GearSix);
+export const IconCrown = ph(Crown);
+export const IconGlobe = ph(Globe);
+export const IconInstagram = ph(InstagramLogo);
+export const IconTelegram = ph(TelegramLogo);
+export const IconRefresh = ph(ArrowsClockwise);
+export const IconSend = ph(PaperPlaneRight);
+export const IconBook = ph(BookOpenText);
+export const IconGame = ph(GameController);
+export const IconMore = ph(DotsThree);
+export const IconVolume = ph(SpeakerHigh);
+export const IconFlip = ph(Cards);
+
 export const IconGoogle = (props) => (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" {...props}>
     <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.4h6.5a5.6 5.6 0 0 1-2.4 3.6v3h3.9c2.2-2.1 3.5-5.1 3.5-8.7z" />
@@ -86,8 +91,3 @@ export function AppIcon({ size = 40 }) {
     </span>
   );
 }
-export const IconBook = P(<><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z" /><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5" /><path d="M9 7h7M9 10.5h5" /></>);
-export const IconGame = P(<><path d="M6 8h12a4 4 0 0 1 4 4v1.5a3.5 3.5 0 0 1-6.3 2.1L14.5 14h-5l-1.2 1.6A3.5 3.5 0 0 1 2 13.5V12a4 4 0 0 1 4-4z" /><path d="M7 11v3M5.5 12.5h3M16 11.5h.01M18 13.5h.01" /></>);
-export const IconMore = P(<><circle cx="5" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="19" cy="12" r="1.4" /></>);
-export const IconVolume = P(<><path d="M4 9h4l5-4v14l-5-4H4z" /><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /></>);
-export const IconFlip = P(<><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5" /><path d="M20 3.5v5h-5" /><path d="M20 12a8 8 0 0 1-13.7 5.6L4 15.5" /><path d="M4 20.5v-5h5" /></>);

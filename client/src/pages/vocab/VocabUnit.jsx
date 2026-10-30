@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Confirm, Field, Gate, Modal, Segmented, useAsync } from '../../components/ui.jsx';
-import { IconArrow, IconEdit, IconPlay, IconPlus, IconTrash, IconVolume } from '../../components/icons.jsx';
+import { IconArrow, IconBack, IconBook, IconEdit, IconFlip, IconPlay, IconPlus, IconQuiz, IconTrash, IconVolume } from '../../components/icons.jsx';
+import { Ring } from './VocabHome.jsx';
 import { VideoPlayer } from '../student/Roadmap.jsx';
 import Flashcards, { highlight, speak } from './Flashcards.jsx';
 import VocabTest from './VocabTest.jsx';
@@ -22,7 +23,8 @@ export function VocabReview() {
   const st = useAsync(() => api.get('/vocab/due'), []);
   return (
     <div className="page">
-      <header className="lesson-head"><Link to="/vocab" className="crumb">← Vocabulary</Link><h1>Review</h1></header>
+      <div className="vu-top"><Link className="btn ghost sm vu-back" to="/vocab"><IconBack width={18} height={18} /> Vocabulary</Link></div>
+      <header className="vu-hero card"><div className="vu-hero-main"><span className="vu-tag">SPACED REVIEW</span><h1>Words due today</h1></div></header>
       <Gate state={st}>{(d) => <Flashcards words={d.words} title="Words due for review" onDone={() => nav('/vocab')} />}</Gate>
     </div>
   );
@@ -38,25 +40,55 @@ function Unit({ u, reload }) {
   const counts = { n: u.words.filter((w) => w.state === 'new').length, l: u.words.filter((w) => w.state === 'learning').length, r: u.words.filter((w) => w.state === 'review').length };
   const finish = () => { setTab('words'); reload(); };
 
+  const learnedPct = u.words.length ? counts.r / u.words.length : 0;
+  const TABS = [
+    { value: 'words', label: 'Words', icon: <IconBook width={18} height={18} /> },
+    ...(teacher ? [] : [{ value: 'cards', label: 'Flashcards', icon: <IconFlip width={18} height={18} /> }]),
+    { value: 'test', label: 'Test', icon: <IconQuiz width={18} height={18} /> },
+  ];
+
   return (
     <>
-      <header className="lesson-head">
-        <Link to="/vocab" className="crumb">← Vocabulary · {u.set.title}</Link>
-        <small className="eyebrow-ink">UNIT {u.n} · {u.words.length} WORDS</small>
-        <h1>{u.title}</h1>
+      <div className="vu-top">
+        <Link className="btn ghost sm vu-back" to="/vocab"><IconBack width={18} height={18} /> Vocabulary</Link>
+        <nav className="vu-steps" aria-label={`${u.set.title} units`}>
+          <span className="vu-steps-label">{u.set.title}</span>
+          {u.siblings.map((s, k) => (
+            <Link key={s.id} to={`/vocab/unit/${s.id}`} className={s.id === u.id ? 'on' : ''} aria-current={s.id === u.id ? 'page' : undefined} title={s.title}>{k + 1}</Link>
+          ))}
+        </nav>
+      </div>
+
+      <header className="vu-hero card">
+        <div className="vu-hero-main">
+          <span className="vu-tag">{u.set.title.toUpperCase()} · UNIT {idx + 1} OF {u.siblings.length}</span>
+          <h1>{u.title}</h1>
+          <div className="vu-meta">
+            <span><IconBook width={16} height={16} /> {u.words.length} words</span>
+            {u.set.video_url && <button className="btn soft sm" onClick={() => setVideo(true)}><IconPlay width={16} height={16} /> Watch the {u.set.title} video</button>}
+          </div>
+        </div>
+        {!teacher && (
+          <div className="vu-stats">
+            <div className="vu-ring"><Ring value={learnedPct} size={92} stroke={8} /><b>{Math.round(learnedPct * 100)}%</b><small>learned</small></div>
+            <ul>
+              <li className="n"><i>{counts.n}</i>New</li>
+              <li className="l"><i>{counts.l}</i>Learning</li>
+              <li className="r"><i>{counts.r}</i>Learned</li>
+            </ul>
+          </div>
+        )}
       </header>
 
-      <div className="row wrap between" style={{ gap: 10 }}>
-        <Segmented value={tab} onChange={setTab} options={[{ value: 'words', label: 'Words' }, ...(teacher ? [] : [{ value: 'cards', label: 'Flashcards' }]), { value: 'test', label: 'Test' }]} />
-        <div className="row" style={{ gap: 8 }}>
-          {u.set.video_url && <button className="btn soft sm" onClick={() => setVideo(true)}><IconPlay width={16} height={16} /> {u.set.title} video</button>}
-          {!teacher && tab === 'words' && <button className="btn primary sm" onClick={() => setTab('cards')}>Start learning <IconArrow width={16} height={16} /></button>}
+      <div className="vu-bar">
+        <div className="vu-tabs" role="tablist">
+          {TABS.map((t) => <button key={t.value} role="tab" aria-selected={tab === t.value} className={tab === t.value ? 'on' : ''} onClick={() => setTab(t.value)}>{t.icon}{t.label}</button>)}
         </div>
+        {!teacher && tab === 'words' && <button className="btn primary vu-cta" onClick={() => setTab('cards')}>Start learning <IconArrow width={18} height={18} /></button>}
       </div>
 
       {tab === 'words' && (
         <>
-          {!teacher && <div className="fc-counts big"><span className="n">{counts.n} New</span><span className="l">{counts.l} Learning</span><span className="r">{counts.r} Learned</span></div>}
           {teacher ? <WordEditor u={u} reload={reload} /> : (
             <div className="v-words">
               {u.words.map((w) => (
@@ -75,8 +107,8 @@ function Unit({ u, reload }) {
       {tab === 'test' && <VocabTest words={u.words} unitId={u.id} setId={u.set.id} onDone={finish} />}
 
       <nav className="lesson-nav">
-        {prev ? <Link className="btn ghost" to={`/vocab/unit/${prev.id}`}>← Unit {prev.n}</Link> : <span />}
-        {next && <Link className="btn soft" to={`/vocab/unit/${next.id}`}>Unit {next.n} →</Link>}
+        {prev ? <Link className="btn ghost" to={`/vocab/unit/${prev.id}`}><IconBack width={18} height={18} /> Unit {idx}</Link> : <span />}
+        {next && <Link className="btn soft" to={`/vocab/unit/${next.id}`}>Unit {idx + 2}: {next.title} <IconArrow width={18} height={18} /></Link>}
       </nav>
       {video && <Modal wide title={`${u.set.title} · video`} onClose={() => setVideo(false)}><VideoPlayer url={u.set.video_url} /></Modal>}
     </>

@@ -159,7 +159,7 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--mute
 .loading { display: flex; align-items: center; gap: 10px; color: var(--muted); padding: 40px 0; justify-content: center; }
 .error-box { background: var(--bad-soft); color: var(--bad); border-radius: 14px; padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .empty { text-align: center; padding: 36px 16px; display: grid; gap: 8px; justify-items: center; }
-.empty-icon { width: 56px; height: 56px; display: grid; place-items: center; border-radius: 18px; background: var(--primary-soft); color: var(--primary); } .empty-icon svg { width: 26px; height: 26px; }
+.empty-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 20px; background: var(--sun-50); color: var(--night); transform: rotate(-4deg); } :root[data-theme="dark"] .empty-icon { color: var(--sun); } .empty-icon svg { width: 32px; height: 32px; }
 .avatar { display: inline-grid; place-items: center; border-radius: 50%; color: #fff; font-weight: 700; flex: none; }
 .kbd { font: 600 .72rem ui-monospace, monospace; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 1px 6px; background: var(--surface-2); }
 
@@ -1262,3 +1262,50 @@ input[type='checkbox'], input[type='radio'] { width: auto; }
   .page-head > .btn, .page-actions { width: 100%; }
 }
 @media (max-width: 640px) { .web-savebar { flex-wrap: wrap; bottom: calc(80px + env(safe-area-inset-bottom)); } .web-savebar > * { flex: 1 1 100%; } }
+
+/* ---------- vocabulary unit page ---------- */
+.vu-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.vu-back { gap: 6px; padding-left: 10px; }
+.vu-steps { display: flex; align-items: center; gap: 6px; padding: 4px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface); }
+.vu-steps-label { padding: 0 8px 0 10px; font: 700 .8rem var(--font); color: var(--muted); }
+.vu-steps a { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; font: 800 .85rem var(--display); color: var(--ink); text-decoration: none; transition: background .15s, color .15s; }
+.vu-steps a:hover { background: var(--surface-2); text-decoration: none; }
+.vu-steps a.on { background: var(--night); color: var(--sun); }
+:root[data-theme='dark'] .vu-steps a.on { background: var(--sun); color: #161B3D; }
+
+.vu-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center; padding: clamp(20px, 3vw, 30px); border-radius: 24px; animation: rise .45s cubic-bezier(.2,.8,.2,1) both; }
+.vu-hero-main { display: grid; gap: 10px; justify-items: start; }
+.vu-tag { display: inline-block; padding: 5px 10px; border-radius: 8px; background: var(--sun-50); color: var(--sun-ink); font: 800 .7rem var(--font); letter-spacing: .1em; }
+.vu-hero h1 { font-size: clamp(1.6rem, 1.1rem + 2vw, 2.4rem); line-height: 1.12; margin: 0; }
+.vu-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; color: var(--muted); font-weight: 600; font-size: .9rem; }
+.vu-meta > span { display: inline-flex; align-items: center; gap: 6px; }
+.vu-stats { display: flex; align-items: center; gap: 18px; }
+.vu-ring { position: relative; width: 92px; height: 92px; display: grid; place-items: center; }
+.vu-ring svg { position: absolute; inset: 0; }
+.vu-ring b { font: 800 1.25rem/1 var(--display); margin-top: -8px; } .vu-ring small { position: absolute; bottom: 24px; font-size: .68rem; color: var(--muted); font-weight: 700; }
+.vu-stats ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.vu-stats li { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: .88rem; }
+.vu-stats li i { display: grid; place-items: center; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 9px; font: 800 .85rem var(--display); font-style: normal; }
+.vu-stats li.n i { background: var(--primary-soft); color: var(--primary); }
+.vu-stats li.l i { background: var(--sun-50); color: var(--sun-ink); }
+.vu-stats li.r i { background: var(--good-soft); color: var(--good); }
+
+.vu-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.vu-tabs { display: inline-flex; gap: 4px; padding: 5px; border-radius: 16px; background: var(--surface-2); }
+.vu-tabs button { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); font: 700 .92rem var(--font); cursor: pointer; transition: background .15s, color .15s, box-shadow .15s; }
+.vu-tabs button:hover { color: var(--ink); }
+.vu-tabs button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 0 var(--line), 0 0 0 1px var(--line); }
+.vu-tabs button.on svg { color: var(--primary); }
+.vu-tabs button:focus-visible { outline: 3px solid var(--sun); outline-offset: 1px; }
+.vu-cta { height: 46px; padding: 0 20px; }
+
+@media (max-width: 720px) {
+  .vu-hero { grid-template-columns: 1fr; gap: 18px; }
+  .vu-stats { justify-content: space-between; padding-top: 16px; border-top: 1px solid var(--line); }
+  .vu-stats ul { grid-template-columns: repeat(3, auto); gap: 10px; }
+  .vu-stats li { flex-direction: column; gap: 4px; font-size: .74rem; color: var(--muted); }
+  .vu-ring { width: 76px; height: 76px; } .vu-ring svg { width: 76px; height: 76px; } .vu-ring small { bottom: 17px; }
+  .vu-top { gap: 8px; } .vu-steps { width: 100%; justify-content: space-between; } .vu-steps a { width: 38px; height: 38px; }
+  .vu-bar { display: grid; } .vu-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; } .vu-tabs button { justify-content: center; padding: 0 8px; }
+  .vu-cta { width: 100%; justify-content: center; }
+}

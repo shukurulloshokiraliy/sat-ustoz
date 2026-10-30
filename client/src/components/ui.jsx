@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, cloneElement, isValidElement } from 'react';
 import { createPortal } from 'react-dom';
 import { IconX } from './icons.jsx';
 
@@ -49,7 +49,7 @@ export const ErrorBox = ({ error, onRetry }) => (
 
 export const Empty = ({ icon, title, text, children }) => (
   <div className="empty">
-    {icon && <div className="empty-icon">{icon}</div>}
+    {icon && <div className="empty-icon">{isValidElement(icon) ? cloneElement(icon, { weight: 'duotone', width: 30 }) : icon}</div>}
     <h3>{title}</h3>
     {text && <p className="muted">{text}</p>}
     {children}
