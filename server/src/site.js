@@ -271,7 +271,7 @@ export function registerSiteAdmin(app, { h, bad, requireMaster }) {
     if (key === 'about' && data) {
       for (const f of ['instagram', 'telegram', 'photo_url']) {
         const v = String(data[f] || '').trim();
-        if (v && !/^https?:\/\//i.test(v)) return bad(res, `“${f}” must be a link starting with https://`);
+        if (v && !/^https?:\/\//i.test(v)) return bad(res, `${{ instagram: 'Instagram', telegram: 'Telegram', photo_url: 'Photo' }[f]} link must start with https://`);
         data[f] = v;
       }
     }
