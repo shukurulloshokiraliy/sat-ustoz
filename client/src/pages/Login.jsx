@@ -9,7 +9,8 @@ export default function Login() {
   const { login, register, google: googleLogin } = useAuth();
   const { theme, toggle } = useTheme();
   const [mode, setMode] = useState(() => (window.location.pathname === '/signup' ? 'signup' : 'signin'));
-  const [form, setForm] = useState({ name: '', login: '', password: '' });
+  const [form, setForm] = useState({ name: '', login: '', password: '', password2: '' });
+  const [showPw, setShowPw] = useState(false);
   const [err, setErr] = useState(() => sessionStorage.getItem('auth_error') || '');
   const [busy, setBusy] = useState(false);
   const [cfg, setCfg] = useState(null);
@@ -20,6 +21,7 @@ export default function Login() {
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const submit = async (e) => {
     e.preventDefault();
+    if (mode === 'signup' && form.password !== form.password2) { setErr('Passwords do not match'); return; }
     setBusy(true); setErr('');
     try {
       if (mode === 'signup') await register({ name: form.name.trim(), email: form.login.trim(), password: form.password });
@@ -50,7 +52,7 @@ export default function Login() {
           <div className="login-mark"><Logo size={30} /></div>
           <div>
             <h1>{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h1>
-            <p className="muted" style={{ marginTop: 6 }}>{mode === 'signup' ? 'Start with a short readiness check, then follow your roadmap to 800.' : 'Sign in to continue your SAT prep.'}</p>
+            <p className="muted" style={{ marginTop: 6 }}>{mode === 'signup' ? 'Free practice tests, your results saved, a roadmap to 800.' : 'Sign in to continue your SAT prep.'}</p>
           </div>
           <Segmented value={mode} onChange={setMode} options={[{ value: 'signin', label: 'Sign in' }, { value: 'signup', label: 'Create account' }]} />
           {cfg?.google && (
@@ -63,8 +65,16 @@ export default function Login() {
           <label className="field"><span>{mode === 'signup' ? 'Email' : 'Email or login'}</span>
             <input autoFocus type={mode === 'signup' ? 'email' : 'text'} autoComplete={mode === 'signup' ? 'email' : 'username'} autoCapitalize="none" value={form.login} onChange={set('login')} required /></label>
           <label className="field"><span>Password</span>
-            <input type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={form.password} onChange={set('password')} required minLength={mode === 'signup' ? 6 : undefined} />
-            {mode === 'signup' && <small className="muted">At least 6 characters</small>}</label>
+            <div className="pw-wrap">
+              <input type={showPw ? 'text' : 'password'} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={form.password} onChange={set('password')} required minLength={mode === 'signup' ? 6 : undefined} />
+              <button type="button" className="pw-eye" onClick={() => setShowPw(!showPw)} aria-label={showPw ? 'Hide password' : 'Show password'}>{showPw ? 'Hide' : 'Show'}</button>
+            </div>
+            {mode === 'signup' && <small className="muted">At least 6 characters — 6 digits are fine too</small>}</label>
+          {mode === 'signup' && (
+            <label className="field"><span>Repeat password</span>
+              <input type={showPw ? 'text' : 'password'} autoComplete="new-password" value={form.password2} onChange={set('password2')} required />
+              {form.password2 && form.password2 !== form.password && <small className="bad-text">Passwords do not match</small>}</label>
+          )}
           {err && <div className="error-box" role="alert">{err}</div>}
           <button className="btn primary lg" disabled={busy}>{busy ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Sign in'}</button>
           <p className="muted center" style={{ fontSize: '.82rem' }}>

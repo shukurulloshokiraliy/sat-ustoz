@@ -48,6 +48,11 @@ export function VideoPlayer({ url }) {
   const yt = youtubeId(url);
   if (yt) return <div className="video-frame"><iframe src={`https://www.youtube-nocookie.com/embed/${yt}`} title="Video lesson" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen /></div>;
   if (isFile(url)) return <div className="video-frame"><video src={url} controls preload="metadata" /></div>;
+  const drive = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]{20,})/)?.[1];
+  if (drive) return <div className="video-frame"><iframe src={`https://drive.google.com/file/d/${drive}/preview`} title="Video lesson" allow="autoplay; fullscreen" allowFullScreen /></div>;
+  const vimeo = url.match(/vimeo\.com\/(?:video\/)?(\d+)/)?.[1];
+  if (vimeo) return <div className="video-frame"><iframe src={`https://player.vimeo.com/video/${vimeo}`} title="Video lesson" allow="fullscreen; picture-in-picture" allowFullScreen /></div>;
+  if (/^https?:\/\//.test(url)) return <a className="btn soft" href={url} target="_blank" rel="noreferrer">Open the video</a>;
   return null;
 }
 

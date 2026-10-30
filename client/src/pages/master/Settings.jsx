@@ -46,8 +46,25 @@ function Form({ init }) {
       </Card>
       <Card className="stack">
         <h2>Integrations</h2>
+        {!init.google_env && (
+          <Field label="Google sign-in — Client ID" hint="public value, not a secret">
+            <input value={f.google_client_id || ''} onChange={set('google_client_id')} placeholder="1234567890-abc123.apps.googleusercontent.com" />
+          </Field>
+        )}
+        {!init.google_env && (
+          <details>
+            <summary className="linkish" style={{ cursor: 'pointer' }}>How to get the Client ID (5 minutes)</summary>
+            <ol className="muted tg-steps" style={{ marginTop: 8 }}>
+              <li>Open <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer">Google Cloud Console → Credentials</a> and create a project (any name).</li>
+              <li><b>OAuth consent screen</b>: User type <b>External</b>, app name “SAT Ustoz”, your email → Save. Then <b>Publish app</b>.</li>
+              <li><b>Create credentials → OAuth client ID</b> → Application type <b>Web application</b>.</li>
+              <li><b>Authorized JavaScript origins</b>: <code>https://sat-ustoz.vercel.app</code> (and your own domain if you add one).</li>
+              <li>Copy the <b>Client ID</b> (ends with .apps.googleusercontent.com), paste it here and press Save settings.</li>
+            </ol>
+          </details>
+        )}
         <div className="row wrap" style={{ gap: 8 }}>
-          <span className={`chip ${init.google_configured ? 'good' : 'warn'}`}>{init.google_configured ? <><IconCheck width={13} height={13} /> Google sign-in on</> : 'Google sign-in off — set GOOGLE_CLIENT_ID in server/.env'}</span>
+          <span className={`chip ${init.google_configured ? 'good' : 'warn'}`}>{init.google_configured ? <><IconCheck width={13} height={13} /> Google sign-in on</> : 'Google sign-in off'}</span>
           <span className="chip">{init.database === 'postgres' ? 'Database: Supabase Postgres' : 'Database: local (embedded)'}</span>
         </div>
       </Card>

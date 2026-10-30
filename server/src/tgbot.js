@@ -120,7 +120,7 @@ async function chooseMethod(chat, planId) {
   const rows = [];
   if (payToken) rows.push([{ text: '💳 Click / Payme orqali (avtomatik)', callback_data: `click:${p.id}` }]);
   if (s.pay_card) rows.push([{ text: '🏦 Karta orqali o\'tkazish', callback_data: `card:${p.id}` }]);
-  if (!rows.length) return send(chat, "To'lov usuli hali sozlanmagan. Iltimos, o'qituvchingizga yozing.");
+  if (!rows.length) return send(chat, "To'lov kartasi hali kiritilmagan — ustoz tez orada qo'shadi. Savolingiz bo'lsa, «💬 Savol berish» tugmasini bosing.");
   await send(chat, `<b>${p.label}</b> — ${money(p.amount, p.currency)}\nTo'lov usulini tanlang:`, { reply_markup: { inline_keyboard: rows } });
 }
 

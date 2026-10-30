@@ -64,6 +64,18 @@ console.log(`[db] ${DB_KIND === 'postgres' ? 'PostgreSQL (DATABASE_URL)' : 'embe
 const genPassword = () => crypto.randomBytes(5).toString('hex'); // 10 chars
 const slug = (s) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '').slice(0, 14) || 'student';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+/** One mailbox = one account: Gmail ignores dots and “+tags”, so t.est+1@gmail.com is the same as test@gmail.com. */
+const canonEmail = (e) => {
+  const [local = '', domain = ''] = String(e || '').trim().toLowerCase().split('@');
+  if (domain === 'gmail.com' || domain === 'googlemail.com') return `${local.split('+')[0].replace(/\./g, '')}@gmail.com`;
+  return `${local.split('+')[0]}@${domain}`;
+};
+async function emailTaken(email) {
+  const c = canonEmail(email);
+  const [, domain] = c.split('@');
+  const rows = await db.all("SELECT email, login FROM users WHERE email ILIKE ? OR email ILIKE ? OR login ILIKE ?", [`%@${domain}`, '%@googlemail.com', `%@${domain}`]);
+  return rows.some((r) => canonEmail(r.email || '') === c || canonEmail(r.login || '') === c);
+}
 async function uniqueLogin(name) {
   const base = slug(name);
   for (let i = 0; i < 50; i++) {
@@ -124,8 +136,8 @@ async function mepayload(user) {
 app.get('/api/config', h(async (req, res) => {
   const s = await getSettings();
   res.json({
-    googleClientId: process.env.GOOGLE_CLIENT_ID || '',
-    google: !!process.env.GOOGLE_CLIENT_ID,
+    googleClientId: process.env.GOOGLE_CLIENT_ID || s.google_client_id || '',
+    google: !!(process.env.GOOGLE_CLIENT_ID || s.google_client_id),
     telegram_bot: s.telegram_bot,
     prices: { month: +s.price_month || 0, quarter: +s.price_quarter || 0, currency: s.currency },
   });
@@ -149,8 +161,9 @@ app.post('/api/auth/register', h(async (req, res) => {
   const password = String(req.body?.password || '');
   if (name.length < 2) return bad(res, 'Please enter your full name');
   if (!EMAIL_RE.test(email)) return bad(res, 'Please enter a valid email');
-  if (password.length < 6) return bad(res, 'Password must be at least 6 characters');
-  if (await db.one('SELECT 1 AS x FROM users WHERE email = ? OR login = ?', [email, email])) return bad(res, 'An account with this email already exists — sign in instead', 409);
+  if (password.length < 6) return bad(res, 'Password must be at least 6 characters (numbers are fine, e.g. 6 digits)');
+  if (password.length > 100) return bad(res, 'Password is too long');
+  if (await emailTaken(email)) return bad(res, 'An account with this email already exists — sign in instead (or use “Continue with Google”)', 409);
   // hosted without MASTER_PASSWORD: the owner's email (MASTER_EMAIL) becomes the teacher on first sign-up
   const owner = process.env.MASTER_EMAIL && email === process.env.MASTER_EMAIL.trim().toLowerCase()
     && !(await db.one("SELECT 1 AS x FROM users WHERE role = 'master'"));
@@ -163,8 +176,13 @@ app.post('/api/auth/register', h(async (req, res) => {
 }));
 
 app.post('/api/auth/google', h(async (req, res) => {
-  const g = await verifyGoogleCredential(req.body?.credential);
+  const g = await verifyGoogleCredential(req.body?.credential, (await getSettings()).google_client_id);
   let u = await db.one('SELECT * FROM users WHERE email = ? OR login = ?', [g.email, g.email]);
+  if (!u && (await emailTaken(g.email))) {
+    // same Gmail written with dots / +tag on the website account → sign in to that account
+    const all = await db.all("SELECT * FROM users WHERE email ILIKE '%@gmail.com' OR email ILIKE '%@googlemail.com'");
+    u = all.find((x) => canonEmail(x.email) === canonEmail(g.email)) || null;
+  }
   if (u) {
     await db.run("UPDATE users SET last_login_at = now(), avatar_url = CASE WHEN avatar_url = '' THEN ? ELSE avatar_url END WHERE id = ?", [g.avatar, u.id]);
   } else {
@@ -213,7 +231,8 @@ app.put('/api/me/password', h(async (req, res) => {
 
 // ---------- settings (teacher) ----------
 app.get('/api/settings', requireMaster, h(async (req, res) => {
-  res.json({ ...(await getSettings()), google_configured: !!process.env.GOOGLE_CLIENT_ID, database: DB_KIND });
+  const st = await getSettings();
+  res.json({ ...st, google_configured: !!(process.env.GOOGLE_CLIENT_ID || st.google_client_id), google_env: !!process.env.GOOGLE_CLIENT_ID, database: DB_KIND });
 }));
 app.put('/api/settings', requireMaster, h(async (req, res) => {
   const b = req.body || {};
@@ -223,6 +242,11 @@ app.put('/api/settings', requireMaster, h(async (req, res) => {
   if ('price_month' in b) patch.price_month = digits(b.price_month);
   if ('price_quarter' in b) patch.price_quarter = digits(b.price_quarter);
   if ('currency' in b) patch.currency = String(b.currency || 'UZS').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || 'UZS';
+  if ('google_client_id' in b) {
+    const id = String(b.google_client_id || '').trim();
+    if (id && !/^[\w-]+\.apps\.googleusercontent\.com$/.test(id)) return bad(res, 'Google Client ID looks like 1234-abc.apps.googleusercontent.com');
+    patch.google_client_id = id;
+  }
   if ('pay_card' in b) patch.pay_card = String(b.pay_card || '').replace(/[^\d ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 23);
   if ('pay_holder' in b) patch.pay_holder = String(b.pay_holder || '').trim().slice(0, 60);
   if ('telegram_bot' in b) patch.telegram_bot = String(b.telegram_bot || '').trim().replace(/^@/, '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 64);

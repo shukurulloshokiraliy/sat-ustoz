@@ -329,6 +329,7 @@ const DEFAULT_SETTINGS = {
   currency: 'UZS',
   telegram_bot: process.env.TELEGRAM_BOT || '',
   pay_card: '',
+  google_client_id: '',
   pay_holder: '',
 };
 export async function getSettings() {

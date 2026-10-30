@@ -67,8 +67,8 @@ export const requireStudent = (req, res, next) =>
  * Only the public GOOGLE_CLIENT_ID is needed — no client secret.
  */
 const GOOGLE_JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
-export async function verifyGoogleCredential(credential) {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
+export async function verifyGoogleCredential(credential, fromSettings = '') {
+  const clientId = process.env.GOOGLE_CLIENT_ID || fromSettings;
   if (!clientId) throw Object.assign(new Error('Google sign-in is not configured on this server'), { status: 400 });
   let payload;
   try {

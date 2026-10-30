@@ -978,3 +978,7 @@ input[type='checkbox'], input[type='radio'] { width: auto; }
 .sp-msg.teacher { justify-self: end; background: var(--primary-soft); }
 .sp-msg p { white-space: pre-wrap; } .sp-msg small { color: var(--muted); font-size: .74rem; } .sp-msg img { max-width: 260px; border-radius: 10px; }
 .sp-empty { display: grid; place-items: center; min-height: 200px; }
+
+.pw-wrap { position: relative; } .pw-wrap input { padding-right: 70px; }
+.pw-eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: 0; color: var(--primary); font-weight: 700; font-size: .82rem; padding: 6px 8px; border-radius: 8px; }
+.pw-eye:hover { background: var(--primary-soft); }
