@@ -4,7 +4,7 @@ import { useAuth, useTheme } from '../context.jsx';
 import { Avatar } from './ui.jsx';
 import {
   IconBookmark, IconBriefcase, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
-  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, Logo,
+  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, Logo,
 } from './icons.jsx';
 
 const STUDENT_NAV = [
@@ -26,6 +26,7 @@ const MASTER_NAV = [
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad },
   { to: '/question-bank/manage', label: 'Question Bank', icon: IconTarget },
   { to: '/website', label: 'Website', icon: IconGlobe },
+  { to: '/support', label: 'Support', icon: IconSend },
   { to: '/settings', label: 'Settings', icon: IconSettings },
 ];
 

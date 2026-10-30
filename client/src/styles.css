@@ -960,3 +960,21 @@ input[type='checkbox'], input[type='radio'] { width: auto; }
 
 .pl-invite { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 18px; border: 1.5px dashed var(--line); border-radius: 18px; color: var(--ink); text-decoration: none; transition: border-color .2s; }
 .pl-invite:hover { text-decoration: none; border-color: var(--primary); }
+
+/* support inbox (teacher) */
+.sp-grid { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .sp-grid { grid-template-columns: 1fr; } }
+.sp-list { display: grid; gap: 8px; max-height: calc(100vh - 220px); overflow: auto; padding-right: 2px; }
+.sp-item { display: grid; gap: 6px; text-align: left; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); transition: border-color .15s; }
+.sp-item:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--line)); } .sp-item.on { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.sp-item.open { border-left: 4px solid var(--sun); } .sp-item.closed { opacity: .7; }
+.sp-item p { color: var(--muted); font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-item small, .sp-item .muted { font-size: .78rem; }
+.sp-cat { font: 700 .72rem var(--font); padding: 3px 9px; border-radius: 99px; background: var(--surface-2); color: var(--muted); }
+.sp-cat.idea { background: var(--sky-50); color: var(--primary); } .sp-cat.complaint { background: var(--coral-50); color: var(--coral-ink); } .sp-cat.payment { background: var(--sun-50); color: var(--sun-ink); }
+.sp-thread { display: grid; gap: 14px; }
+.sp-msgs { display: grid; gap: 10px; max-height: 52vh; overflow: auto; padding: 4px; }
+.sp-msg { max-width: 78%; padding: 10px 14px; border-radius: 16px; background: var(--surface-2); display: grid; gap: 4px; justify-self: start; }
+.sp-msg.teacher { justify-self: end; background: var(--primary-soft); }
+.sp-msg p { white-space: pre-wrap; } .sp-msg small { color: var(--muted); font-size: .74rem; } .sp-msg img { max-width: 260px; border-radius: 10px; }
+.sp-empty { display: grid; place-items: center; min-height: 200px; }

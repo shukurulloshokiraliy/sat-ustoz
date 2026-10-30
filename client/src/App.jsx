@@ -34,6 +34,7 @@ import Landing from './pages/public/Landing.jsx';
 import Practice from './pages/public/Practice.jsx';
 import { AboutPage, PageView, SectionPage } from './pages/public/Pages.jsx';
 import Website from './pages/master/Website.jsx';
+import Support from './pages/master/Support.jsx';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -83,6 +84,7 @@ export default function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="question-bank/manage" element={<QbankAdmin />} />
             <Route path="website" element={<Website />} />
+            <Route path="support" element={<Support />} />
           </>
         ) : (
           <>

@@ -13,6 +13,8 @@
 import crypto from 'node:crypto';
 import { db, getSettings } from './db.js';
 import { getSecret, subActive } from './auth.js';
+import { getBlock } from './site.js';
+import { CATS, MENU, answer, closeTicket, getState, menuKeyboard, migrateSupport, registerSupportAdmin, setState, ticketByAdminMessage, userMessage } from './tgsupport.js';
 
 export async function migrateBot() {
   await db.exec(`
@@ -35,6 +37,7 @@ CREATE TABLE IF NOT EXISTS tg_state (chat_id TEXT PRIMARY KEY, data TEXT NOT NUL
 ALTER TABLE tg_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tg_state ENABLE ROW LEVEL SECURITY;
 `);
+  await migrateSupport();
 }
 
 // ---------- internal settings (never sent to the browser) ----------
@@ -52,7 +55,16 @@ async function tg(method, body, token) {
   if (!j.ok) throw Object.assign(new Error(`Telegram: ${j.description || r.status}`), { status: 400 });
   return j.result;
 }
+async function download(file_id) {
+  const f = await tg('getFile', { file_id });
+  const token = await getKey('_tg_token');
+  const r = await fetch(`https://api.telegram.org/file/bot${token}/${f.file_path}`, { signal: AbortSignal.timeout(20000) });
+  return { buf: Buffer.from(await r.arrayBuffer()), type: r.headers.get('content-type') || 'application/octet-stream' };
+}
 const send = (chat_id, text, extra = {}) => tg('sendMessage', { chat_id, text, parse_mode: 'HTML', disable_web_page_preview: true, ...extra }).catch((e) => console.error('[tg]', e.message));
+
+const isAdmin = async (chat) => (await admins()).map(String).includes(String(chat));
+const ctx = { tg: (...a) => tg(...a), send: (...a) => send(...a), admins: () => admins(), download: (id) => download(id) };
 
 // ---------- plans ----------
 async function plans() {
@@ -127,7 +139,7 @@ async function cardInfo(chat, planId) {
     `1️⃣ Shu kartaga pul o'tkazing (Click, Payme, Uzum yoki bank ilovasi).`,
     `2️⃣ <b>Chek rasmini (skrinshot) shu yerga yuboring.</b>`,
     `3️⃣ O'qituvchi tasdiqlashi bilan obunangiz yoqiladi — bot sizga xabar beradi.`,
-  ].filter((x) => x !== null).join('\n'));
+  ].filter((x) => x !== null).join('\n'), { reply_markup: { inline_keyboard: [[{ text: "To'lovda muammo bormi? Yozing", callback_data: 'cat:payment' }]] } });
 }
 
 async function sendInvoice(chat, user, planId) {
@@ -206,7 +218,23 @@ async function handle(u) {
     const data = String(q.data || '');
     await tg('answerCallbackQuery', { callback_query_id: q.id }).catch(() => {});
     if (data === 'noop') return;
-    const [act, arg] = data.split(':');
+    const [act, arg, extra] = data.split(':');
+    // ---- support ----
+    if (act === 'cat' && CATS[arg]) { await setState(chat, { category: arg }); return send(chat, CATS[arg].ask, { reply_markup: { inline_keyboard: [[{ text: 'Bekor qilish', callback_data: 'cancel' }]] } }); }
+    if (act === 'cancel') { await setState(chat, {}); return send(chat, 'Bekor qilindi.', { reply_markup: menuKeyboard() }); }
+    if (act === 't_more') { await setState(chat, { ticket: Number(arg) }); return send(chat, `№${arg} murojaatga javobingizni yozing:`, { reply_markup: { inline_keyboard: [[{ text: 'Bekor qilish', callback_data: 'cancel' }]] } }); }
+    if (act === 't_done') { await closeTicket(ctx, Number(arg), 'user'); await tg('editMessageReplyMarkup', { chat_id: chat, message_id: q.message.message_id, reply_markup: { inline_keyboard: [] } }).catch(() => {}); return send(chat, 'Rahmat! Murojaat yopildi. Yana savol bo\'lsa — menyudan yozing.', { reply_markup: menuKeyboard() }); }
+    if (act === 't_rate') {
+      await db.run('UPDATE tg_tickets SET rating = ? WHERE id = ? AND chat_id = ?', [Number(extra) || null, Number(arg), String(chat)]);
+      await tg('editMessageText', { chat_id: chat, message_id: q.message.message_id, text: 'Rahmat, fikringiz qabul qilindi!' }).catch(() => {});
+      return;
+    }
+    if (act === 't_ans' || act === 't_close') {
+      if (!(await isAdmin(q.from.id))) return send(chat, "Bu tugma faqat o'qituvchi uchun.");
+      if (act === 't_close') { await closeTicket(ctx, Number(arg)); return send(chat, `№${arg} yopildi.`); }
+      await setState(chat, { reply_ticket: Number(arg) });
+      return send(chat, `№${arg} uchun javobingizni yozing — u o'quvchiga bot orqali boradi. (/cancel — bekor qilish)`);
+    }
     if (act === 'ok' || act === 'no') {
       if (!(await admins()).map(String).includes(String(q.from.id))) return send(chat, "Bu tugma faqat o'qituvchi uchun.");
       const r = await decide(Number(arg), act === 'ok', q.from.first_name || 'teacher');
@@ -215,6 +243,7 @@ async function handle(u) {
     }
     const user = await db.one('SELECT * FROM users WHERE tg_chat_id = ?', [String(chat)]);
     if (!user) return send(chat, "Avval saytga kiring: Subscription → <b>Pay via Telegram</b> tugmasini bosing.");
+    if (act === 'plans') return showPlans(chat, user);
     if (act === 'plan') return chooseMethod(chat, arg);
     if (act === 'card') return cardInfo(chat, arg);
     if (act === 'click') return sendInvoice(chat, user, arg);
@@ -239,14 +268,26 @@ async function handle(u) {
   }
 
   const text = String(msg.text || '').trim();
+  const st = await getState(chat);
+  if (text === '/cancel') { await setState(chat, {}); return send(chat, 'Bekor qilindi.', { reply_markup: menuKeyboard() }); }
   if (text.startsWith('/admin')) {
     const code = text.split(/\s+/)[1] || '';
     if (code && code === (await getKey('_tg_admin_code'))) {
       const list = await admins();
       if (!list.map(String).includes(String(chat))) await setKey('_tg_admins', JSON.stringify([...list, String(chat)]));
-      return send(chat, "✅ Siz o'qituvchi sifatida ulandingiz. To'lov cheklari shu yerga keladi — ✅/❌ tugmalari bilan tasdiqlaysiz.");
+      return send(chat, "✅ Siz o'qituvchi sifatida ulandingiz.\n\n• To'lov cheklari shu yerga keladi — ✅/❌ bilan tasdiqlaysiz.\n• O'quvchilarning savol, taklif va shikoyatlari ham keladi — xabarga <b>Reply</b> qilib yoki «Javob berish» tugmasi bilan javob yozasiz.");
     }
     return send(chat, "Kod noto'g'ri. Saytdagi Settings → Telegram bot bo'limidagi kodni yuboring: /admin KOD");
+  }
+  // ---- the teacher answers a student ----
+  if (await isAdmin(chat)) {
+    const replyTo = msg.reply_to_message?.message_id;
+    const tid = replyTo ? await ticketByAdminMessage(chat, replyTo) : st.reply_ticket;
+    if (tid && (text || msg.caption)) {
+      await answer(ctx, Number(tid), text || msg.caption, msg.from?.first_name || 'Ustoz');
+      await setState(chat, {});
+      return send(chat, `✅ Javob №${tid} o'quvchiga yuborildi.`);
+    }
   }
   if (text.startsWith('/start')) {
     const code = text.split(/\s+/)[1] || '';
@@ -261,21 +302,59 @@ async function handle(u) {
     } else {
       user = await db.one('SELECT * FROM users WHERE tg_chat_id = ?', [String(chat)]);
     }
+    await setState(chat, {});
     if (!user) {
       const site = await getKey('_site_url');
-      return send(chat, "👋 Assalomu alaykum! Bu <b>SAT Ustoz</b> to'lov boti.\n\nTo'lov qilish uchun saytga kiring → <b>Subscription</b> → <b>Pay via Telegram</b>. Bot hisobingizni o'zi taniydi.",
-        site ? { reply_markup: { inline_keyboard: [[{ text: '🌐 Saytni ochish', url: `${site}/subscribe` }]] } } : {});
+      await send(chat, "👋 Assalomu alaykum! Bu <b>SAT Ustoz</b> boti.\n\nBu yerda obuna uchun to'lov qilasiz, ustozga savol berasiz, taklif yoki shikoyat yozasiz. Pastdagi menyudan tanlang.", { reply_markup: menuKeyboard() });
+      if (code && !uid) return;
+      return send(chat, "To'lov qilish uchun saytga kiring → <b>Subscription</b> → <b>Pay via Telegram</b> — bot hisobingizni o'zi taniydi.",
+        site ? { reply_markup: { inline_keyboard: [[{ text: 'Saytni ochish', url: `${site}/subscribe` }]] } } : {});
     }
+    await send(chat, `Menyu tayyor, ${esc(user.name.split(' ')[0])}. Savol, taklif yoki shikoyat bo'lsa — pastdagi tugmalardan foydalaning.`, { reply_markup: menuKeyboard() });
     return showPlans(chat, user);
   }
-  if (msg.photo || msg.document) {
-    const user = await db.one('SELECT * FROM users WHERE tg_chat_id = ?', [String(chat)]);
-    if (!user) return send(chat, "Avval saytga kiring: Subscription → <b>Pay via Telegram</b>.");
-    return receipt(chat, user, msg);
+  // ---- menu buttons ----
+  const linked = () => db.one('SELECT * FROM users WHERE tg_chat_id = ?', [String(chat)]);
+  if (text === MENU.plans) {
+    const user = await linked();
+    if (user) return showPlans(chat, user);
+    const site = await getKey('_site_url');
+    return send(chat, "Obuna uchun saytga kiring → <b>Subscription</b> → <b>Pay via Telegram</b>. Bot hisobingizni taniydi va tariflarni ko'rsatadi.",
+      site ? { reply_markup: { inline_keyboard: [[{ text: 'Saytni ochish', url: `${site}/subscribe` }]] } } : {});
   }
-  const user = await db.one('SELECT * FROM users WHERE tg_chat_id = ?', [String(chat)]);
-  if (user) return showPlans(chat, user);
-  return send(chat, "To'lov uchun saytda Subscription → <b>Pay via Telegram</b> tugmasini bosing.");
+  if (text === MENU.mine) {
+    const user = await linked();
+    if (!user) return send(chat, "Hisobingiz hali ulanmagan: saytda Subscription → <b>Pay via Telegram</b> tugmasini bosing.");
+    const last = await db.one("SELECT status, created_at FROM tg_requests WHERE user_id = ? ORDER BY id DESC LIMIT 1", [user.id]);
+    return send(chat, [
+      `👤 <b>${esc(user.name)}</b>`,
+      subActive(user) ? `✅ Obuna faol: <b>${day(user.sub_until)}</b> gacha` : '⛔ Faol obuna yo\'q',
+      last ? `Oxirgi chek: ${last.status === 'pending' ? 'tekshirilmoqda' : last.status === 'approved' ? 'tasdiqlangan' : 'rad etilgan'}` : '',
+    ].filter(Boolean).join('\n'), { reply_markup: { inline_keyboard: [[{ text: subActive(user) ? 'Uzaytirish' : 'Obuna olish', callback_data: 'plans' }]] } });
+  }
+  const catByMenu = { [MENU.question]: 'question', [MENU.idea]: 'idea', [MENU.complaint]: 'complaint' }[text];
+  if (catByMenu) {
+    await setState(chat, { category: catByMenu });
+    return send(chat, CATS[catByMenu].ask, { reply_markup: { inline_keyboard: [[{ text: 'Bekor qilish', callback_data: 'cancel' }]] } });
+  }
+  if (text === MENU.faq || text === '/help') {
+    const faq = await getBlock('faq').catch(() => []);
+    const body = (faq || []).slice(0, 10).map((f) => `<b>${esc(f.q)}</b>\n${esc(f.a)}`).join('\n\n') || "Hozircha savollar yo'q.";
+    return send(chat, `❓ <b>Ko'p so'raladigan savollar</b>\n\n${body}\n\nJavob topilmadimi? «${MENU.question}» tugmasini bosing.`, { reply_markup: menuKeyboard() });
+  }
+  // ---- waiting for a support message ----
+  if (st.category || st.ticket) return userMessage(ctx, chat, msg, st);
+  // ---- a payment receipt ----
+  if (msg.photo || msg.document) {
+    const user = await linked();
+    let wait = null;
+    try { wait = JSON.parse((await getKey(`_tg_wait_${chat}`)) || 'null'); } catch {}
+    if (user && wait) return receipt(chat, user, msg);
+    return userMessage(ctx, chat, msg, { category: 'question' });
+  }
+  if (text.startsWith('/')) return send(chat, 'Pastdagi menyudan tanlang.', { reply_markup: menuKeyboard() });
+  // any other text → a question to the teacher
+  if (text) return userMessage(ctx, chat, msg, { category: 'question' });
 }
 
 export function registerBot(app, { h, bad, requireMaster, requireStudent }) {
@@ -289,6 +368,7 @@ export function registerBot(app, { h, bad, requireMaster, requireStudent }) {
 }
 
 export function registerBotAdmin(app, { h, bad, requireMaster, requireStudent }) {
+  registerSupportAdmin(app, { h, bad, requireMaster }, ctx);
   app.get('/api/telegram/link', requireStudent, h(async (req, res) => {
     const s = await getSettings();
     if (!s.telegram_bot || !(await getKey('_tg_token'))) return bad(res, 'The payment bot is not connected yet');
@@ -317,7 +397,7 @@ export function registerBotAdmin(app, { h, bad, requireMaster, requireStudent })
     if (!secret) { secret = crypto.randomBytes(24).toString('hex'); await setKey('_tg_webhook_secret', secret); }
     if (proto !== 'https') return bad(res, 'Telegram needs an https address — connect the bot on the live site (sat-ustoz.vercel.app)');
     await tg('setWebhook', { url: `${site}/api/telegram/webhook`, secret_token: secret, allowed_updates: ['message', 'callback_query', 'pre_checkout_query'], drop_pending_updates: true }, token);
-    await tg('setMyCommands', { commands: [{ command: 'start', description: "Obuna va to'lov" }] }, token).catch(() => {});
+    await tg('setMyCommands', { commands: [{ command: 'start', description: 'Menyu' }, { command: 'help', description: "Ko'p so'raladigan savollar" }, { command: 'cancel', description: 'Bekor qilish' }] }, token).catch(() => {});
     await setKey('_tg_token', token);
     await setKey('_site_url', site);
     await db.run("INSERT INTO settings (key, value) VALUES ('telegram_bot', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [me.username]);
