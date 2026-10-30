@@ -4,7 +4,10 @@
  * and in the teacher panel (Support). The answer goes back to the student through the bot.
  * Anyone can write — a website account is not required.
  */
+import crypto from 'node:crypto';
+import jwt from 'jsonwebtoken';
 import { db } from './db.js';
+import { getSecret } from './auth.js';
 
 export async function migrateSupport() {
   await db.exec(`
@@ -31,6 +34,9 @@ CREATE INDEX IF NOT EXISTS idx_tg_tickets ON tg_tickets(status, updated_at);
 CREATE INDEX IF NOT EXISTS idx_tg_ticket_msgs ON tg_ticket_msgs(ticket_id, id);
 ALTER TABLE tg_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tg_ticket_msgs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tg_tickets ADD COLUMN IF NOT EXISTS channel TEXT NOT NULL DEFAULT 'telegram';
+ALTER TABLE tg_tickets ADD COLUMN IF NOT EXISTS contact TEXT NOT NULL DEFAULT '';
+ALTER TABLE tg_tickets ADD COLUMN IF NOT EXISTS user_seen INTEGER NOT NULL DEFAULT 0;
 `);
 }
 
@@ -114,6 +120,7 @@ export async function answer(ctx, ticketId, text, byName, close = false) {
   if (!body) throw Object.assign(new Error('Write an answer'), { status: 400 });
   await db.run('INSERT INTO tg_ticket_msgs (ticket_id, author, text, by_name) VALUES (?,?,?,?)', [t.id, 'teacher', body, String(byName || '').slice(0, 60)]);
   await db.run(`UPDATE tg_tickets SET updated_at = now(), last_from = 'teacher', status = ? WHERE id = ?`, [close ? 'closed' : 'answered', t.id]);
+  if (t.channel === 'web') return { ok: true }; // the website chat picks it up
   await send(t.chat_id, `👨‍🏫 <b>SAT Ustoz javobi</b> (№${t.id})\n\n${esc(body)}`, {
     reply_markup: { inline_keyboard: [[{ text: '↩️ Javob yozish', callback_data: `t_more:${t.id}` }], ...(close ? [] : [[{ text: '✅ Masala hal bo\'ldi', callback_data: `t_done:${t.id}` }]])] },
   });
@@ -125,7 +132,7 @@ export async function closeTicket(ctx, ticketId, by = 'teacher') {
   const t = await db.one('SELECT * FROM tg_tickets WHERE id = ?', [ticketId]);
   if (!t || t.status === 'closed') return { ok: true };
   await db.run("UPDATE tg_tickets SET status = 'closed', updated_at = now() WHERE id = ?", [t.id]);
-  if (by === 'teacher') {
+  if (by === 'teacher' && t.channel !== 'web') {
     await send(t.chat_id, `Murojaatingiz №${t.id} yopildi. Yordam berdikmi?`, {
       reply_markup: { inline_keyboard: [[{ text: '👍 Ha', callback_data: `t_rate:${t.id}:5` }, { text: '👎 Yo\'q', callback_data: `t_rate:${t.id}:1` }]] },
     });
@@ -173,5 +180,87 @@ export function registerSupportAdmin(app, { h, bad, requireMaster }, ctx) {
   }));
   app.post('/api/support/:id/close', requireMaster, h(async (req, res) => {
     res.json(await closeTicket(ctx, Number(req.params.id)));
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Website chat: the same tickets, written from the site (signed-in students or guests).
+// Guests get a random token kept in their browser; it is the key to their conversation.
+// The teacher sees them in Support and in Telegram (reply there works too).
+// ---------------------------------------------------------------------------
+const WEB_LIMIT = 20; // messages per conversation per hour
+function webIdentity(req) {
+  const h = req.headers.authorization || '';
+  if (h.startsWith('Bearer ')) {
+    try { const p = jwt.verify(h.slice(7), getSecret()); return { chat: `web:u:${p.id}`, userId: p.id }; } catch { /* fall through to guest */ }
+  }
+  const g = String(req.query.guest || req.body?.guest || '').replace(/[^a-f0-9]/g, '').slice(0, 48);
+  return g.length >= 32 ? { chat: `web:g:${g}`, userId: null, guest: g } : { chat: null, userId: null };
+}
+const pubMsg = (m) => ({ id: m.id, author: m.author, text: m.text, by: m.author === 'teacher' ? (m.by_name || 'SAT Ustoz') : '', at: m.created_at });
+
+async function webThread(chat) {
+  const t = await db.one("SELECT * FROM tg_tickets WHERE chat_id = ? AND channel = 'web' ORDER BY (status <> 'closed') DESC, updated_at DESC LIMIT 1", [chat]);
+  if (!t) return { ticket: null, msgs: [], unread: 0 };
+  const msgs = await db.all('SELECT id, author, text, by_name, created_at FROM tg_ticket_msgs WHERE ticket_id = ? ORDER BY id', [t.id]);
+  const unread = msgs.filter((m) => m.author === 'teacher' && m.id > t.user_seen).length;
+  return { ticket: { id: t.id, status: t.status, category: t.category }, msgs: msgs.map(pubMsg), unread };
+}
+
+export function registerSupportWeb(app, { h, bad }, ctx) {
+  app.get('/api/chat', h(async (req, res) => {
+    const me = webIdentity(req);
+    if (!me.chat) return res.json({ ticket: null, msgs: [], unread: 0 });
+    res.json(await webThread(me.chat));
+  }));
+
+  app.post('/api/chat/seen', h(async (req, res) => {
+    const me = webIdentity(req);
+    if (me.chat) await db.run("UPDATE tg_tickets SET user_seen = COALESCE((SELECT MAX(id) FROM tg_ticket_msgs WHERE ticket_id = tg_tickets.id), 0) WHERE chat_id = ? AND channel = 'web'", [me.chat]);
+    res.json({ ok: true });
+  }));
+
+  app.post('/api/chat', h(async (req, res) => {
+    let me = webIdentity(req);
+    const text = String(req.body?.text || '').trim().slice(0, 2000);
+    if (!text) return bad(res, 'Write a message first');
+    const category = CATS[req.body?.category] ? req.body.category : 'question';
+    const user = me.userId ? await db.one('SELECT id, name, email, login FROM users WHERE id = ?', [me.userId]) : null;
+    if (!me.chat) me = { chat: null, guest: crypto.randomBytes(16).toString('hex') };
+    if (!me.chat) me.chat = `web:g:${me.guest}`;
+    const name = String(user?.name || req.body?.name || '').trim().slice(0, 80);
+    const contact = String(req.body?.contact || '').trim().slice(0, 120);
+    if (!user && !name) return bad(res, 'Please write your name');
+    if (!user && !contact) return bad(res, 'Please leave a phone number, Telegram or email so the teacher can reach you');
+
+    let t = await db.one("SELECT * FROM tg_tickets WHERE chat_id = ? AND channel = 'web' AND status <> 'closed' ORDER BY id DESC LIMIT 1", [me.chat]);
+    if (t) {
+      const { n } = await db.one("SELECT COUNT(*) AS n FROM tg_ticket_msgs WHERE ticket_id = ? AND author = 'user' AND created_at > now() - interval '1 hour'", [t.id]);
+      if (Number(n) >= WEB_LIMIT) return bad(res, 'Too many messages — please wait for an answer', 429);
+    }
+    const isNew = !t;
+    if (!t) {
+      const r = await db.run("INSERT INTO tg_tickets (chat_id, user_id, tg_name, category, channel, contact) VALUES (?,?,?,?,'web',?) RETURNING id",
+        [me.chat, user?.id || null, name, category, contact]);
+      t = await db.one('SELECT * FROM tg_tickets WHERE id = ?', [r.id]);
+    }
+    const m = await db.run("INSERT INTO tg_ticket_msgs (ticket_id, author, text) VALUES (?, 'user', ?) RETURNING id", [t.id, text]);
+    await db.run("UPDATE tg_tickets SET updated_at = now(), last_from = 'user', status = 'open', user_seen = ? WHERE id = ?", [m.id, t.id]);
+
+    // tell the teacher in Telegram (if the bot is connected); a reply to that message answers on the website
+    try {
+      const c = CATS[t.category] || CATS.question;
+      const head = `🌐 ${c.icon} <b>${c.label} №${t.id}</b> · saytdan${isNew ? '' : ' (davomi)'}\n👤 ${esc(name || t.tg_name || 'Mehmon')}${user ? ` · ${esc(user.email || user.login)}` : t.contact ? ` · ${esc(t.contact)}` : ''}`;
+      const kb = { inline_keyboard: [[{ text: '✍️ Javob berish', callback_data: `t_ans:${t.id}` }, { text: '✅ Yopish', callback_data: `t_close:${t.id}` }]] };
+      let sent = [];
+      try { sent = JSON.parse(t.admin_msgs || '[]'); } catch {}
+      for (const a of await ctx.admins()) {
+        try { const r = await ctx.tg('sendMessage', { chat_id: a, text: `${head}\n\n${esc(text)}`.slice(0, 1000), parse_mode: 'HTML', reply_markup: kb }); sent.push([String(a), r.message_id]); }
+        catch { /* bot not connected */ }
+      }
+      if (sent.length) await db.run('UPDATE tg_tickets SET admin_msgs = ? WHERE id = ?', [JSON.stringify(sent.slice(-40)), t.id]);
+    } catch { /* never block the student */ }
+
+    res.json({ ...(await webThread(me.chat)), guest: me.guest || undefined });
   }));
 }

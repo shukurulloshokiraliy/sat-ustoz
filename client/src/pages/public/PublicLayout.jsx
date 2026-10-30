@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth, useTheme } from '../../context.jsx';
 import { IconChevron, IconMenu, IconMoon, IconSun, IconX, Logo } from '../../components/icons.jsx';
+import SupportChat from '../../components/SupportChat.jsx';
 import { useSite } from './site.jsx';
 
 /** Website header (like a product site): menu with dropdowns, Log in, Start free trial. No sign-in needed. */
@@ -67,6 +68,7 @@ export default function PublicLayout() {
         </div>
       </header>
       <main className="pub-main"><Outlet /></main>
+      <SupportChat />
       <footer className="pub-foot">
         <div className="pub-foot-in">
           <div className="pub-foot-brand">

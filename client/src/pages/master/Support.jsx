@@ -22,7 +22,7 @@ export default function Support() {
   const c = d.counts;
   return (
     <div className="stack">
-      <PageHeader title="Support" sub="Questions, suggestions and complaints from the Telegram bot. You can answer here or in Telegram (reply to the message)." />
+      <PageHeader title="Support" sub="Questions, suggestions and complaints from the website chat and the Telegram bot. Answer here or in Telegram (reply to the message) — the answer goes back where the student wrote." />
       <Segmented value={filter} onChange={(v) => { setFilter(v); setOpen(null); }} options={[
         { value: 'all', label: 'All' }, { value: 'open', label: 'New', count: c.open }, { value: 'answered', label: 'Answered', count: c.answered }, { value: 'closed', label: 'Closed', count: c.closed },
       ]} />
@@ -32,7 +32,7 @@ export default function Support() {
             {d.list.map((t) => (
               <button key={t.id} className={`sp-item ${open === t.id ? 'on' : ''} ${t.status}`} onClick={() => setOpen(t.id)}>
                 <div className="row between"><b>{t.user_name || t.tg_name || 'Student'}</b><small className="muted">{when(t.updated_at)}</small></div>
-                <div className="row" style={{ gap: 6 }}><span className={`sp-cat ${t.category}`}>{CAT[t.category] || t.category}</span><span className="muted">№{t.id} · {STATUS[t.status]}</span>{t.rating ? <span className="muted">· {t.rating >= 4 ? 'helpful' : 'not helpful'}</span> : null}</div>
+                <div className="row" style={{ gap: 6 }}><span className={`sp-cat ${t.category}`}>{CAT[t.category] || t.category}</span><span className={`sp-ch ${t.channel}`}>{t.channel === 'web' ? 'Website' : 'Telegram'}</span><span className="muted">№{t.id} · {STATUS[t.status]}</span>{t.rating ? <span className="muted">· {t.rating >= 4 ? 'helpful' : 'not helpful'}</span> : null}</div>
                 <p>{t.last_text || '(photo)'}</p>
               </button>
             ))}
@@ -62,7 +62,7 @@ function Thread({ id, onChange }) {
   };
   const reply = async (close = false) => {
     setBusy(true);
-    try { await api.post(`/support/${id}/reply`, { text, close }); setText(''); toast('Sent to the student in Telegram'); await load(); onChange(); }
+    try { await api.post(`/support/${id}/reply`, { text, close }); setText(''); toast(t.channel === 'web' ? 'Sent to the website chat' : 'Sent to the student in Telegram'); await load(); onChange(); }
     catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); }
   };
   const close = async () => { setBusy(true); try { await api.post(`/support/${id}/close`); await load(); onChange(); } catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); } };
@@ -70,7 +70,7 @@ function Thread({ id, onChange }) {
   return (
     <Card className="sp-thread">
       <div className="row between wrap">
-        <div><b>{t.user_name || t.tg_name || 'Student'}</b> <small className="muted">{t.tg_username ? `@${t.tg_username}` : ''}{t.user_id ? ` · ${t.user_email || 'website account'}` : ' · no website account'}</small></div>
+        <div><b>{t.user_name || t.tg_name || 'Student'}</b> <small className="muted">{t.channel === 'web' ? 'Website chat' : t.tg_username ? `@${t.tg_username}` : 'Telegram'}{t.user_id ? ` · ${t.user_email || 'website account'}` : t.channel === 'web' ? ` · guest${t.contact ? ` · ${t.contact}` : ''}` : ' · no website account'}</small></div>
         <span className={`sp-cat ${t.category}`}>{CAT[t.category]} №{t.id}</span>
       </div>
       <div className="sp-msgs">
@@ -84,7 +84,7 @@ function Thread({ id, onChange }) {
       </div>
       {(
         <div className="stack sm">
-          <textarea rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder="Write an answer — it goes to the student in Telegram" />
+          <textarea rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder={t.channel === 'web' ? 'Write an answer — the student sees it in the website chat' : 'Write an answer — it goes to the student in Telegram'} />
           <div className="row wrap" style={{ gap: 8, justifyContent: 'flex-end' }}>
             {t.status !== 'closed' && <button className="btn ghost" disabled={busy} onClick={close}>Close without answer</button>}
             <button className="btn soft" disabled={busy || !text.trim()} onClick={() => reply(true)}>Answer and close</button>

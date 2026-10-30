@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth, useTheme } from '../context.jsx';
 import { Avatar } from './ui.jsx';
+import SupportChat from './SupportChat.jsx';
 import {
   IconBookmark, IconBriefcase, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
   IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, Logo,
@@ -73,6 +74,7 @@ export default function Layout() {
           <button className="icon-btn" onClick={toggle} aria-label={"Toggle theme"}>{theme === 'dark' ? <IconSun /> : <IconMoon />}</button>
         </div>
         <main className="main"><Outlet /></main>
+        <SupportChat />
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ import crypto from 'node:crypto';
 import { db, getSettings } from './db.js';
 import { getSecret, subActive } from './auth.js';
 import { getBlock } from './site.js';
-import { CATS, MENU, answer, closeTicket, getState, menuKeyboard, migrateSupport, registerSupportAdmin, setState, ticketByAdminMessage, userMessage } from './tgsupport.js';
+import { CATS, MENU, answer, closeTicket, getState, menuKeyboard, migrateSupport, registerSupportAdmin, registerSupportWeb, setState, ticketByAdminMessage, userMessage } from './tgsupport.js';
 
 export async function migrateBot() {
   await db.exec(`
@@ -358,6 +358,7 @@ async function handle(u) {
 }
 
 export function registerBot(app, { h, bad, requireMaster, requireStudent }) {
+  registerSupportWeb(app, { h, bad }, ctx); // website chat (public: signed-in students and guests)
   // Telegram → webhook (public; checked by the secret header Telegram sends)
   app.post('/api/telegram/webhook', h(async (req, res) => {
     const secret = await getKey('_tg_webhook_secret');
