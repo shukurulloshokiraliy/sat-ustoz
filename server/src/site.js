@@ -96,6 +96,22 @@ export const DEFAULT_BLOCKS = {
     { id: 'community', label: 'Community', enabled: false },
   ],
   practice: { pool_percent: 40, test_size: 27, minutes: 32 },
+  about: {
+    title: 'About SAT Ustoz',
+    intro: 'SAT Ustoz is an online platform for SAT Reading & Writing. Students from Uzbekistan learn step by step — from 200 to 800 — with video lessons, clear notes, practice with instant feedback and real exam-style tests.',
+    points: [
+      { emoji: '🗺️', title: 'A clear roadmap', text: 'Lessons open one by one, so a student always knows what to study next.' },
+      { emoji: '🎯', title: 'Original SAT-style questions', text: 'Written for SAT Ustoz, every question has an explanation and an Ustoz tip.' },
+      { emoji: '📊', title: 'Progress you can see', text: 'Score estimates, skill breakdowns and the teacher watching every result.' },
+    ],
+    founder_name: 'Axror Alimjon',
+    founder_role: 'Founder · SAT teacher',
+    founder_bio: 'I created SAT Ustoz so that every student in Uzbekistan can prepare for the SAT with a real teacher’s method — not just random tests. Follow me on Instagram and Telegram for SAT tips, results of my students and news about new lessons.',
+    photo_url: '',
+    instagram: 'https://www.instagram.com/ahroralimjon',
+    telegram: 'https://t.me/ahroralimjon_life',
+    show_on_home: true,
+  },
 };
 const DEFAULT_PAGES = [
   { section: 'guides', slug: 'digital-sat-format', emoji: '🧭', title: 'Digital SAT format', summary: 'Modules, timing and what the Reading & Writing section looks like.',
@@ -154,12 +170,12 @@ export function registerSitePublic(app, { h, bad, secret }) {
   const who = optionalUser(secret);
 
   app.get('/api/public/site', h(async (req, res) => {
-    const [home, testimonials, faq, sections, practice] = await Promise.all(['home', 'testimonials', 'faq', 'sections', 'practice'].map(getBlock));
+    const [home, faq, sections, practice, about] = await Promise.all(['home', 'faq', 'sections', 'practice', 'about'].map(getBlock));
     const pages = await db.all('SELECT id, section, slug, title, summary, emoji FROM site_pages WHERE published ORDER BY section, position, id');
     const q = await db.one('SELECT COUNT(*) AS n FROM qbank_questions WHERE active');
     const st = await db.one("SELECT COUNT(*) AS n FROM users WHERE role = 'student'");
     const tests = await db.one('SELECT COUNT(*) AS n FROM practice_sessions WHERE finished_at IS NOT NULL');
-    res.json({ home, testimonials, faq, sections: sections.filter((s) => s.enabled), pages, practice,
+    res.json({ home, faq, about, sections: sections.filter((s) => s.enabled), pages, practice,
       counts: { questions: Number(q.n), students: Number(st.n), tests: Number(tests.n), skills: DOMAINS.reduce((s, d) => s + d.skills.length, 0) } });
   }));
 
@@ -251,6 +267,13 @@ export function registerSiteAdmin(app, { h, bad, requireMaster }) {
     if (key === 'practice') {
       const n = (v, lo, hi, d) => Math.min(hi, Math.max(lo, Math.round(Number(v) || d)));
       data = { pool_percent: n(data?.pool_percent, 10, 100, 40), test_size: n(data?.test_size, 5, 60, 27), minutes: n(data?.minutes, 5, 120, 32) };
+    }
+    if (key === 'about' && data) {
+      for (const f of ['instagram', 'telegram', 'photo_url']) {
+        const v = String(data[f] || '').trim();
+        if (v && !/^https?:\/\//i.test(v)) return bad(res, `“${f}” must be a link starting with https://`);
+        data[f] = v;
+      }
     }
     if (Array.isArray(DEFAULT_BLOCKS[key]) !== Array.isArray(data)) return bad(res, 'Wrong format');
     if (JSON.stringify(data).length > 200_000) return bad(res, 'Too much text');

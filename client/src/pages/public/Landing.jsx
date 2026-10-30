@@ -5,6 +5,7 @@ import { useAuth } from '../../context.jsx';
 import { Spinner } from '../../components/ui.jsx';
 import { IconArrow, IconCheck } from '../../components/icons.jsx';
 import { useSite } from './site.jsx';
+import { FounderCard } from './Pages.jsx';
 
 const money = (n) => Number(n || 0).toLocaleString('ru-RU').replace(/,/g, ' ');
 
@@ -97,21 +98,11 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------- student wins ---------- */}
-      {site.testimonials?.length > 0 && (
+      {/* ---------- founder ---------- */}
+      {site.about?.show_on_home && (
         <section className="pub-wrap">
-          <h2 className="pub-h2">Student wins</h2>
-          <div className="pub-wins">
-            {site.testimonials.map((t, i) => (
-              <figure key={i} className="pub-win">
-                <div className="row" style={{ gap: 10 }}>
-                  <span className="av">{t.name?.[0] || '★'}</span>
-                  <div><b>{t.name}</b>{(t.from || t.to) && <small>{t.from} → <em>{t.to}</em></small>}</div>
-                </div>
-                <blockquote>“{t.text}”</blockquote>
-              </figure>
-            ))}
-          </div>
+          <h2 className="pub-h2">Meet your ustoz</h2>
+          <FounderCard a={site.about} />
         </section>
       )}
 

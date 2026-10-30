@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth } from '../../context.jsx';
 import { Spinner } from '../../components/ui.jsx';
-import { IconArrow } from '../../components/icons.jsx';
+import { IconArrow, IconInstagram, IconTelegram } from '../../components/icons.jsx';
 import { Markdown, Video, useSite } from './site.jsx';
 
 /** A menu section (Guides, Courses…): cards of its pages. */
@@ -85,6 +85,57 @@ function NotFound() {
     <div className="pub-wrap pub-page center" style={{ display: 'grid', gap: 14, justifyItems: 'center' }}>
       <h1>Page not found</h1>
       <Link className="btn sun" to="/">Back to home</Link>
+    </div>
+  );
+}
+
+/** About the platform + the founder (teacher edits it in Website → About). */
+export function AboutPage() {
+  const { site } = useSite();
+  const { user } = useAuth();
+  if (!site) return <div className="pub-wrap"><Spinner /></div>;
+  const a = site.about;
+  return (
+    <div className="pub-wrap pub-page">
+      <section className="ab-hero">
+        <small className="eyebrow">SAT USTOZ</small>
+        <h1>{a.title}</h1>
+        <p className="lead">{a.intro}</p>
+      </section>
+      {a.points?.length > 0 && (
+        <div className="pub-features" style={{ marginTop: 28 }}>
+          {a.points.map((pt, i) => <div key={i} className="pub-feature"><span className="em">{pt.emoji}</span><b>{pt.title}</b><p>{pt.text}</p></div>)}
+        </div>
+      )}
+      <h2 className="pub-h2" style={{ marginTop: 56 }}>Founder</h2>
+      <FounderCard a={a} big />
+      <div className="pt-nudge" style={{ marginTop: 28 }}>
+        <b>📝 Start with one test</b>
+        <span>27 questions, 32 minutes, a score estimate — free and without sign-up.</span>
+        <div className="row wrap" style={{ gap: 8 }}>
+          <Link className="btn sun" to="/practice">Take a practice test</Link>
+          {!user && <Link className="btn ghost" to="/signup">Start free trial</Link>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function FounderCard({ a, big = false }) {
+  const initials = String(a.founder_name || 'U').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  return (
+    <div className={`founder ${big ? 'big' : ''}`}>
+      <div className="founder-photo">{a.photo_url ? <img src={a.photo_url} alt={a.founder_name} loading="lazy" /> : <span>{initials}</span>}</div>
+      <div className="founder-text">
+        <small>{a.founder_role}</small>
+        <h3>{a.founder_name}</h3>
+        <p>{a.founder_bio}</p>
+        <div className="row wrap" style={{ gap: 10 }}>
+          {a.instagram && <a className="soc ig" href={a.instagram} target="_blank" rel="noreferrer"><IconInstagram width={18} height={18} /> Instagram</a>}
+          {a.telegram && <a className="soc tg" href={a.telegram} target="_blank" rel="noreferrer"><IconTelegram width={18} height={18} /> Telegram</a>}
+          {!big && <Link className="soc more" to="/about">About the platform →</Link>}
+        </div>
+      </div>
     </div>
   );
 }

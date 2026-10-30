@@ -8,7 +8,7 @@ import { loadSite, Markdown } from '../public/site.jsx';
 const TABS = [
   { value: 'home', label: 'Home page' },
   { value: 'pages', label: 'Menu & pages' },
-  { value: 'wins', label: 'Student wins' },
+  { value: 'about', label: 'About & founder' },
   { value: 'faq', label: 'FAQ' },
   { value: 'practice', label: 'Practice tests' },
 ];
@@ -27,7 +27,7 @@ export default function Website() {
   const st = d.stats;
   return (
     <div className="stack">
-      <PageHeader title="Website" sub="What visitors see before they sign in: home page, menu pages, student wins, FAQ and free practice tests.">
+      <PageHeader title="Website" sub="What visitors see before they sign in: home page, menu pages, about and founder, FAQ and free practice tests.">
         <a className="btn ghost" href="/site" target="_blank" rel="noreferrer"><IconEye /> Open the website</a>
       </PageHeader>
       <div className="grid g4 keep2">
@@ -39,8 +39,7 @@ export default function Website() {
       <Segmented value={tab} onChange={setTab} options={TABS} />
       {tab === 'home' && <HomeEditor block={d.blocks.home} reload={load} />}
       {tab === 'pages' && <PagesEditor pages={d.pages} sections={d.blocks.sections} reload={load} />}
-      {tab === 'wins' && <ListEditor k="testimonials" items={d.blocks.testimonials} reload={load} empty={{ name: '', from: '', to: '', text: '' }}
-        fields={[['name', 'Student name'], ['from', 'Score before (e.g. 1180)'], ['to', 'Score after (e.g. 1420)'], ['text', 'What they say', true]]} title={(x) => `${x.name || 'New'}${x.to ? ` · ${x.from} → ${x.to}` : ''}`} />}
+      {tab === 'about' && <AboutEditor block={d.blocks.about} reload={load} />}
       {tab === 'faq' && <ListEditor k="faq" items={d.blocks.faq} reload={load} empty={{ q: '', a: '' }} fields={[['q', 'Question'], ['a', 'Answer', true]]} title={(x) => x.q || 'New question'} />}
       {tab === 'practice' && <PracticeEditor block={d.blocks.practice} bank={st.bank} reload={load} />}
     </div>
@@ -268,6 +267,51 @@ function ListEditor({ k, items, reload, empty, fields, title }) {
       ))}
       <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn primary" disabled={busy} onClick={() => save(list)}>{busy ? 'Saving…' : 'Save'}</button></div>
     </Card>
+  );
+}
+
+/* ---------- about the platform + founder ---------- */
+function AboutEditor({ block, reload }) {
+  const [a, setA] = useState(block);
+  const [save, busy] = useSave('about', reload);
+  const set = (k) => (e) => setA({ ...a, [k]: e.target.value });
+  const setPt = (i, f) => (e) => setA({ ...a, points: a.points.map((x, j) => (j === i ? { ...x, [f]: e.target.value } : x)) });
+  return (
+    <div className="stack">
+      <Card className="stack">
+        <div className="row between wrap"><h2>About the platform</h2><a className="btn ghost sm" href="/about" target="_blank" rel="noreferrer"><IconEye /> Open the page</a></div>
+        <label className="field"><span>Title</span><input value={a.title} onChange={set('title')} /></label>
+        <label className="field"><span>Text</span><textarea rows={4} value={a.intro} onChange={set('intro')} /></label>
+        <div className="row between"><h3>Why SAT Ustoz</h3><button className="btn soft sm" onClick={() => setA({ ...a, points: [...(a.points || []), { emoji: '⭐', title: '', text: '' }] })}><IconPlus /> Add</button></div>
+        <div className="grid g3">
+          {(a.points || []).map((pt, i) => (
+            <div key={i} className="stack sm web-mini">
+              <div className="row" style={{ gap: 8 }}>
+                <input style={{ width: 56 }} value={pt.emoji} onChange={setPt(i, 'emoji')} aria-label="Emoji" />
+                <input className="grow" value={pt.title} onChange={setPt(i, 'title')} placeholder="Title" />
+                <button className="icon-btn" onClick={() => setA({ ...a, points: a.points.filter((_, j) => j !== i) })} aria-label="Remove"><IconTrash /></button>
+              </div>
+              <textarea rows={2} value={pt.text} onChange={setPt(i, 'text')} placeholder="Short text" />
+            </div>
+          ))}
+        </div>
+      </Card>
+      <Card className="stack">
+        <h2>Founder</h2>
+        <div className="grid g2">
+          <label className="field"><span>Name</span><input value={a.founder_name} onChange={set('founder_name')} /></label>
+          <label className="field"><span>Role</span><input value={a.founder_role} onChange={set('founder_role')} /></label>
+        </div>
+        <label className="field"><span>About the founder</span><textarea rows={4} value={a.founder_bio} onChange={set('founder_bio')} /></label>
+        <label className="field"><span>Photo link (optional)</span><input value={a.photo_url} onChange={set('photo_url')} placeholder="https://… .jpg — empty = initials" /></label>
+        <div className="grid g2">
+          <label className="field"><span>Instagram</span><input value={a.instagram} onChange={set('instagram')} placeholder="https://www.instagram.com/…" /></label>
+          <label className="field"><span>Telegram</span><input value={a.telegram} onChange={set('telegram')} placeholder="https://t.me/…" /></label>
+        </div>
+        <label className="row" style={{ gap: 8 }}><input type="checkbox" checked={!!a.show_on_home} onChange={(e) => setA({ ...a, show_on_home: e.target.checked })} /> Show the founder card on the home page</label>
+      </Card>
+      <div className="web-savebar"><span className="muted">The page is at /about and in the top menu.</span><button className="btn primary lg" disabled={busy} onClick={() => save(a)}>{busy ? 'Saving…' : 'Save'}</button></div>
+    </div>
   );
 }
 

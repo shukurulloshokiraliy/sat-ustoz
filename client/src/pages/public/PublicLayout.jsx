@@ -47,6 +47,7 @@ export default function PublicLayout() {
           <Link to="/" className="pub-logo" aria-label="SAT Ustoz — home"><Logo size={24} tone="white" /></Link>
           <nav className={`pub-nav ${open ? 'open' : ''}`} aria-label="Site menu">
             {menus.map((m) => <Menu key={m.label} m={m} />)}
+            <NavLink to="/about" className="pub-nav-link">About</NavLink>
             <Link to="/#pricing" className="pub-nav-link" onClick={() => setTimeout(() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }), 60)}>Pricing</Link>
             <div className="pub-nav-mobile-cta">
               {user ? <Link className="btn sun lg block" to="/">Open my dashboard</Link> : <>
@@ -90,7 +91,10 @@ export default function PublicLayout() {
             <b>SAT Ustoz</b>
             <Link to="/login">Log in</Link>
             <Link to="/signup">Create account</Link>
+            <Link to="/about">About us</Link>
             <Link to="/#pricing">Pricing</Link>
+            {site?.about?.instagram && <a href={site.about.instagram} target="_blank" rel="noreferrer">Instagram</a>}
+            {site?.about?.telegram && <a href={site.about.telegram} target="_blank" rel="noreferrer">Telegram</a>}
           </div>
         </div>
         <p className="pub-legal">© {new Date().getFullYear()} SAT Ustoz. SAT is a trademark of the College Board, which does not endorse this site.</p>

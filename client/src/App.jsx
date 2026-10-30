@@ -32,7 +32,7 @@ import LevelCheck, { LevelCheckResult } from './pages/lesson/LevelCheck.jsx';
 import PublicLayout from './pages/public/PublicLayout.jsx';
 import Landing from './pages/public/Landing.jsx';
 import Practice from './pages/public/Practice.jsx';
-import { PageView, SectionPage } from './pages/public/Pages.jsx';
+import { AboutPage, PageView, SectionPage } from './pages/public/Pages.jsx';
 import Website from './pages/master/Website.jsx';
 
 export default function App() {
@@ -49,6 +49,7 @@ export default function App() {
         <Route path="practice" element={<Practice />} />
         <Route path="s/:id" element={<SectionPage />} />
         <Route path="p/:slug" element={<PageView />} />
+        <Route path="about" element={<AboutPage />} />
         <Route path="*" element={<Landing />} />
       </Route>
     </Routes>
@@ -67,6 +68,7 @@ export default function App() {
       </Route>
       <Route path="/s/:id" element={<PublicLayout />}><Route index element={<SectionPage />} /></Route>
       <Route path="/p/:slug" element={<PublicLayout />}><Route index element={<PageView />} /></Route>
+      <Route path="/about" element={<PublicLayout />}><Route index element={<AboutPage />} /></Route>
       <Route element={<Layout />}>
         <Route path="practice" element={<Practice />} />
         {user.role === 'master' ? (
