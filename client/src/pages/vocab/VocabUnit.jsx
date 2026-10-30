@@ -4,7 +4,7 @@ import { api } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Confirm, Field, Gate, Modal, Segmented, useAsync } from '../../components/ui.jsx';
 import { IconArrow, IconBack, IconBook, IconEdit, IconFlip, IconPlay, IconPlus, IconQuiz, IconTrash, IconVolume } from '../../components/icons.jsx';
-import { Ring } from './VocabHome.jsx';
+import { ItemForm, Ring } from './VocabHome.jsx';
 import { VideoPlayer } from '../student/Roadmap.jsx';
 import Flashcards, { highlight, speak } from './Flashcards.jsx';
 import VocabTest from './VocabTest.jsx';
@@ -35,6 +35,10 @@ function Unit({ u, reload }) {
   const teacher = user.role === 'master';
   const [tab, setTab] = useState('words');
   const [video, setVideo] = useState(false);
+  const [rename, setRename] = useState(false);
+  const [delUnit, setDelUnit] = useState(false);
+  const navTo = useNavigate();
+  const toast2 = useToast();
   const idx = u.siblings.findIndex((s) => s.id === u.id);
   const prev = u.siblings[idx - 1]; const next = u.siblings[idx + 1];
   const counts = { n: u.words.filter((w) => w.state === 'new').length, l: u.words.filter((w) => w.state === 'learning').length, r: u.words.filter((w) => w.state === 'review').length };
@@ -66,6 +70,10 @@ function Unit({ u, reload }) {
           <div className="vu-meta">
             <span><IconBook width={16} height={16} /> {u.words.length} words</span>
             {u.set.video_url && <button className="btn soft sm" onClick={() => setVideo(true)}><IconPlay width={16} height={16} /> Watch the {u.set.title} video</button>}
+            {teacher && <>
+              <button className="btn ghost sm" onClick={() => setRename(true)}><IconEdit width={16} height={16} /> Rename unit</button>
+              <button className="btn ghost sm danger-text" onClick={() => setDelUnit(true)}><IconTrash width={16} height={16} /> Delete unit</button>
+            </>}
           </div>
         </div>
         {!teacher && (
@@ -110,6 +118,9 @@ function Unit({ u, reload }) {
         {prev ? <Link className="btn ghost" to={`/vocab/unit/${prev.id}`}><IconBack width={18} height={18} /> Unit {idx}</Link> : <span />}
         {next && <Link className="btn soft" to={`/vocab/unit/${next.id}`}>Unit {idx + 2}: {next.title} <IconArrow width={18} height={18} /></Link>}
       </nav>
+      {rename && <ItemForm kind="unit" mode="edit" row={u} onClose={() => setRename(false)} onSaved={() => { setRename(false); reload(); }} />}
+      {delUnit && <Confirm title={`Delete ${u.title}`} text="This unit and its words disappear for every student." onClose={() => setDelUnit(false)}
+        onConfirm={async () => { try { await api.del(`/vocab/units/${u.id}`); toast2('Unit deleted'); navTo('/vocab'); } catch (e) { toast2(e.message, 'bad'); } }} />}
       {video && <Modal wide title={`${u.set.title} · video`} onClose={() => setVideo(false)}><VideoPlayer url={u.set.video_url} /></Modal>}
     </>
   );

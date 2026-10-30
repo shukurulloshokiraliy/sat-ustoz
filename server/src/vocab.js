@@ -1,7 +1,7 @@
 /**
  * Vocabulary: decks → sets (5 units each, one video per set) → units (one reading passage) → words.
  * Students learn words with spaced repetition (Again / Hard / Good / Easy) and test themselves.
- * Bundled decks live in content/vocab/*.json; the teacher can add, edit and remove words and set videos.
+ * Bundled decks live in content/vocab/*.json; the teacher can create, rename and remove word books, sets, units and words, and set videos.
  * Without a subscription only the first `free_sets` sets of a deck are open.
  */
 import fs from 'node:fs';
@@ -33,6 +33,16 @@ CREATE INDEX IF NOT EXISTS idx_vocab_due ON vocab_progress(user_id, due_at);
 CREATE TABLE IF NOT EXISTS vocab_tests (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, unit_id INTEGER REFERENCES vocab_units(id) ON DELETE CASCADE, set_id INTEGER REFERENCES vocab_sets(id) ON DELETE CASCADE, score INTEGER NOT NULL, total INTEGER NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
 ALTER TABLE vocab_decks ENABLE ROW LEVEL SECURITY; ALTER TABLE vocab_sets ENABLE ROW LEVEL SECURITY; ALTER TABLE vocab_units ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vocab_words ENABLE ROW LEVEL SECURITY; ALTER TABLE vocab_progress ENABLE ROW LEVEL SECURITY; ALTER TABLE vocab_tests ENABLE ROW LEVEL SECURITY;
+-- teacher CRUD: hidden = removed bundled content (stays removed after a content update), edited = teacher renamed it
+ALTER TABLE vocab_decks ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE vocab_decks ADD COLUMN IF NOT EXISTS edited BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE vocab_decks ADD COLUMN IF NOT EXISTS src TEXT NOT NULL DEFAULT 'bundled';
+ALTER TABLE vocab_sets ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE vocab_sets ADD COLUMN IF NOT EXISTS edited BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE vocab_sets ADD COLUMN IF NOT EXISTS src TEXT NOT NULL DEFAULT 'bundled';
+ALTER TABLE vocab_units ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE vocab_units ADD COLUMN IF NOT EXISTS edited BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE vocab_units ADD COLUMN IF NOT EXISTS src TEXT NOT NULL DEFAULT 'bundled';
 `);
 }
 
@@ -45,13 +55,13 @@ export async function syncVocab() {
     if (!d?.id || !Array.isArray(d.sets)) continue;
     await db.tx(async (t) => {
       await t.run(`INSERT INTO vocab_decks (id, title, subtitle, free_sets) VALUES (?,?,?,?)
-        ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, subtitle = EXCLUDED.subtitle`, [d.id, d.title, d.subtitle || '', d.free_sets ?? 1]);
+        ON CONFLICT (id) DO UPDATE SET title = CASE WHEN vocab_decks.edited THEN vocab_decks.title ELSE EXCLUDED.title END, subtitle = CASE WHEN vocab_decks.edited THEN vocab_decks.subtitle ELSE EXCLUDED.subtitle END`, [d.id, d.title, d.subtitle || '', d.free_sets ?? 1]);
       for (const s of d.sets) {
         const set = await t.one(`INSERT INTO vocab_sets (deck_id, n, title) VALUES (?,?,?)
-          ON CONFLICT (deck_id, n) DO UPDATE SET title = EXCLUDED.title RETURNING id`, [d.id, s.n, s.title || `Set ${s.n}`]);
+          ON CONFLICT (deck_id, n) DO UPDATE SET title = CASE WHEN vocab_sets.edited THEN vocab_sets.title ELSE EXCLUDED.title END RETURNING id`, [d.id, s.n, s.title || `Set ${s.n}`]);
         for (const u of s.units) {
           const unit = await t.one(`INSERT INTO vocab_units (set_id, n, title) VALUES (?,?,?)
-            ON CONFLICT (set_id, n) DO UPDATE SET title = EXCLUDED.title RETURNING id`, [set.id, u.n, u.title]);
+            ON CONFLICT (set_id, n) DO UPDATE SET title = CASE WHEN vocab_units.edited THEN vocab_units.title ELSE EXCLUDED.title END RETURNING id`, [set.id, u.n, u.title]);
           // one statement per unit (Neon round trips add up on a cold start)
           const seen = new Set();
           const rows = u.words.map((w, i) => [w, i]).filter(([w]) => w.word && !seen.has(w.word.toLowerCase()) && seen.add(w.word.toLowerCase()));
@@ -114,9 +124,9 @@ export function registerVocab(app, { h, bad, requireMaster, requireStudent, acce
 
   // decks → sets → units with counts and this student's progress
   app.get('/api/vocab', h(async (req, res) => {
-    const decks = await db.all('SELECT * FROM vocab_decks ORDER BY position, id');
-    const sets = await db.all('SELECT * FROM vocab_sets ORDER BY deck_id, n');
-    const units = await db.all(`SELECT u.*, (SELECT COUNT(*) FROM vocab_words w WHERE w.unit_id = u.id AND NOT w.hidden) AS words FROM vocab_units u ORDER BY u.set_id, u.n`);
+    const decks = await db.all('SELECT * FROM vocab_decks WHERE NOT hidden ORDER BY position, id');
+    const sets = await db.all('SELECT * FROM vocab_sets WHERE NOT hidden ORDER BY deck_id, n');
+    const units = await db.all(`SELECT u.*, (SELECT COUNT(*) FROM vocab_words w WHERE w.unit_id = u.id AND NOT w.hidden) AS words FROM vocab_units u WHERE NOT u.hidden ORDER BY u.set_id, u.n`);
     const prog = await db.all(`SELECT w.unit_id, COUNT(*) AS seen, SUM(CASE WHEN p.state = 'review' THEN 1 ELSE 0 END) AS learned,
         SUM(CASE WHEN p.due_at <= now() THEN 1 ELSE 0 END) AS due
       FROM vocab_progress p JOIN vocab_words w ON w.id = p.word_id WHERE p.user_id = ? AND NOT w.hidden GROUP BY w.unit_id`, [req.user.id]);
@@ -141,13 +151,13 @@ export function registerVocab(app, { h, bad, requireMaster, requireStudent, acce
 
   // one unit (or a whole set with ?set=) with words and the student's card state
   app.get('/api/vocab/units/:id', h(async (req, res) => {
-    const u = await db.one('SELECT u.*, s.deck_id, s.n AS set_n, s.title AS set_title, s.video_url, s.id AS set_id FROM vocab_units u JOIN vocab_sets s ON s.id = u.set_id WHERE u.id = ?', [Number(req.params.id)]);
+    const u = await db.one('SELECT u.*, s.deck_id, s.n AS set_n, s.title AS set_title, s.video_url, s.id AS set_id FROM vocab_units u JOIN vocab_sets s ON s.id = u.set_id WHERE u.id = ? AND NOT u.hidden AND NOT s.hidden', [Number(req.params.id)]);
     if (!u) return bad(res, 'Unit not found', 404);
     if (!(await setOpen(req.user, { deck_id: u.deck_id, n: u.set_n }))) return bad(res, 'This set needs an active subscription', 402, { code: 'subscription_required' });
     const words = await db.all('SELECT * FROM vocab_words WHERE unit_id = ? AND NOT hidden ORDER BY position, id', [u.id]);
     const prog = await db.all('SELECT * FROM vocab_progress WHERE user_id = ? AND word_id = ANY(?::int[])', [req.user.id, words.map((w) => w.id)]);
     const pm = new Map(prog.map((p) => [p.word_id, p]));
-    const siblings = await db.all('SELECT id, n, title FROM vocab_units WHERE set_id = ? ORDER BY n', [u.set_id]);
+    const siblings = await db.all('SELECT id, n, title FROM vocab_units WHERE set_id = ? AND NOT hidden ORDER BY n', [u.set_id]);
     res.json({ id: u.id, n: u.n, title: u.title, set: { id: u.set_id, n: u.set_n, title: u.set_title, video_url: u.video_url, deck_id: u.deck_id }, siblings,
       words: words.map((w) => pubWord(w, pm.get(w.id))) });
   }));
@@ -157,7 +167,7 @@ export function registerVocab(app, { h, bad, requireMaster, requireStudent, acce
     const full = await canPractice(req.user);
     const rows = await db.all(`SELECT w.*, p.state AS p_state, p.ease, p.interval_days, p.step, p.reps, p.lapses, p.due_at AS p_due, s.n AS set_n, d.free_sets
       FROM vocab_progress p JOIN vocab_words w ON w.id = p.word_id JOIN vocab_units u ON u.id = w.unit_id JOIN vocab_sets s ON s.id = u.set_id JOIN vocab_decks d ON d.id = s.deck_id
-      WHERE p.user_id = ? AND p.due_at <= now() + interval '20 minutes' AND NOT w.hidden ORDER BY p.due_at LIMIT 100`, [req.user.id]);
+      WHERE p.user_id = ? AND p.due_at <= now() + interval '20 minutes' AND NOT w.hidden AND NOT u.hidden AND NOT s.hidden AND NOT d.hidden ORDER BY p.due_at LIMIT 100`, [req.user.id]);
     res.json({ words: rows.filter((r) => full || r.set_n <= r.free_sets).map((r) => pubWord(r, { state: r.p_state, ease: r.ease, interval_days: r.interval_days, step: r.step, reps: r.reps, lapses: r.lapses, due_at: r.p_due })) });
   }));
 
@@ -190,10 +200,81 @@ export function registerVocab(app, { h, bad, requireMaster, requireStudent, acce
   }));
 
   // ---------- teacher ----------
-  app.put('/api/vocab/sets/:id', requireMaster, h(async (req, res) => {
-    await db.run('UPDATE vocab_sets SET video_url = ?, title = COALESCE(NULLIF(?, \'\'), title) WHERE id = ?', [String(req.body?.video_url || '').trim().slice(0, 500), String(req.body?.title || '').trim().slice(0, 80), Number(req.params.id)]);
+  const txt = (v, max) => String(v ?? '').trim().slice(0, max);
+  // bundled rows are hidden (a content update must not bring them back); the teacher's own rows are deleted
+  const remove = async (table, id) => {
+    const r = await db.one(`SELECT src FROM ${table} WHERE id = ?`, [id]);
+    if (!r) return false;
+    if (r.src === 'bundled') await db.run(`UPDATE ${table} SET hidden = true WHERE id = ?`, [id]);
+    else await db.run(`DELETE FROM ${table} WHERE id = ?`, [id]);
+    return true;
+  };
+
+  // decks (word books)
+  app.post('/api/vocab/decks', requireMaster, h(async (req, res) => {
+    const title = txt(req.body?.title, 80);
+    if (!title) return bad(res, 'Give the word book a title');
+    const id = 'custom-' + Date.now().toString(36);
+    const { p } = await db.one('SELECT COALESCE(MAX(position), 0) + 1 AS p FROM vocab_decks');
+    await db.run("INSERT INTO vocab_decks (id, title, subtitle, free_sets, position, src, edited) VALUES (?,?,?,?,?, 'teacher', true)",
+      [id, title, txt(req.body?.subtitle, 200), Math.max(0, Number(req.body?.free_sets ?? 1) || 0), Number(p)]);
+    res.json({ id });
+  }));
+  app.put('/api/vocab/decks/:id', requireMaster, h(async (req, res) => {
+    const title = txt(req.body?.title, 80);
+    if (!title) return bad(res, 'Give the word book a title');
+    await db.run('UPDATE vocab_decks SET title = ?, subtitle = ?, free_sets = ?, edited = true WHERE id = ?',
+      [title, txt(req.body?.subtitle, 200), Math.max(0, Number(req.body?.free_sets ?? 1) || 0), req.params.id]);
     res.json({ ok: true });
   }));
+  app.delete('/api/vocab/decks/:id', requireMaster, h(async (req, res) => {
+    const d = await db.one('SELECT src FROM vocab_decks WHERE id = ?', [req.params.id]);
+    if (!d) return bad(res, 'Not found', 404);
+    if (d.src === 'bundled') await db.run('UPDATE vocab_decks SET hidden = true WHERE id = ?', [req.params.id]);
+    else await db.run('DELETE FROM vocab_decks WHERE id = ?', [req.params.id]);
+    res.json({ ok: true });
+  }));
+
+  // sets (five units and one video each)
+  app.post('/api/vocab/decks/:id/sets', requireMaster, h(async (req, res) => {
+    const deck = await db.one('SELECT id FROM vocab_decks WHERE id = ?', [req.params.id]);
+    if (!deck) return bad(res, 'Word book not found', 404);
+    const { n } = await db.one('SELECT COALESCE(MAX(n), 0) + 1 AS n FROM vocab_sets WHERE deck_id = ?', [deck.id]);
+    const r = await db.one("INSERT INTO vocab_sets (deck_id, n, title, src, edited) VALUES (?,?,?, 'teacher', true) RETURNING id", [deck.id, Number(n), txt(req.body?.title, 80) || `Set ${n}`]);
+    res.json({ id: r.id });
+  }));
+  app.put('/api/vocab/sets/:id', requireMaster, h(async (req, res) => {
+    const id = Number(req.params.id);
+    if (req.body?.video_url !== undefined) await db.run('UPDATE vocab_sets SET video_url = ? WHERE id = ?', [txt(req.body.video_url, 500), id]);
+    if (txt(req.body?.title, 80)) await db.run('UPDATE vocab_sets SET title = ?, edited = true WHERE id = ?', [txt(req.body.title, 80), id]);
+    res.json({ ok: true });
+  }));
+  app.delete('/api/vocab/sets/:id', requireMaster, h(async (req, res) => {
+    if (!(await remove('vocab_sets', Number(req.params.id)))) return bad(res, 'Not found', 404);
+    res.json({ ok: true });
+  }));
+
+  // units (one reading passage each)
+  app.post('/api/vocab/sets/:id/units', requireMaster, h(async (req, res) => {
+    const set = await db.one('SELECT id FROM vocab_sets WHERE id = ?', [Number(req.params.id)]);
+    if (!set) return bad(res, 'Set not found', 404);
+    const title = txt(req.body?.title, 120);
+    if (!title) return bad(res, 'Give the unit a title');
+    const { n } = await db.one('SELECT COALESCE(MAX(n), 0) + 1 AS n FROM vocab_units WHERE set_id = ?', [set.id]);
+    const r = await db.one("INSERT INTO vocab_units (set_id, n, title, src, edited) VALUES (?,?,?, 'teacher', true) RETURNING id", [set.id, Number(n), title]);
+    res.json({ id: r.id });
+  }));
+  app.put('/api/vocab/units/:id', requireMaster, h(async (req, res) => {
+    const title = txt(req.body?.title, 120);
+    if (!title) return bad(res, 'Give the unit a title');
+    await db.run('UPDATE vocab_units SET title = ?, edited = true WHERE id = ?', [title, Number(req.params.id)]);
+    res.json({ ok: true });
+  }));
+  app.delete('/api/vocab/units/:id', requireMaster, h(async (req, res) => {
+    if (!(await remove('vocab_units', Number(req.params.id)))) return bad(res, 'Not found', 404);
+    res.json({ ok: true });
+  }));
+
   const wordBody = (b) => ({ word: String(b?.word || '').trim().slice(0, 80), definition: String(b?.definition || '').trim().slice(0, 400), uz: String(b?.uz || '').trim().slice(0, 200),
     ru: String(b?.ru || '').trim().slice(0, 200), example: String(b?.example || '').trim().slice(0, 500), image_url: String(b?.image_url || '').trim().slice(0, 500) });
   app.post('/api/vocab/units/:id/words', requireMaster, h(async (req, res) => {
@@ -227,7 +308,7 @@ export function registerVocab(app, { h, bad, requireMaster, requireStudent, acce
 
 /** Random words for the game from the given sets (all open sets when none are given). */
 export async function gameWords(setIds, limit = 40) {
-  const rows = await db.all(`SELECT w.id, w.word, w.definition, w.uz, w.example FROM vocab_words w JOIN vocab_units u ON u.id = w.unit_id
-    WHERE NOT w.hidden AND w.definition <> '' ${setIds?.length ? 'AND u.set_id = ANY(?::int[])' : ''} ORDER BY random() LIMIT ?`, setIds?.length ? [setIds, limit] : [limit]);
+  const rows = await db.all(`SELECT w.id, w.word, w.definition, w.uz, w.example FROM vocab_words w JOIN vocab_units u ON u.id = w.unit_id JOIN vocab_sets s ON s.id = u.set_id
+    WHERE NOT w.hidden AND NOT u.hidden AND NOT s.hidden AND w.definition <> '' ${setIds?.length ? 'AND u.set_id = ANY(?::int[])' : ''} ORDER BY random() LIMIT ?`, setIds?.length ? [setIds, limit] : [limit]);
   return rows;
 }

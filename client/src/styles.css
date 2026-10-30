@@ -1353,3 +1353,7 @@ a.card:hover, .card.clickable:hover { transform: translateY(-2px); box-shadow: 0
 @keyframes char-win { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-10px) rotate(-4deg); } 60% { transform: translateY(0) rotate(3deg); } }
 .arena-pick button:hover .char, .arena-mode:hover .char { transform: translateY(-4px) scale(1.06); }
 @media (prefers-reduced-motion: reduce) { .char-win { animation: none; } }
+.v-unit-add { justify-content: center; gap: 8px; border-style: dashed; color: var(--primary); font: 700 .9rem var(--font); cursor: pointer; min-height: 64px; }
+.v-unit-add:hover { background: var(--primary-soft); }
+.v-add-deck { border-style: dashed; height: 54px; }
+.btn.danger-text { color: var(--bad); }
