@@ -23,6 +23,8 @@ export async function initSecret() {
   fs.writeFileSync(f, SECRET, { mode: 0o600 });
 }
 
+export const getSecret = () => SECRET;
+
 export const signToken = (user) => jwt.sign({ id: user.id, role: user.role }, SECRET, { expiresIn: '30d' });
 
 export const subActive = (u) => !!(u?.sub_until && new Date(u.sub_until) > new Date());

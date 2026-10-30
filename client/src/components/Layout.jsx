@@ -4,13 +4,14 @@ import { useAuth, useTheme } from '../context.jsx';
 import { Avatar } from './ui.jsx';
 import {
   IconBookmark, IconBriefcase, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
-  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, Logo,
+  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, Logo,
 } from './icons.jsx';
 
 const STUDENT_NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true },
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad },
   { to: '/question-bank', label: 'Question Bank', icon: IconTarget },
+  { to: '/practice', label: 'Practice Tests', icon: IconBolt },
   { to: '/quizzes', label: 'Quizzes', icon: IconQuiz },
   { to: '/analytics', label: 'Results', icon: IconChart },
   { to: '/saved', label: 'Saved', icon: IconBookmark },
@@ -24,6 +25,7 @@ const MASTER_NAV = [
   { to: '/quizzes', label: 'Quizzes', icon: IconQuiz },
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad },
   { to: '/question-bank/manage', label: 'Question Bank', icon: IconTarget },
+  { to: '/website', label: 'Website', icon: IconGlobe },
   { to: '/settings', label: 'Settings', icon: IconSettings },
 ];
 
