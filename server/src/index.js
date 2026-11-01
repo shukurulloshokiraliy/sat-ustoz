@@ -331,6 +331,48 @@ app.get('/api/students/:id', requireMaster, h(async (req, res) => {
   const payments = await db.all('SELECT * FROM payments WHERE user_id = ? ORDER BY created_at DESC', [s.id]);
   res.json({ ...withSub(s), payments });
 }));
+// full report for the teacher: everything the student did on the platform
+app.get('/api/students/:id/report', requireMaster, h(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!(await db.one("SELECT id FROM users WHERE id = ? AND role = 'student'", [id]))) return bad(res, 'Not found', 404);
+  const num = (v) => Number(v || 0);
+  const [qb, qbTot, mocks, vocab, vtests, arena, lessons, checks, quizzes, days] = await Promise.all([
+    db.all(`SELECT q.domain, q.skill, COUNT(*) AS n, SUM(CASE WHEN a.correct THEN 1 ELSE 0 END) AS ok
+      FROM qbank_answers a JOIN qbank_questions q ON q.id = a.question_id WHERE a.user_id = ? GROUP BY q.domain, q.skill ORDER BY q.domain, q.skill`, [id]),
+    db.one('SELECT COUNT(*) AS n, SUM(CASE WHEN correct THEN 1 ELSE 0 END) AS ok, MAX(answered_at) AS last FROM qbank_answers WHERE user_id = ?', [id]),
+    db.all('SELECT id, score, total, finished_at FROM qbank_mocks WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 20', [id]),
+    db.one(`SELECT SUM(CASE WHEN state = 'review' THEN 1 ELSE 0 END) AS learned, SUM(CASE WHEN state = 'learning' THEN 1 ELSE 0 END) AS learning,
+      SUM(CASE WHEN due_at <= now() THEN 1 ELSE 0 END) AS due, MAX(last_at) AS last FROM vocab_progress WHERE user_id = ?`, [id]),
+    db.all(`SELECT t.score, t.total, t.created_at, u.title, u.n FROM vocab_tests t LEFT JOIN vocab_units u ON u.id = t.unit_id
+      WHERE t.user_id = ? ORDER BY t.created_at DESC LIMIT 20`, [id]),
+    db.one(`SELECT COUNT(*) AS games, MAX(p.score) AS best, SUM(p.correct) AS correct, SUM(p.answered) AS answered, MAX(p.joined_at) AS last
+      FROM game_players p WHERE p.user_id = ?`, [id]),
+    db.one(`SELECT (SELECT COUNT(*) FROM roadmap_items) AS total, (SELECT COUNT(*) FROM roadmap_done WHERE user_id = ?) AS done,
+      (SELECT MAX(done_at) FROM roadmap_done WHERE user_id = ?) AS last`, [id, id]),
+    db.all(`SELECT c.score, c.total, c.passed, c.finished_at, i.title FROM lesson_checks c JOIN roadmap_items i ON i.id = c.item_id
+      WHERE c.user_id = ? AND c.finished_at IS NOT NULL ORDER BY c.finished_at DESC LIMIT 20`, [id]),
+    db.all(`SELECT a.id, a.score, a.total, a.finished_at, q.title
+      FROM attempts a JOIN quizzes q ON q.id = a.quiz_id WHERE a.user_id = ? AND a.finished_at IS NOT NULL ORDER BY a.finished_at DESC LIMIT 20`, [id]),
+    // activity per day for the last 28 days (any answer, card, game, lesson or quiz)
+    db.all(`SELECT to_char(d, 'YYYY-MM-DD') AS day, COUNT(*) AS n FROM (
+        SELECT answered_at AS d FROM qbank_answers WHERE user_id = ? UNION ALL
+        SELECT last_at FROM vocab_progress WHERE user_id = ? AND last_at IS NOT NULL UNION ALL
+        SELECT created_at FROM vocab_tests WHERE user_id = ? UNION ALL
+        SELECT joined_at FROM game_players WHERE user_id = ? UNION ALL
+        SELECT done_at FROM roadmap_done WHERE user_id = ? UNION ALL
+        SELECT finished_at FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL
+      ) x WHERE d > now() - interval '28 days' GROUP BY 1 ORDER BY 1`, [id, id, id, id, id, id]),
+  ]);
+  res.json({
+    qbank: { answered: num(qbTot.n), correct: num(qbTot.ok), last: qbTot.last, skills: qb.map((r) => ({ domain: r.domain, skill: r.skill, answered: num(r.n), correct: num(r.ok) })) },
+    mocks,
+    vocab: { learned: num(vocab.learned), learning: num(vocab.learning), due: num(vocab.due), last: vocab.last, tests: vtests },
+    arena: { games: num(arena.games), best: num(arena.best), correct: num(arena.correct), answered: num(arena.answered), last: arena.last },
+    lessons: { total: num(lessons.total), done: num(lessons.done), last: lessons.last, checks },
+    quizzes,
+    days: days.map((d) => ({ day: d.day, n: num(d.n) })),
+  });
+}));
 app.post('/api/students', requireMaster, h(async (req, res) => {
   const { name, group_id, login, password } = req.body || {};
   const nm = String(name || '').trim();

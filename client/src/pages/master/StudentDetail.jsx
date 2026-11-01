@@ -6,14 +6,15 @@ import { Avatar, Card, Confirm, Field, Gate, Modal, PageHeader, Segmented, useAs
 import AnalyticsView from '../../components/AnalyticsView.jsx';
 import { PortfolioView } from '../student/Portfolio.jsx';
 import { Credentials, SubscriptionModal } from './Students.jsx';
+import StudentReport from './StudentReport.jsx';
 import { IconCrown, IconEdit, IconKey, IconTrash } from '../../components/icons.jsx';
 
 export default function StudentDetail() {
   const { id } = useParams();
   const nav = useNavigate();
   const toast = useToast();
-  const st = useAsync(() => Promise.all([api.get('/students/' + id), api.get('/students/' + id + '/analytics'), api.get('/portfolio?user_id=' + id), api.get('/groups'), api.get('/placement?user_id=' + id)]), [id]);
-  const [tab, setTab] = useState('analytics');
+  const st = useAsync(() => Promise.all([api.get('/students/' + id), api.get('/students/' + id + '/analytics'), api.get('/portfolio?user_id=' + id), api.get('/groups'), api.get('/placement?user_id=' + id), api.get('/students/' + id + '/report')]), [id]);
+  const [tab, setTab] = useState('report');
   const [edit, setEdit] = useState(false);
   const [del, setDel] = useState(false);
   const [cred, setCred] = useState(null);
@@ -21,10 +22,10 @@ export default function StudentDetail() {
 
   return (
     <div className="page">
-      <Gate state={st}>{([s, a, pf, groups, pl]) => (
+      <Gate state={st}>{([s, a, pf, groups, pl, rep]) => (
         <>
           <PageHeader title={s.name} sub={<><Link to="/students">Students</Link> / {s.email || '@' + s.login}{s.group_name ? ` · ${s.group_name}` : ''}</>}>
-            <button className="btn soft" onClick={() => setSub(true)}><IconCrown width={16} height={16} /> Subscription</button>
+            <button className={`btn ${s.sub_active ? 'soft' : 'primary'}`} onClick={() => setSub(true)}><IconCrown width={16} height={16} /> {s.sub_active ? 'Extend subscription' : 'Activate subscription'}</button>
             <button className="btn ghost" onClick={() => setEdit(true)}><IconEdit width={16} height={16} /> {"Edit"}</button>
             <button className="btn ghost" onClick={async () => { const r = await api.post(`/students/${s.id}/reset-password`); setCred({ title: "New password", rows: [{ name: s.name, login: r.login, password: r.password }] }); }}><IconKey width={16} height={16} /> {"Reset password"}</button>
             <button className="btn danger-ghost" onClick={() => setDel(true)}><IconTrash width={16} height={16} /> {"Delete"}</button>
@@ -36,11 +37,13 @@ export default function StudentDetail() {
                 ? <Link to={`/placement/result/${pl.results[0].id}`} style={{ display: 'block', fontWeight: 700 }}>{pl.results[0].cefr} · {pl.results[0].midpoint - 30}–{pl.results[0].midpoint + 30} →</Link>
                 : <b style={{ display: 'block' }}>{pl.open ? 'In progress' : 'Not taken'}</b>}
               {pl.results[0] && <small className={pl.results[0].admitted ? 'muted' : 'muted'}>{pl.results[0].admitted ? 'Ready for the course' : 'Below the course level'}</small>}</Card>
-            <Card><small className="muted">Subscription</small><b style={{ display: 'block', color: s.sub_active ? 'var(--good)' : undefined }}>{s.sub_active ? `Until ${fmtDate(s.sub_until)}` : 'None'}</b></Card>
+            <Card className={`sub-card ${s.sub_active ? 'on' : 'off'}`}><small className="muted">Subscription</small>
+              <b style={{ display: 'block', color: s.sub_active ? 'var(--good)' : 'var(--bad)' }}>{s.sub_active ? `Active until ${fmtDate(s.sub_until)}` : 'Not active'}</b>
+              <button className="link-btn" onClick={() => setSub(true)}>{s.sub_active ? 'Extend or cancel' : 'Activate now'} →</button></Card>
             <Card><small className="muted">Last sign-in</small><b style={{ display: 'block' }}>{s.last_login_at ? fmtDate(s.last_login_at) : '—'}</b></Card>
           </div>
-          <Segmented value={tab} onChange={setTab} options={[{ value: 'analytics', label: "Analysis" }, { value: 'portfolio', label: 'Portfolio' }, { value: 'payments', label: 'Payments', count: s.payments.length }]} />
-          {tab === 'analytics' ? <AnalyticsView a={a} /> : tab === 'portfolio' ? <PortfolioView data={pf} editable={false} onChange={() => {}} /> : (
+          <Segmented value={tab} onChange={setTab} options={[{ value: 'report', label: 'Full report' }, { value: 'analytics', label: 'Quiz analysis' }, { value: 'portfolio', label: 'Portfolio' }, { value: 'payments', label: 'Payments', count: s.payments.length }]} />
+          {tab === 'report' ? <StudentReport r={rep} /> : tab === 'analytics' ? <AnalyticsView a={a} /> : tab === 'portfolio' ? <PortfolioView data={pf} editable={false} onChange={() => {}} /> : (
             <Card>
               {s.payments.length === 0 ? <p className="muted center">No payments yet.</p> : (
                 <div className="table-wrap"><table className="t">
