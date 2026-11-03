@@ -29,6 +29,7 @@ export default function Quizzes() {
       <Gate state={st}>{(list) => {
         const shown = list.filter((q) => tab === 'all' || q.status === tab);
         const c = (s) => list.filter((q) => q.status === s).length;
+        if (!list.length) return null; // no teacher quizzes: Take a quiz above is enough
         return (
           <>
             <Segmented value={tab} onChange={setTab} options={[
@@ -36,7 +37,7 @@ export default function Quizzes() {
               { value: 'in_progress', label: "In progress", count: c('in_progress') }, { value: 'done', label: "Completed", count: c('done') },
             ]} />
             {shown.length === 0 ? (
-              <Card><Empty icon={<IconQuiz />} title={"Nothing here yet"} text="New quizzes will appear here soon." /></Card>
+              <Card><Empty icon={<IconQuiz />} title="Nothing in this tab" text="Pick another tab above." /></Card>
             ) : (
               <div className="stack stagger">
                 {shown.map((q) => (

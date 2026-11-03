@@ -37,7 +37,7 @@ function analyse(r, self) {
     out.push([top[0] === 'arena' && share > 50 ? 'warn' : 'good', `Most time this week: ${SECTIONS[top[0]]?.[0] || top[0]} (${share}%).${top[0] === 'arena' && share > 50 ? T(' Mostly games: ask for more Question Bank or Take a quiz.', ' Great for words, but add Question Bank or Take a quiz for SAT questions.') : ''}`]);
     if (!by.qbank && !by.mock && !by.quiz) out.push(['warn', T('No SAT question practice this week (Question Bank, Take a quiz or quizzes).', 'No SAT questions this week yet: try the Question Bank or Take a quiz.')]);
   }
-  if (r.quizzes_available) out.push([r.quizzes.length >= r.quizzes_available ? 'good' : 'warn', `${T('Finished', 'You finished')} ${new Set(r.quizzes.map((q) => q.title)).size} of ${r.quizzes_available} available teacher quizzes.`]);
+  if (r.quizzes_available && !self) out.push([r.quizzes.length >= r.quizzes_available ? 'good' : 'warn', `${T('Finished', 'You finished')} ${new Set(r.quizzes.map((q) => q.title)).size} of ${r.quizzes_available} available teacher quizzes.`]);
   if (r.vocab.due > 20) out.push(['warn', `${r.vocab.due} vocabulary words are waiting for review${T('', ': open Vocabulary and press Review')}.`]);
   else if (r.vocab.learned + r.vocab.learning === 0) out.push(['warn', T('Has not started Vocabulary yet.', 'You have not started Vocabulary yet: Set 1 is open.')]);
   const weak = r.qbank.skills.filter((x) => x.answered >= 3 && x.correct / x.answered < 0.5).map((x) => `${x.skill} (${Math.round((x.correct / x.answered) * 100)}%)`);
@@ -156,10 +156,10 @@ export default function StudentReport({ r, self = false }) {
       </div>
 
       <div className="grid g2">
-        <Card>
-          <h3 className="sr-h">Teacher quizzes</h3>
+        {(!self || r.quizzes.length > 0) && <Card>
+          <h3 className="sr-h">{self ? 'Quizzes' : 'Teacher quizzes'}</h3>
           {!r.quizzes.length ? <p className="muted">No quizzes finished yet.</p> : <List rows={r.quizzes.slice(0, 8).map((q) => [when(q.finished_at), <Link key={q.id} to={`/result/${q.id}`}>{q.title}</Link>, q.total ? `${q.score}/${q.total}` : `${q.score}%`, q.total ? pct(q.score, q.total) : q.score])} />}
-        </Card>
+        </Card>}
         <Card>
           <h3 className="sr-h">Lesson level checks</h3>
           {!r.lessons.checks.length ? <p className="muted">No level checks yet.</p> : <List rows={r.lessons.checks.slice(0, 8).map((c) => [when(c.finished_at), c.title, `${c.score}/${c.total}${c.passed ? ' · passed' : ''}`, pct(c.score, c.total)])} />}

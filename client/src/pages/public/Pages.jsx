@@ -148,6 +148,15 @@ export function AboutPage() {
         </section>
       )}
 
+      {site.faq?.length > 0 && (
+        <section className="pub-wrap pub-faq" id="faq">
+          <h2 className="pub-h2">Questions</h2>
+          {site.faq.map((f, i) => (
+            <details key={i} className="pub-faq-item"><summary>{f.q}</summary><p>{f.a}</p></details>
+          ))}
+        </section>
+      )}
+
       <section className="pub-final">
         <h2>Start with one test</h2>
         <p>{site.practice.test_size} questions, {site.practice.minutes} minutes, a score estimate — free and without sign-up.</p>

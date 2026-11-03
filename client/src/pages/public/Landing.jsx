@@ -5,7 +5,6 @@ import { useAuth } from '../../context.jsx';
 import { Spinner } from '../../components/ui.jsx';
 import { IconArrow, IconCheck } from '../../components/icons.jsx';
 import { useSite } from './site.jsx';
-import { FounderCard } from './Pages.jsx';
 
 const money = (n) => Number(n || 0).toLocaleString('ru-RU').replace(/,/g, ' ');
 
@@ -14,7 +13,6 @@ export default function Landing() {
   const { site, err } = useSite();
   const { user } = useAuth();
   const [cfg, setCfg] = useState(null);
-  const [faq, setFaq] = useState(0);
   useEffect(() => { getConfig().then(setCfg); }, []);
   if (err) return <div className="pub-wrap"><p className="error-box">{err.message}</p></div>;
   if (!site) return <div className="pub-hero" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}><Spinner /></div>;
@@ -74,7 +72,7 @@ export default function Landing() {
           <div>
             <small className="eyebrow">FREE · NO SIGN-UP</small>
             <h2>Today’s practice test is ready</h2>
-            <p>{site.practice.test_size} questions, {site.practice.minutes} minutes — like a real Reading &amp; Writing module. Every visit opens a fresh {site.practice.pool_percent}% of our {c.questions}-question bank, so you always get new questions. Score estimate and full explanations at the end.</p>
+            <p>{site.practice.test_size} questions, {site.practice.minutes} minutes, like a real Reading &amp; Writing module. Score estimate and explanations at the end.</p>
             <div className="row wrap" style={{ marginTop: 18 }}>
               <Link className="btn sun lg" to="/practice">Start the test <IconArrow /></Link>
               <Link className="btn on-dark lg" to="/practice?levels=hard">Hard mode</Link>
@@ -87,24 +85,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
-      {/* ---------- features ---------- */}
-      <section className="pub-wrap">
-        <h2 className="pub-h2">All essentials included</h2>
-        <div className="pub-features">
-          {h.features?.map((f, i) => (
-            <div key={i} className="pub-feature"><span className="fnum">{String(i + 1).padStart(2, '0')}</span><b>{f.title}</b><p>{f.text}</p></div>
-          ))}
-        </div>
-      </section>
-
-      {/* ---------- founder ---------- */}
-      {site.about?.show_on_home && (
-        <section className="pub-wrap">
-          <h2 className="pub-h2">Meet your ustoz</h2>
-          <FounderCard a={site.about} />
-        </section>
-      )}
 
       {/* ---------- pricing ---------- */}
       <section className="pub-wrap" id="pricing">
@@ -128,19 +108,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
-      {/* ---------- FAQ ---------- */}
-      {site.faq?.length > 0 && (
-        <section className="pub-wrap pub-faq">
-          <h2 className="pub-h2">Questions</h2>
-          {site.faq.map((f, i) => (
-            <div key={i} className={`pub-faq-item ${faq === i ? 'open' : ''}`}>
-              <button onClick={() => setFaq(faq === i ? -1 : i)} aria-expanded={faq === i}>{f.q}<span>{faq === i ? '−' : '+'}</span></button>
-              {faq === i && <p>{f.a}</p>}
-            </div>
-          ))}
-        </section>
-      )}
 
       {/* ---------- final CTA ---------- */}
       <section className="pub-final">

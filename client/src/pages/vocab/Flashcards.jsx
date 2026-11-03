@@ -60,7 +60,7 @@ export default function Flashcards({ words, onDone, title }) {
   }, [queue, states]);
 
   const rate = useCallback(async (rating) => {
-    if (!card || !flipped || busy) return;
+    if (!card || busy) return;
     setBusy(true);
     try {
       const res = await api.post('/vocab/review', { word_id: card.id, rating });
@@ -134,14 +134,14 @@ export default function Flashcards({ words, onDone, title }) {
           )}
         </div>
       </div>
-      <div className={`fc-rate ${flipped ? '' : 'wait'}`}>
+      <div className="fc-rate">
         {RATINGS.map((b, i) => (
-          <button key={b.r} className={`fc-btn ${b.cls}`} disabled={!flipped || busy} onClick={() => rate(b.r)}>
+          <button key={b.r} className={`fc-btn ${b.cls}`} disabled={busy} onClick={() => rate(b.r)}>
             <b>{b.label}</b><small>{pv[i] || ''}</small><kbd>{b.r}</kbd>
           </button>
         ))}
       </div>
-      <p className="fc-hint">{flipped ? 'Rate honestly — the app picks when you see this word again.' : 'Try to remember the meaning first, then reveal.'}</p>
+      <p className="fc-hint">{flipped ? 'Rate honestly: the app picks when you see this word again.' : 'Know it? Tap Easy. Not sure? Tap the card to see the meaning (optional).'}</p>
     </div>
   );
 }
