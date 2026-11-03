@@ -396,7 +396,7 @@ export function registerBotAdmin(app, { h, bad, requireMaster, requireStudent })
     const site = `${proto}://${host}`;
     let secret = await getKey('_tg_webhook_secret');
     if (!secret) { secret = crypto.randomBytes(24).toString('hex'); await setKey('_tg_webhook_secret', secret); }
-    if (proto !== 'https') return bad(res, 'Telegram needs an https address — connect the bot on the live site (sat-ustoz.vercel.app)');
+    if (proto !== 'https') return bad(res, 'Telegram needs an https address — connect the bot on the live site (www.ustozsat.uz)');
     await tg('setWebhook', { url: `${site}/api/telegram/webhook`, secret_token: secret, allowed_updates: ['message', 'callback_query', 'pre_checkout_query'], drop_pending_updates: true }, token);
     await tg('setMyCommands', { commands: [{ command: 'start', description: 'Menyu' }, { command: 'help', description: "Ko'p so'raladigan savollar" }, { command: 'cancel', description: 'Bekor qilish' }] }, token).catch(() => {});
     await setKey('_tg_token', token);

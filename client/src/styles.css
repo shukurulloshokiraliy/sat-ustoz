@@ -474,7 +474,8 @@ table.t { width: 100%; border-collapse: collapse; min-width: 560px; }
 .pr-dots > button.cur { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--primary); color: var(--ink); }
 @media (max-width: 560px) { .pr { padding: 0 10px 30px; } .pr-card { border-radius: 24px; gap: 16px; } .pr-opt { padding: 15px 16px; font-size: 16px; } .pr-opt.sel, .pr-opt.correct, .pr-opt.wrong { padding: 14.5px 15.5px; } .pr-opt .tag { white-space: normal; } }
 .google-slot { position: relative; min-height: 44px; display: grid; justify-items: center; }
-.google-btn-host { width: 100%; display: flex; justify-content: center; min-height: 44px; }
+.google-btn-host { width: 100%; display: flex; justify-content: center; min-height: 44px; color-scheme: light; }
+.google-btn-host iframe { color-scheme: light; background: transparent !important; }
 .google-skeleton { position: absolute; inset: 0; border-radius: 99px; border: 1.5px solid var(--line); background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
 
 /* ============ Brand tile (sidebar) ============ */
