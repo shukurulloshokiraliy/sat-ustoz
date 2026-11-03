@@ -150,13 +150,16 @@ export function combine(a, r) {
   const tests = [
     ...a.history.map((h) => ({ key: `q${h.id}`, to: `/result/${h.id}`, title: h.title, date: h.date, score: h.score, total: h.total })),
     ...r.mocks.map((m) => ({ key: `m${m.id}`, to: `/mock/${m.id}`, title: 'Take a quiz', date: m.finished_at, score: m.score, total: m.total, estimate: Number(m.estimate) || null })),
+    ...(r.full || []).map((f) => ({ key: `f${f.id}`, to: `/full-mock/result/${f.id}`, title: f.title, date: f.finished_at, score: f.m1_correct + f.m2_correct, total: f.m1_total + f.m2_total, estimate: f.score, full: true })),
     ...(r.practice || []).map((p) => ({ key: `p${p.id}`, to: '/practice', title: 'Practice test', date: p.finished_at, score: p.score, total: p.total, estimate: p.estimate || null })),
   ].map((t) => ({ ...t, score: Number(t.score) || 0, total: Number(t.total) || 0 })).filter((t) => t.total > 0).map((t) => ({ ...t, pct: Math.round((t.score / t.total) * 100) })).sort((x, y) => new Date(y.date) - new Date(x.date));
   const full = tests.filter((t) => t.total >= 10); // short quizzes say little about the score
   const last = full.slice(0, 5);
   // latest tests weigh more (3, 2, 1, 1, 1): the estimate follows recent progress
+  // a full mock is the best evidence: if there is a recent one, it leads
   const W = [3, 2, 1, 1, 1];
-  const estimateNow = last.length ? Math.round(last.reduce((s, t, i) => s + estOf(t) * W[i], 0) / last.reduce((s, t, i) => s + W[i], 0) / 10) * 10 : (a.estimates?.english ?? null);
+  const fullFirst = full[0]?.full;
+  const estimateNow = fullFirst ? Math.round((full[0].estimate * 3 + last.slice(1).reduce((s, t) => s + estOf(t), 0)) / (3 + last.slice(1).length) / 10) * 10 : last.length ? Math.round(last.reduce((s, t, i) => s + estOf(t) * W[i], 0) / last.reduce((s, t, i) => s + W[i], 0) / 10) * 10 : (a.estimates?.english ?? null);
   const quizQ = a.totals.answered || 0; const quizOk = Math.round(((a.totals.accuracy || 0) / 100) * quizQ);
   const mockQ = r.mocks.reduce((s, m) => s + Number(m.total || 0), 0); const mockOk = r.mocks.reduce((s, m) => s + Number(m.score || 0), 0);
   const practiceQ = (r.practice || []).reduce((s, p) => s + p.total, 0) + mockQ; const practiceOk = (r.practice || []).reduce((s, p) => s + p.score, 0) + mockOk;

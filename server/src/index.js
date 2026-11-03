@@ -16,6 +16,7 @@ import { registerPlacement } from './placement/routes.js';
 import { lessonSummary, syncBundledModules } from './course/modules.js';
 import { registerLessons } from './course/lessons.js';
 import { registerQbank, syncQbank, migrateQbankMocks } from './qbank.js';
+import { registerFullMocks, migrateFullMocks } from './fullmock.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
 import { migrateSite, seedSite, registerSitePublic, registerSiteAdmin } from './site.js';
@@ -53,6 +54,7 @@ await migrateSite();
 await migrateBot();
 await migrateVocab();
 await migrateQbankMocks();
+await migrateFullMocks();
 await db.exec(`
 CREATE TABLE IF NOT EXISTS user_activity (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, day DATE NOT NULL, section TEXT NOT NULL,
@@ -237,6 +239,7 @@ registerVocab(app, { h, bad, requireMaster, requireStudent, accessFor: (u) => ac
 registerPlacement(app, { h, bad, requireStudent, requireMaster });
 registerLessons(app, { h, bad, requireStudent, requireMaster, roadmapFor: (u) => roadmapFor(u), accessFor: (u) => accessFor(u) });
 registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor: (u) => accessFor(u), upload });
+registerFullMocks(app, { h, bad, requireStudent, requireMaster, upload });
 
 app.get('/api/me', h(async (req, res) => res.json(await mepayload(req.user))));
 app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
@@ -323,6 +326,7 @@ app.put('/api/settings', requireMaster, h(async (req, res) => {
   }
   if ('pay_card' in b) patch.pay_card = String(b.pay_card || '').replace(/[^\d ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 23);
   if ('pay_holder' in b) patch.pay_holder = String(b.pay_holder || '').trim().slice(0, 60);
+  for (const k of ['fm_free', 'fm_month', 'fm_quarter']) if (k in b) patch[k] = String(Math.max(0, Math.min(99, Math.round(+b[k] || 0))));
   if ('telegram_bot' in b) patch.telegram_bot = String(b.telegram_bot || '').trim().replace(/^@/, '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 64);
   res.json(await setSettings(patch));
 }));
@@ -389,6 +393,8 @@ app.post('/api/activity', h(async (req, res) => {
 /** Everything one student did on the platform (teacher report and the student's own Results page). */
 async function buildReport(id) {
   const num = (v) => Number(v || 0);
+  const full = await db.all(`SELECT a.id, a.mock_id, m.title, a.score, a.low, a.high, a.route, a.m1_correct, a.m2_correct, a.m1_total, a.m2_total, a.finished_at
+    FROM full_mock_attempts a JOIN full_mocks m ON m.id = a.mock_id WHERE a.user_id = ? AND a.stage = 'done' ORDER BY a.finished_at DESC LIMIT 20`, [id]).catch(() => []);
   const [practice, reviews, time, assigned, qb, qbTot, mocks, vocab, vtests, arena, lessons, checks, quizzes, days] = await Promise.all([
     db.all(`SELECT id, score, total, estimate, finished_at, filters FROM practice_sessions WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 30`, [id]).catch(() => []),
     db.all(`SELECT to_char(last_at, 'YYYY-MM-DD') AS day, COUNT(*) AS n FROM vocab_progress WHERE user_id = ? AND last_at > now() - interval '28 days' GROUP BY 1 ORDER BY 1`, [id]),
@@ -434,6 +440,7 @@ async function buildReport(id) {
     quizzes_available: num(assigned.n),
     practice: practice.map((p) => ({ id: p.id, score: num(p.score), total: num(p.total), estimate: p.estimate == null ? null : num(p.estimate), finished_at: p.finished_at })),
     reviews: reviews.map((r) => ({ day: r.day, n: num(r.n) })),
+    full: full.map((f) => ({ ...f, score: num(f.score), low: num(f.low), high: num(f.high), m1_correct: num(f.m1_correct), m2_correct: num(f.m2_correct), m1_total: num(f.m1_total), m2_total: num(f.m2_total) })),
   };
 }
 

@@ -3,6 +3,10 @@ import MockTaker from './pages/mock/MockTaker.jsx';
 import ActivityTracker from './components/ActivityTracker.jsx';
 import MockResult from './pages/mock/MockResult.jsx';
 import Leaderboard from './pages/student/Leaderboard.jsx';
+import FullMocks from './pages/fullmock/FullMocks.jsx';
+import FullMockTaker from './pages/fullmock/FullMockTaker.jsx';
+import FullMockResult from './pages/fullmock/FullMockResult.jsx';
+import FullMockAdmin from './pages/master/FullMockAdmin.jsx';
 import { useAuth } from './context.jsx';
 import { Spinner } from './components/ui.jsx';
 import Layout from './components/Layout.jsx';
@@ -75,6 +79,7 @@ export default function App() {
       {user.role === 'student' && <Route path="/lesson/:id/check" element={<LevelCheck />} />}
       {user.role === 'student' && <Route path="/question-bank/practice" element={<QbankPractice />} />}
       {user.role === 'student' && <Route path="/mock" element={<MockTaker />} />}
+      {user.role === 'student' && <Route path="/full-mock/:aid" element={<FullMockTaker />} />}
       <Route path="/site" element={<PublicLayout />}>
         <Route index element={<Landing />} />
       </Route>
@@ -100,6 +105,7 @@ export default function App() {
             <Route path="roadmap" element={<RoadmapEditor />} />
             <Route path="settings" element={<Settings />} />
             <Route path="question-bank/manage" element={<QbankAdmin />} />
+            <Route path="full-mocks" element={<FullMockAdmin />} />
             <Route path="website" element={<Website />} />
             <Route path="support" element={<Support />} />
           </>
@@ -111,6 +117,8 @@ export default function App() {
             <Route path="mock/:id" element={<MockResult />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="leaderboard" element={<Leaderboard />} />
+            <Route path="full-mocks" element={<FullMocks />} />
+            <Route path="full-mock/result/:aid" element={<FullMockResult />} />
             <Route path="saved" element={<Saved />} />
             <Route path="portfolio" element={<Portfolio />} />
             <Route path="subscribe" element={<Subscribe />} />

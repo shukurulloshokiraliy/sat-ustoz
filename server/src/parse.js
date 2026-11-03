@@ -29,6 +29,8 @@ const ALIASES = {
   explanation: ['explanation', 'rationale', 'izoh', 'tushuntirish', 'why'],
   tip: ['tip', 'ustoztip', 'hint', 'maslahat', 'ustozmaslahati'],
   topic: ['topic', 'mavzu', 'skill', 'category'],
+  module: ['module', 'modul', 'part', 'qism'],
+  difficulty: ['difficulty', 'level', 'qiyinlik', 'daraja'],
 };
 
 function pick(row, key) {
@@ -62,6 +64,8 @@ export function parseSheet(buffer) {
       explanation: pick(r, 'explanation'),
       tip: pick(r, 'tip'),
       topic: pick(r, 'topic') || 'General',
+      module: pick(r, 'module'),
+      difficulty: pick(r, 'difficulty'),
     }))
     .filter((q) => q.passage || q.opt_a || q.opt_b);
 }

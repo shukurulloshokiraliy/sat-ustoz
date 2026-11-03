@@ -337,6 +337,9 @@ const DEFAULT_SETTINGS = {
   pay_card: '',
   google_client_id: '',
   pay_holder: '',
+  fm_free: '1',     // full mocks per week without a subscription
+  fm_month: '3',    // ... with the monthly plan
+  fm_quarter: '7',  // ... with the 3-month plan (7 = every day)
 };
 export async function getSettings() {
   const rows = await db.all('SELECT key, value FROM settings');

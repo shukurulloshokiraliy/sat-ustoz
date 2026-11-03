@@ -156,6 +156,10 @@ export default function StudentReport({ r, self = false }) {
       </div>
 
       <div className="grid g2">
+        {(r.full || []).length > 0 && <Card>
+          <h3 className="sr-h">Full mocks</h3>
+          <List rows={r.full.slice(0, 8).map((f) => [when(f.finished_at), self ? <Link key={f.id} to={`/full-mock/result/${f.id}`}>{f.title}</Link> : `${f.title}${f.route ? ` · ${f.route} M2` : ''}`, `${f.score} (${f.low}–${f.high})`, pct(f.m1_correct + f.m2_correct, f.m1_total + f.m2_total)])} />
+        </Card>}
         {(!self || r.quizzes.length > 0) && <Card>
           <h3 className="sr-h">{self ? 'Quizzes' : 'Teacher quizzes'}</h3>
           {!r.quizzes.length ? <p className="muted">No quizzes finished yet.</p> : <List rows={r.quizzes.slice(0, 8).map((q) => [when(q.finished_at), <Link key={q.id} to={`/result/${q.id}`}>{q.title}</Link>, q.total ? `${q.score}/${q.total}` : `${q.score}%`, q.total ? pct(q.score, q.total) : q.score])} />}
