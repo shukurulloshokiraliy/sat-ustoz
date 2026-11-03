@@ -47,7 +47,7 @@ export default function PublicLayout() {
     <div className="pub">
       <header className="pub-head">
         <div className="pub-head-in">
-          <Link to="/" className="pub-logo" aria-label="SAT Ustoz — home"><Logo size={24} tone="white" /></Link>
+          <Link to="/" className="pub-logo" aria-label="SAT Ustoz — home"><Logo size={24} tone={theme === "dark" ? "white" : "auto"} /></Link>
           <nav className={`pub-nav ${open ? 'open' : ''}`} aria-label="Site menu">
             {menus.map((m) => <Menu key={m.label} m={m} />)}
             <NavLink to="/about" className="pub-nav-link">About</NavLink>
