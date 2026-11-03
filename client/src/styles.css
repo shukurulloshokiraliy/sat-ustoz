@@ -1913,3 +1913,6 @@ em.hi, .sr-bars i.hi { background: #1E8E4E; } em.mid, .sr-bars i.mid { backgroun
 @media (max-width: 760px) { .tiers, .sub-top, .pay-how { grid-template-columns: 1fr; } .paycard { width: 100%; } }
 .tier .price { font-size: 1.15rem; white-space: nowrap; }
 @media (max-width: 760px) { .paycard { padding: 18px; } .paycard-num { font-size: clamp(.95rem, 4.6vw, 1.2rem); white-space: nowrap; } .paycard-bottom span { font-size: .78rem; } }
+.vup { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.vup-bar { flex: 1; min-width: 120px; height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; } .vup-bar i { display: block; height: 100%; background: var(--primary); transition: width .3s; }
+.vup-ok { color: var(--good); font-weight: 600; }

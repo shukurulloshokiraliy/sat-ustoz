@@ -345,6 +345,9 @@ const DEFAULT_SETTINGS = {
   free_q_day: '20', // Question Bank answers per day without a subscription
   live_link: '',    // live online lessons (plan 4): meeting link
   live_note: '',    // ... and the schedule shown to students
+  bunny_library_id: '', // Bunny Stream video library (video lessons)
+  bunny_api_key: '',    // secret: library API key (upload)
+  bunny_token_key: '',  // secret: embed token authentication key (signed player links)
 };
 export async function getSettings() {
   const rows = await db.all('SELECT key, value FROM settings');

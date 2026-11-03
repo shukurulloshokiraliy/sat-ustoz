@@ -17,6 +17,7 @@ import { lessonSummary, syncBundledModules } from './course/modules.js';
 import { registerLessons } from './course/lessons.js';
 import { registerQbank, syncQbank, migrateQbankMocks } from './qbank.js';
 import { registerFullMocks, migrateFullMocks } from './fullmock.js';
+import { registerVideo, playUrl, isBunny } from './video.js';
 import { registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
@@ -254,6 +255,7 @@ registerLessons(app, { h, bad, requireStudent, requireMaster, roadmapFor: (u) =>
 registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor: (u) => accessFor(u), upload, usedToday });
 registerFullMocks(app, { h, bad, requireStudent, requireMaster, upload });
 registerTiers(app, { h, bad, requireStudent, requireMaster });
+registerVideo(app, { h, bad, requireMaster });
 
 app.get('/api/me', h(async (req, res) => res.json(await mepayload(req.user))));
 app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
@@ -323,7 +325,8 @@ app.put('/api/me/password', h(async (req, res) => {
 // ---------- settings (teacher) ----------
 app.get('/api/settings', requireMaster, h(async (req, res) => {
   const st = await getSettings();
-  res.json({ ...st, google_configured: !!(process.env.GOOGLE_CLIENT_ID || st.google_client_id), google_env: !!process.env.GOOGLE_CLIENT_ID, database: DB_KIND });
+  const secret = (v) => (v ? `••••${String(v).slice(-4)}` : '');
+  res.json({ ...st, bunny_api_key: secret(st.bunny_api_key), bunny_token_key: secret(st.bunny_token_key), bunny_env: !!process.env.BUNNY_API_KEY, google_configured: !!(process.env.GOOGLE_CLIENT_ID || st.google_client_id), google_env: !!process.env.GOOGLE_CLIENT_ID, database: DB_KIND });
 }));
 app.put('/api/settings', requireMaster, h(async (req, res) => {
   const b = req.body || {};
@@ -343,11 +346,14 @@ app.put('/api/settings', requireMaster, h(async (req, res) => {
   if ('tiers' in b) patch.tiers = cleanTiers(b.tiers);
   if ('fm_extra_price' in b) patch.fm_extra_price = digits(b.fm_extra_price) || '0';
   if ('free_q_day' in b) patch.free_q_day = String(Math.max(0, Math.min(999, Math.round(+b.free_q_day || 0))));
+  if ('bunny_library_id' in b) patch.bunny_library_id = String(b.bunny_library_id || '').replace(/\D/g, '').slice(0, 12);
+  for (const k of ['bunny_api_key', 'bunny_token_key']) if (k in b && !String(b[k]).startsWith('••••')) patch[k] = String(b[k] || '').trim().replace(/[^\w-]/g, '').slice(0, 100);
   if ('live_link' in b) patch.live_link = /^https?:\/\//i.test(String(b.live_link || '').trim()) ? String(b.live_link).trim().slice(0, 300) : '';
   if ('live_note' in b) patch.live_note = String(b.live_note || '').trim().slice(0, 300);
   for (const k of ['fm_free', 'fm_month', 'fm_quarter']) if (k in b) patch[k] = String(Math.max(0, Math.min(99, Math.round(+b[k] || 0))));
   if ('telegram_bot' in b) patch.telegram_bot = String(b.telegram_bot || '').trim().replace(/^@/, '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 64);
-  res.json(await setSettings(patch));
+  const out = await setSettings(patch);
+  res.json({ ...out, bunny_api_key: out.bunny_api_key ? `••••${out.bunny_api_key.slice(-4)}` : '', bunny_token_key: out.bunny_token_key ? `••••${out.bunny_token_key.slice(-4)}` : '' });
 }));
 
 // ---------- groups (teacher) ----------
@@ -887,7 +893,10 @@ async function roadmapFor(user) {
   return { steps: out, estimate };
 }
 app.get('/api/roadmap', h(async (req, res) => {
-  const r = await roadmapFor(req.user);
+  const r0 = await roadmapFor(req.user);
+  const st = await getSettings();
+  const sign = (it) => (isBunny(it.url) ? { ...it, url: req.user.role === 'master' ? it.url : playUrl(it.url, st), play: req.user.role === 'master' ? playUrl(it.url, st, 1) : undefined } : it);
+  const r = { ...r0, steps: r0.steps.map((x) => ({ ...x, items: (x.items || []).map(sign) })) };
   if (req.user.role === 'master' || (await accessFor(req.user)).video) return res.json(r);
   // video links only reach students whose plan includes video (free lessons excepted)
   const hide = (it) => ((it.kind === 'video' || (it.kind === 'lesson' && !it.lesson?.free)) && it.url ? { ...it, url: '', video_locked: true } : it);
@@ -921,8 +930,8 @@ function stepBody(b) {
       body: kind === 'reading' ? String(it?.body || '').slice(0, 10000) : '',
     };
     if (kind === 'quiz' && !out.quiz_id) throw new HttpError(`Item ${i + 1}: choose a quiz`);
-    if (kind === 'video' && !/^https?:\/\//i.test(out.url)) throw new HttpError(`Item ${i + 1}: paste a video link (https://…)`);
-    if (kind === 'lesson' && out.url && !/^https?:\/\//i.test(out.url)) throw new HttpError(`Item ${i + 1}: the video link must start with https://`);
+    if (kind === 'video' && !/^https?:\/\//i.test(out.url) && !isBunny(out.url)) throw new HttpError(`Item ${i + 1}: paste a video link (https://…)`);
+    if (kind === 'lesson' && out.url && !/^https?:\/\//i.test(out.url) && !isBunny(out.url)) throw new HttpError(`Item ${i + 1}: the video link must start with https://`);
     if (kind === 'lesson' && !out.id) throw new HttpError(`Item ${i + 1}: lessons are added by importing a course module`);
     if (kind === 'reading' && !out.body.trim() && !out.title) throw new HttpError(`Item ${i + 1}: write the notes`);
     if (!out.title) out.title = kind === 'video' ? 'Video lesson' : kind === 'quiz' ? 'Practice quiz' : 'Study notes';

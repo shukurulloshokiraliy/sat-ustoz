@@ -63,6 +63,27 @@ function Form({ init }) {
         </div>
       </Card>
       <Card className="stack">
+        <h2>Video lessons (Bunny Stream)</h2>
+        <small className="muted">Teachers upload MP4 files in Roadmap; only students whose plan includes video can watch, only on this website, through links that expire after a few hours.</small>
+        {init.bunny_env ? <span className="chip good">Set on the server (environment variables)</span> : (
+          <div className="grid g3">
+            <Field label="Library ID"><input inputMode="numeric" value={f.bunny_library_id || ''} onChange={set('bunny_library_id')} placeholder="123456" /></Field>
+            <Field label="API key" hint="Stream → API"><input type="password" autoComplete="off" value={f.bunny_api_key || ''} onChange={set('bunny_api_key')} placeholder="xxxxxxxx-xxxx-…" /></Field>
+            <Field label="Token authentication key" hint="Security page"><input type="password" autoComplete="off" value={f.bunny_token_key || ''} onChange={set('bunny_token_key')} placeholder="xxxxxxxx-xxxx-…" /></Field>
+          </div>
+        )}
+        <details>
+          <summary className="linkish" style={{ cursor: 'pointer' }}>How to set it up (10 minutes)</summary>
+          <ol className="muted tg-steps" style={{ marginTop: 8 }}>
+            <li>Sign up at <a href="https://bunny.net" target="_blank" rel="noreferrer">bunny.net</a> (14 days free, then about $1–10 a month depending on views).</li>
+            <li><b>Stream → Add Video Library</b>, name “SAT Ustoz”, pick a region close to Europe.</li>
+            <li>Library → <b>API</b>: copy the <b>Library ID</b> and the <b>API key</b>.</li>
+            <li>Library → <b>Security</b>: turn on <b>Embed view token authentication</b>, copy the <b>Token authentication key</b>, and in <b>Allowed referrers</b> add <code>ustozsat.uz</code> and <code>www.ustozsat.uz</code>.</li>
+            <li>Paste the three values here and press Save settings. Then open Roadmap → edit a step → <b>Upload MP4</b>.</li>
+          </ol>
+        </details>
+      </Card>
+      <Card className="stack">
         <h2>Integrations</h2>
         {!init.google_env && (
           <Field label="Google sign-in — Client ID" hint="public value, not a secret">

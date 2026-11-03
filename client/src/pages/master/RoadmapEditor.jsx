@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import VideoUpload from '../../components/VideoUpload.jsx';
 import { api } from '../../api.js';
 import { useToast } from '../../context.jsx';
 import { Card, Confirm, Field, Gate, Modal, PageHeader, Segmented, useAsync } from '../../components/ui.jsx';
@@ -161,7 +162,9 @@ function StepModal({ init, insertAt, quizzes, onClose, onSaved, onChanged }) {
             <button className="icon-sm danger" type="button" aria-label="Remove" onClick={() => removeItem(it._k)}><IconTrash width={15} height={15} /></button>
           </div>
           <input value={it.title} onChange={(e) => setItem(it._k, { title: e.target.value })} placeholder={it.kind === 'video' ? 'Lesson 1: Commas' : it.kind === 'quiz' ? 'Level check (optional title)' : 'Study notes'} aria-label="Lesson title" />
-          {(it.kind === 'video' || it.kind === 'lesson') && <input value={it.url || ''} onChange={(e) => setItem(it._k, { url: e.target.value })} placeholder={it.kind === 'lesson' ? `Video link for this lesson (optional${it.lesson?.video_meta?.length_minutes ? `, planned ${it.lesson.video_meta.length_minutes} min` : ''}) — https://youtu.be/…` : 'https://youtu.be/…  or a Supabase Storage video link'} aria-label="Video link" />}
+          {(it.kind === 'video' || it.kind === 'lesson') && <VideoUpload title={it.title || f.title} onDone={(url) => setItem(it._k, { url })} />}
+          {(it.kind === 'video' || it.kind === 'lesson') && /^bunny:/.test(it.url || '') && <small className="vup-ok">Uploaded video lesson (Bunny Stream) · <button type="button" className="link-btn" onClick={() => setItem(it._k, { url: '' })}>remove</button></small>}
+          {(it.kind === 'video' || it.kind === 'lesson') && !/^bunny:/.test(it.url || '') && <input value={it.url || ''} onChange={(e) => setItem(it._k, { url: e.target.value })} placeholder={it.kind === 'lesson' ? `Video link for this lesson (optional${it.lesson?.video_meta?.length_minutes ? `, planned ${it.lesson.video_meta.length_minutes} min` : ''}) — https://youtu.be/…` : 'https://youtu.be/…  or a Supabase Storage video link'} aria-label="Video link" />}
           {it.kind === 'lesson' && it.lesson?.video_meta?.covers && !it.url && <small className="muted">Video plan: {it.lesson.video_meta.covers}</small>}
           {it.kind === 'quiz' && (
             <select value={it.quiz_id || ''} onChange={(e) => setItem(it._k, { quiz_id: Number(e.target.value) })} aria-label="Quiz">

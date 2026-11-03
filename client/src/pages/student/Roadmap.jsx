@@ -57,6 +57,8 @@ export function VideoPlayer({ url }) {
       {user?.role === 'student' && <span className="video-mark" aria-hidden="true">{user.name} · {user.email || user.login} · #{user.id}</span>}
     </div>
   );
+  if (/^bunny:/.test(url)) return <div className="video-soon"><div><b>Video uploaded</b><p>It plays here once Bunny Stream has finished preparing it.</p></div></div>;
+  if (/^https:\/\/(player|iframe)\.mediadelivery\.net\/embed\//.test(url)) return frame(<iframe src={`${url}${url.includes('?') ? '&' : '?'}autoplay=false&preload=true`} title="Video lesson" allow="accelerometer; gyroscope; encrypted-media; fullscreen" allowFullScreen />);
   const yt = youtubeId(url);
   if (yt) return frame(<iframe src={`https://www.youtube-nocookie.com/embed/${yt}?rel=0&modestbranding=1&iv_load_policy=3`} title="Video lesson" allow="accelerometer; encrypted-media; gyroscope; fullscreen" allowFullScreen />);
   if (isFile(url)) return frame(<video src={url} controls preload="metadata" controlsList="nodownload noplaybackrate" disablePictureInPicture onContextMenu={(e) => e.preventDefault()} />);
@@ -166,7 +168,7 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
                   {isOpen && it.kind === 'reading' && <div className="item-body">{it.body}</div>}
                   {isOpen && it.kind === 'video' && (
                     <>
-                      {it.video_locked ? <VideoLocked /> : <VideoPlayer url={it.url} />}
+                      {it.video_locked ? <VideoLocked /> : <VideoPlayer url={it.play || it.url} />}
                     </>
                   )}
                 </div>

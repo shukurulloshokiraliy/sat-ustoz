@@ -1,4 +1,6 @@
 import { db } from '../db.js';
+import { playUrl } from '../video.js';
+import { getSettings } from '../db.js';
 import { upsertModule, validateModule } from './modules.js';
 
 const publicQ = (q) => ({ id: q.id, kind: q.kind, prompt: q.prompt, passage: q.passage || '', options: q.options });
@@ -53,7 +55,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
       session: content.type === 'session' ? { time_minutes: content.time_minutes || 0, makeup: content.makeup || '', unlock: content.unlock || '',
         lessons_passed: sections.filter((i) => i.done).length, lessons_total: sections.length } : undefined,
       done: !!state.done,
-      id: item.id, title: item.title, status: item.status, video_url: showContent && (access.video || content.free) ? item.url || '' : '', video_locked: showContent && !!item.url && !(access.video || content.free), locked,
+      id: item.id, title: item.title, status: item.status, video_url: showContent && (access.video || content.free) ? playUrl(item.url || '', await getSettings()) : '', video_locked: showContent && !!item.url && !(access.video || content.free), locked,
       module: { step_id: step?.id, title: step?.title, subtitle: step?.subtitle, step_status: step?.status, handout: step?.handout || null },
       sources: showContent ? content.sources || [] : [],
       order: idx + 1, count: lessons.length, sections: sections.length,
