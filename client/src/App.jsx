@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import MockTaker from './pages/mock/MockTaker.jsx';
 import ActivityTracker from './components/ActivityTracker.jsx';
 import MockResult from './pages/mock/MockResult.jsx';
+import Leaderboard from './pages/student/Leaderboard.jsx';
 import { useAuth } from './context.jsx';
 import { Spinner } from './components/ui.jsx';
 import Layout from './components/Layout.jsx';
@@ -109,6 +110,7 @@ export default function App() {
             <Route path="quizzes" element={<Quizzes />} />
             <Route path="mock/:id" element={<MockResult />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="saved" element={<Saved />} />
             <Route path="portfolio" element={<Portfolio />} />
             <Route path="subscribe" element={<Subscribe />} />

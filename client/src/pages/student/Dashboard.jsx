@@ -1,22 +1,27 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ExamCountdown, ExamPicker } from '../../components/ExamDate.jsx';
 import { api, daysUntil, fmtDate } from '../../api.js';
 import { useAuth } from '../../context.jsx';
 import { satScoreFromCount } from '../../../../server/src/scoring.js';
 import { ActivityDots, Bars, Card, CountUp, Empty, Gate, LineChart, Progress, Ring, pctTone, useAsync } from '../../components/ui.jsx';
 import PathTrack from '../../components/PathTrack.jsx';
 import { PaywallBanner } from './Quizzes.jsx';
-import { IconArrow, IconBolt, IconCheck, IconClock, IconFlame, IconQuiz, IconTarget } from '../../components/icons.jsx';
+import { IconArrow, IconBolt, IconCheck, IconClock, IconFlame, IconQuiz, IconTarget, IconTrophy } from '../../components/icons.jsx';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const st = useAsync(() => Promise.all([api.get('/me/analytics'), api.get('/quizzes'), api.get('/placement'), api.get('/me/report')]), []);
+  const st = useAsync(() => Promise.all([api.get('/me/analytics'), api.get('/quizzes'), api.get('/placement'), api.get('/me/report'), api.get('/leaderboard?period=week').catch(() => null)]), []);
   const first = user.name.split(' ')[0];
+  const [pickExam, setPickExam] = useState(false);
+  const examLeft = daysUntil(user.exam_date);
+  const needExam = !user.exam_date || examLeft < 0;
 
   return (
     <div className="page">
-      <Gate state={st}>{([a, quizzes, pl, rep]) => {
+      {(needExam || pickExam) && <ExamPicker value={user.exam_date} required={needExam} onClose={() => setPickExam(false)} />}
+      <Gate state={st}>{([a, quizzes, pl, rep, lb]) => {
         const next = quizzes.find((q) => q.status === 'in_progress') || quizzes.find((q) => q.status === 'new') || quizzes[0];
-        const left = daysUntil(user.exam_date);
         const all = combine(a, rep);
         const points = all.trend.map((t, i) => ({ value: t.est, label: `${t.title} (${fmtDate(t.date)})`, short: i + 1 }));
         const est = all.estimate ?? user.diagnostic_score;
@@ -80,11 +85,15 @@ export default function Dashboard() {
                     </div>
                   </Card>
                 )}
-                {left != null && left > 0 && (
-                  <Card className="row between">
-                    <div><div className="muted" style={{ fontSize: '.82rem', fontWeight: 600 }}>{"Until the exam"}</div><div className="countdown"><b><CountUp value={left} /></b><span className="muted">{"days"}</span></div></div>
-                    <div className="chip primary"><IconTarget width={14} height={14} /> {fmtDate(user.exam_date)}</div>
-                  </Card>
+                {!needExam ? <ExamCountdown date={user.exam_date} onChange={() => setPickExam(true)} /> : (
+                  <Card className="row between"><b>When is your SAT?</b><button className="btn primary" onClick={() => setPickExam(true)}>Choose date</button></Card>
+                )}
+                {lb?.me && (
+                  <Link to="/leaderboard" className="card lb-mini">
+                    <span className="lb-mini-ic"><IconTrophy width={22} height={22} weight="duotone" /></span>
+                    <span><span><b>#{lb.me.rank}</b> this week</span><small>{lb.me.points} points · {lb.total} {lb.total === 1 ? 'student' : 'students'} on the board</small></span>
+                    <IconArrow width={16} height={16} />
+                  </Link>
                 )}
               </div>
             </div>

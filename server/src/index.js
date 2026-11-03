@@ -10,6 +10,7 @@ import { db, migrate, getSettings, setSettings, DB_KIND } from './db.js';
 import { initSecret, signToken, publicUser, requireAuth, requireMaster, requireStudent, subActive, verifyGoogleCredential } from './auth.js';
 import { parseUpload, buildTemplate, DEFAULT_PROMPT } from './parse.js';
 import { userAnalytics, estimateScore } from './analytics.js';
+import { SAT_DATES, isSatDate } from './satDates.js';
 import { seed } from './seed.js';
 import { registerPlacement } from './placement/routes.js';
 import { lessonSummary, syncBundledModules } from './course/modules.js';
@@ -233,14 +234,42 @@ registerLessons(app, { h, bad, requireStudent, requireMaster, roadmapFor: (u) =>
 registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor: (u) => accessFor(u), upload });
 
 app.get('/api/me', h(async (req, res) => res.json(await mepayload(req.user))));
+app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
+
+/**
+ * Leaderboard: every student ranked by points for the week (Mon–Sun, Tashkent) or all time.
+ * 10 points per correct SAT answer (Question Bank, Take a quiz, practice tests, quizzes), 2 per vocabulary
+ * review, 5 per correct Word Arena answer, 1 per minute of active study. Only first name + initial is shown.
+ */
+app.get('/api/leaderboard', h(async (req, res) => {
+  const week = req.query.period !== 'all';
+  const since = week ? "date_trunc('week', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent'" : "'1970-01-01'::timestamptz";
+  const rows = await db.all(`
+    WITH pts AS (
+      SELECT user_id, 10 * COUNT(*) AS p FROM qbank_answers WHERE correct AND answered_at >= ${since} GROUP BY user_id
+      UNION ALL SELECT user_id, 10 * SUM(score) FROM practice_sessions WHERE user_id IS NOT NULL AND finished_at >= ${since} GROUP BY user_id
+      UNION ALL SELECT user_id, 10 * SUM(CASE WHEN total > 0 THEN score ELSE 0 END) FROM attempts WHERE finished_at >= ${since} GROUP BY user_id
+      UNION ALL SELECT user_id, 2 * COUNT(*) FROM vocab_progress WHERE last_at >= ${since} GROUP BY user_id
+      UNION ALL SELECT user_id, 5 * SUM(correct) FROM game_players WHERE user_id IS NOT NULL AND joined_at >= ${since} GROUP BY user_id
+      UNION ALL SELECT user_id, SUM(seconds) / 60 FROM user_activity WHERE day >= (${since})::date GROUP BY user_id
+    )
+    SELECT u.id, u.name, u.avatar_url, COALESCE(SUM(pts.p), 0) AS points
+    FROM users u LEFT JOIN pts ON pts.user_id = u.id
+    WHERE u.role = 'student' GROUP BY u.id HAVING COALESCE(SUM(pts.p), 0) > 0 OR u.id = ?
+    ORDER BY points DESC, u.id`, [req.user.id]);
+  const short = (n) => { const w = String(n || '').trim().split(/\s+/); return w[0] + (w[1] ? ` ${w[1][0]}.` : ''); };
+  const list = rows.map((r, i) => ({ rank: i + 1, id: r.id, name: short(r.name), avatar_url: r.avatar_url, points: Number(r.points), me: r.id === req.user.id }));
+  res.json({ period: week ? 'week' : 'all', total: list.filter((x) => x.points > 0).length, top: list.slice(0, 50), me: list.find((x) => x.me) || null });
+}));
 app.put('/api/me', h(async (req, res) => {
   const { name, target_english, target_math, exam_date } = req.body || {};
+  if (exam_date && exam_date !== req.user.exam_date && !isSatDate(exam_date)) return bad(res, 'Choose one of the official SAT test dates.');
   const clamp = (v, d) => (Number.isFinite(+v) ? Math.max(200, Math.min(800, Math.round(+v))) : d);
   await db.run('UPDATE users SET name = ?, target_english = ?, target_math = ?, exam_date = ? WHERE id = ?', [
     String(name || req.user.name).trim() || req.user.name,
     clamp(target_english, req.user.target_english),
     clamp(target_math, req.user.target_math),
-    exam_date || null,
+    exam_date === undefined ? req.user.exam_date : exam_date || null,
     req.user.id,
   ]);
   res.json(await mepayload(await db.one('SELECT * FROM users WHERE id = ?', [req.user.id])));
@@ -424,6 +453,7 @@ app.put('/api/students/:id', requireMaster, h(async (req, res) => {
   const s = await db.one("SELECT * FROM users WHERE id = ? AND role = 'student'", [req.params.id]);
   if (!s) return bad(res, 'Not found', 404);
   const { name, group_id, target_english, target_math, exam_date } = req.body || {};
+  if (exam_date && exam_date !== s.exam_date && !isSatDate(exam_date)) return bad(res, 'Choose one of the official SAT test dates.');
   await db.run('UPDATE users SET name = ?, group_id = ?, target_english = ?, target_math = ?, exam_date = ? WHERE id = ?', [
     String(name || s.name).trim(), group_id || null,
     target_english ?? s.target_english, target_math ?? s.target_math, exam_date ?? s.exam_date, s.id,

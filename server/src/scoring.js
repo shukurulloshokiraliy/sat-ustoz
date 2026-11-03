@@ -82,3 +82,38 @@ export function satScoreFromCount(correct, total) {
   order.slice(0, correct).forEach((i) => { items[i].correct = true; });
   return satScore(items);
 }
+
+/* ---------------- score calculator (module counts) ---------------- */
+
+const fill = (n, mix, correct, module) => {
+  const items = Array.from({ length: n }, (_, i) => ({ difficulty: mix[Math.floor((i / n) * mix.length)], module, correct: false }));
+  for (let i = 0; i < Math.min(correct, n); i++) items[i].correct = true; // easier questions answered first
+  return items;
+};
+
+/** Reading & Writing from "correct in Module 1 / Module 2" (27 questions each). */
+export function rwFromModules(m1, m2) {
+  const hard = m1 / 27 >= ROUTE_CUT;
+  const items = [
+    ...fill(27, ['easy', 'medium', 'hard'], m1, 1),
+    ...fill(27, hard ? ['medium', 'hard', 'hard'] : ['easy', 'easy', 'medium'], m2, 2),
+  ];
+  return satScore(items);
+}
+
+// Math (22 + 22): Module 1 needs ~15 for the harder Module 2; easier path caps near 650.
+export const MATH_ROUTE = 15;
+const MATH_HARD = [[0, 380], [15, 460], [20, 510], [25, 570], [30, 630], [35, 700], [38, 740], [40, 770], [42, 790], [44, 800]];
+const MATH_EASY = [[0, 200], [5, 260], [10, 340], [15, 400], [20, 460], [25, 520], [30, 580], [33, 620], [36, 650]];
+const interp = (tbl, x) => {
+  if (x <= tbl[0][0]) return tbl[0][1];
+  for (let i = 1; i < tbl.length; i++) if (x <= tbl[i][0]) { const [x0, y0] = tbl[i - 1]; const [x1, y1] = tbl[i]; return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0); }
+  return tbl[tbl.length - 1][1];
+};
+/** Math estimate from module counts (22 questions each). */
+export function mathFromModules(m1, m2) {
+  const hard = m1 >= MATH_ROUTE;
+  const s = Math.round(interp(hard ? MATH_HARD : MATH_EASY, m1 + m2) / 10) * 10;
+  const r = (x) => Math.max(200, Math.min(hard ? 800 : 650, Math.round(x / 10) * 10));
+  return { score: s, low: r(s - 20), high: r(s + 20), route: hard ? 'hard' : 'easy' };
+}

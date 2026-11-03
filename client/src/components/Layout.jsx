@@ -6,8 +6,7 @@ import { Avatar } from './ui.jsx';
 import SupportChat from './SupportChat.jsx';
 import {
   IconBookmark, IconBriefcase, IconChats, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
-  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo,
-} from './icons.jsx';
+  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy } from './icons.jsx';
 
 const STUDENT_NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, c: '#2A55E5' },
@@ -18,6 +17,7 @@ const STUDENT_NAV = [
   { to: '/practice', label: 'Practice Tests', icon: IconBolt, c: '#E2553D' },
   { to: '/quizzes', label: 'Quizzes', icon: IconQuiz, c: '#12A39A' },
   { to: '/analytics', label: 'Results', icon: IconChart, c: '#2A55E5' },
+  { to: '/leaderboard', label: 'Leaderboard', icon: IconTrophy, c: '#E8A93C' },
   { to: '/saved', label: 'Saved', icon: IconBookmark, c: '#E0569B' },
   { to: '/subscribe', label: 'Subscription', icon: IconCrown, c: '#E8A93C' },
 ];

@@ -1,3 +1,4 @@
+import { SatDateSelect } from '../components/ExamDate.jsx';
 import { useRef, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth, useToast } from '../context.jsx';
@@ -34,7 +35,7 @@ export default function Profile() {
               <div className="form-grid">
                 <Field label={"Goal: Reading & Writing"} hint="200–800"><input type="number" min="200" max="800" step="10" value={f.target_english} onChange={(e) => setF({ ...f, target_english: e.target.value })} /></Field>
                 <Field label={"Goal: Math"} hint="200–800"><input type="number" min="200" max="800" step="10" value={f.target_math} onChange={(e) => setF({ ...f, target_math: e.target.value })} /></Field>
-                <Field label={"Exam date"}><input type="date" value={f.exam_date} onChange={(e) => setF({ ...f, exam_date: e.target.value })} /></Field>
+                <Field label={"SAT date"}><SatDateSelect value={f.exam_date} onChange={(v) => setF({ ...f, exam_date: v })} /></Field>
               </div>
             )}
             <div><button className="btn primary">{"Save"}</button></div>

@@ -5,6 +5,7 @@ import { useAuth } from '../../context.jsx';
 import { Spinner } from '../../components/ui.jsx';
 import { IconArrow, IconCheck } from '../../components/icons.jsx';
 import { useSite } from './site.jsx';
+import ScoreCalc from './ScoreCalc.jsx';
 
 const money = (n) => Number(n || 0).toLocaleString('ru-RU').replace(/,/g, ' ');
 
@@ -65,6 +66,9 @@ export default function Landing() {
           </div>
         ))}
       </section>
+
+      {/* ---------- score calculator ---------- */}
+      <ScoreCalc />
 
       {/* ---------- practice teaser ---------- */}
       <section className="pub-wrap">

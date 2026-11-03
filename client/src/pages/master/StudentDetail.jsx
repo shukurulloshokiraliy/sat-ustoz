@@ -1,3 +1,4 @@
+import { SatDateSelect } from '../../components/ExamDate.jsx';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, fmtDate } from '../../api.js';
@@ -75,7 +76,7 @@ function EditStudent({ s, groups, onClose, onSaved }) {
       <div className="form-grid">
         <Field label={"Goal R&W"}><input type="number" min="200" max="800" step="10" value={f.target_english} onChange={set('target_english')} /></Field>
         <Field label={"Goal Math"}><input type="number" min="200" max="800" step="10" value={f.target_math} onChange={set('target_math')} /></Field>
-        <Field label={"Exam date"}><input type="date" value={f.exam_date} onChange={set('exam_date')} /></Field>
+        <Field label={"SAT date"}><SatDateSelect value={f.exam_date} onChange={(v) => setF({ ...f, exam_date: v })} /></Field>
       </div>
       {err && <div className="error-box">{err}</div>}
     </Modal>
