@@ -356,14 +356,14 @@ app.post('/api/activity', h(async (req, res) => {
 async function buildReport(id) {
   const num = (v) => Number(v || 0);
   const [practice, reviews, time, assigned, qb, qbTot, mocks, vocab, vtests, arena, lessons, checks, quizzes, days] = await Promise.all([
-    db.all(`SELECT id, score, total, finished_at, filters FROM practice_sessions WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 30`, [id]).catch(() => []),
+    db.all(`SELECT id, score, total, estimate, finished_at, filters FROM practice_sessions WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 30`, [id]).catch(() => []),
     db.all(`SELECT to_char(last_at, 'YYYY-MM-DD') AS day, COUNT(*) AS n FROM vocab_progress WHERE user_id = ? AND last_at > now() - interval '28 days' GROUP BY 1 ORDER BY 1`, [id]),
     db.all(`SELECT to_char(day, 'YYYY-MM-DD') AS day, section, seconds FROM user_activity WHERE user_id = ? AND day > CURRENT_DATE - 56 ORDER BY day`, [id]),
     db.one(`SELECT COUNT(*) AS n FROM quizzes q WHERE q.is_public OR EXISTS (SELECT 1 FROM quiz_groups qg JOIN users u ON u.group_id = qg.group_id WHERE qg.quiz_id = q.id AND u.id = ?)`, [id]).catch(() => ({ n: 0 })),
     db.all(`SELECT q.domain, q.skill, COUNT(*) AS n, SUM(CASE WHEN a.correct THEN 1 ELSE 0 END) AS ok
       FROM qbank_answers a JOIN qbank_questions q ON q.id = a.question_id WHERE a.user_id = ? GROUP BY q.domain, q.skill ORDER BY q.domain, q.skill`, [id]),
     db.one('SELECT COUNT(*) AS n, SUM(CASE WHEN correct THEN 1 ELSE 0 END) AS ok, MAX(answered_at) AS last FROM qbank_answers WHERE user_id = ?', [id]),
-    db.all('SELECT id, score, total, finished_at FROM qbank_mocks WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 20', [id]),
+    db.all('SELECT id, score, total, estimate, finished_at FROM qbank_mocks WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 20', [id]),
     db.one(`SELECT SUM(CASE WHEN state = 'review' THEN 1 ELSE 0 END) AS learned, SUM(CASE WHEN state = 'learning' THEN 1 ELSE 0 END) AS learning,
       SUM(CASE WHEN due_at <= now() THEN 1 ELSE 0 END) AS due, MAX(last_at) AS last FROM vocab_progress WHERE user_id = ?`, [id]),
     db.all(`SELECT t.score, t.total, t.created_at, u.title, u.n FROM vocab_tests t LEFT JOIN vocab_units u ON u.id = t.unit_id
@@ -398,7 +398,7 @@ async function buildReport(id) {
     days: days.map((d) => ({ day: d.day, n: num(d.n) })),
     time: time.map((t) => ({ day: t.day, section: t.section, seconds: num(t.seconds) })),
     quizzes_available: num(assigned.n),
-    practice: practice.map((p) => ({ id: p.id, score: num(p.score), total: num(p.total), finished_at: p.finished_at })),
+    practice: practice.map((p) => ({ id: p.id, score: num(p.score), total: num(p.total), estimate: p.estimate == null ? null : num(p.estimate), finished_at: p.finished_at })),
     reviews: reviews.map((r) => ({ day: r.day, n: num(r.n) })),
   };
 }

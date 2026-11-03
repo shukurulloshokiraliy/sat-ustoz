@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { api, daysUntil, fmtDate } from '../../api.js';
 import { useAuth } from '../../context.jsx';
+import { satScoreFromCount } from '../../../../server/src/scoring.js';
 import { ActivityDots, Bars, Card, CountUp, Empty, Gate, LineChart, Progress, Ring, pctTone, useAsync } from '../../components/ui.jsx';
 import PathTrack from '../../components/PathTrack.jsx';
 import { PaywallBanner } from './Quizzes.jsx';
@@ -132,19 +133,21 @@ export default function Dashboard() {
   );
 }
 
-/** Rough Reading & Writing scaled score from the share of correct answers (replaced by the official table when available). */
-export const estimate = (p) => Math.round((200 + 600 * Math.pow(Math.max(0, Math.min(1, p)), 0.9)) / 10) * 10;
+/** Digital SAT R&W estimate (IRT model, see server/src/scoring.js); stored per test, or from the count for old results. */
+const estOf = (t) => t.estimate || satScoreFromCount(t.score, t.total)?.score || null;
 
 /** One picture from every source: teacher quizzes, Take a quiz, practice tests and the Question Bank. */
 export function combine(a, r) {
   const tests = [
     ...a.history.map((h) => ({ key: `q${h.id}`, to: `/result/${h.id}`, title: h.title, date: h.date, score: h.score, total: h.total })),
-    ...r.mocks.map((m) => ({ key: `m${m.id}`, to: `/mock/${m.id}`, title: 'Take a quiz', date: m.finished_at, score: m.score, total: m.total })),
-    ...(r.practice || []).map((p) => ({ key: `p${p.id}`, to: '/practice', title: 'Practice test', date: p.finished_at, score: p.score, total: p.total })),
+    ...r.mocks.map((m) => ({ key: `m${m.id}`, to: `/mock/${m.id}`, title: 'Take a quiz', date: m.finished_at, score: m.score, total: m.total, estimate: Number(m.estimate) || null })),
+    ...(r.practice || []).map((p) => ({ key: `p${p.id}`, to: '/practice', title: 'Practice test', date: p.finished_at, score: p.score, total: p.total, estimate: p.estimate || null })),
   ].map((t) => ({ ...t, score: Number(t.score) || 0, total: Number(t.total) || 0 })).filter((t) => t.total > 0).map((t) => ({ ...t, pct: Math.round((t.score / t.total) * 100) })).sort((x, y) => new Date(y.date) - new Date(x.date));
   const full = tests.filter((t) => t.total >= 10); // short quizzes say little about the score
   const last = full.slice(0, 5);
-  const estimateNow = last.length ? Math.round(last.reduce((s, t) => s + estimate(t.score / t.total), 0) / last.length / 10) * 10 : (a.estimates?.english ?? null);
+  // latest tests weigh more (3, 2, 1, 1, 1): the estimate follows recent progress
+  const W = [3, 2, 1, 1, 1];
+  const estimateNow = last.length ? Math.round(last.reduce((s, t, i) => s + estOf(t) * W[i], 0) / last.reduce((s, t, i) => s + W[i], 0) / 10) * 10 : (a.estimates?.english ?? null);
   const quizQ = a.totals.answered || 0; const quizOk = Math.round(((a.totals.accuracy || 0) / 100) * quizQ);
   const mockQ = r.mocks.reduce((s, m) => s + Number(m.total || 0), 0); const mockOk = r.mocks.reduce((s, m) => s + Number(m.score || 0), 0);
   const practiceQ = (r.practice || []).reduce((s, p) => s + p.total, 0) + mockQ; const practiceOk = (r.practice || []).reduce((s, p) => s + p.score, 0) + mockOk;
@@ -163,7 +166,7 @@ export function combine(a, r) {
   const xp = correct * 10 + minutes * 2 + (r.vocab?.learned || 0) * 3;
   return {
     estimate: estimateNow, streak, xp, level: Math.floor(xp / 500) + 1, levelProgress: Math.round(((xp % 500) / 500) * 100),
-    trend: [...full].reverse().slice(-12).map((t) => ({ est: estimate(t.score / t.total), title: t.title, date: t.date })),
+    trend: [...full].reverse().slice(-12).map((t) => ({ est: estOf(t), title: t.title, date: t.date })),
     answered, accuracy: answered ? Math.round((correct / answered) * 100) : 0,
     minutes,
     weak, activeDays: [...days].sort(), recent: tests,

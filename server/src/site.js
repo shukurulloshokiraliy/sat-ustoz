@@ -1,3 +1,4 @@
+import { satScore } from './scoring.js';
 /**
  * Public website (no sign-in needed) + teacher-editable content.
  *
@@ -45,6 +46,7 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
 );
 CREATE INDEX IF NOT EXISTS idx_practice_user ON practice_sessions(user_id, started_at);
 ALTER TABLE practice_sessions ADD COLUMN IF NOT EXISTS ip TEXT;
+ALTER TABLE practice_sessions ADD COLUMN IF NOT EXISTS estimate INTEGER;
 CREATE INDEX IF NOT EXISTS idx_practice_ip ON practice_sessions(ip, started_at);
 ALTER TABLE site_blocks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE site_pages ENABLE ROW LEVEL SECURITY;
@@ -166,8 +168,6 @@ function optionalUser(SECRET) {
   };
 }
 
-/** Rough SAT R&W scaled score from the share of correct answers (estimate only). */
-const estimate = (pct) => Math.round((200 + 600 * Math.pow(pct, 0.9)) / 10) * 10;
 
 /**
  * Free daily limit: guests and free accounts may answer `daily_limit` practice questions in any 24 hours
@@ -267,14 +267,15 @@ export function registerSitePublic(app, { h, bad, secret }) {
       return { ...pubQ(q), choice: c, answer: q.answer, correct: c === q.answer, explanation: q.explanation, tip: q.tip };
     });
     const score = review.filter((r) => r.correct).length;
+    const sat = satScore(review.map((r) => ({ correct: r.correct, difficulty: r.difficulty })));
     if (!s.finished_at) {
       const u = who(req);
-      await db.run('UPDATE practice_sessions SET answers = ?, score = ?, finished_at = now(), user_id = COALESCE(user_id, ?) WHERE id = ?', [JSON.stringify(given), score, u?.id || null, s.id]);
+      await db.run('UPDATE practice_sessions SET answers = ?, score = ?, estimate = ?, finished_at = now(), user_id = COALESCE(user_id, ?) WHERE id = ?', [JSON.stringify(given), score, sat?.score ?? null, u?.id || null, s.id]);
     }
     const skills = {};
     for (const r of review) { const k = (skills[r.skill] ||= { skill: r.skill, domain: r.domain, n: 0, ok: 0 }); k.n++; k.ok += r.correct ? 1 : 0; }
     const pct = review.length ? score / review.length : 0;
-    res.json({ id: s.id, score, total: review.length, percent: Math.round(pct * 100), estimate: estimate(pct), skills: Object.values(skills), review });
+    res.json({ id: s.id, score, total: review.length, percent: Math.round(pct * 100), estimate: sat?.score ?? 200, sat, skills: Object.values(skills), review });
   }));
 }
 

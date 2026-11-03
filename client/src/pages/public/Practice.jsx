@@ -269,13 +269,13 @@ function Result({ r, onAgain }) {
         <div>
           <small className="eyebrow">PRACTICE TEST · RESULT</small>
           <h1>{good ? 'Excellent — that is a 700+ pace!' : r.percent >= 55 ? 'Good base. Now fix the misses.' : 'Every mistake here is a lesson.'}</h1>
-          <p>You answered <b>{r.score} of {r.total}</b> correctly ({r.percent}%). Estimated Reading &amp; Writing score: <b>{r.estimate}</b>.</p>
+          <p>You answered <b>{r.score} of {r.total}</b> correctly ({r.percent}%). Estimated Reading &amp; Writing score: <b>{r.estimate}</b>{r.sat ? <> (likely {r.sat.low}–{r.sat.high})</> : null}. Harder questions count more, as on the real SAT.</p>
           <div className="row wrap" style={{ marginTop: 18 }}>
             <button className="btn primary lg" onClick={onAgain}>New test — new questions <IconArrow /></button>
             {!user && <Link className="btn on-dark lg" to="/signup">Save my progress (free)</Link>}
           </div>
         </div>
-        <div className="pt-score"><b>{r.estimate}</b><span>R&amp;W estimate</span><em>200 ····· 800</em></div>
+        <div className="pt-score"><b>{r.estimate}</b><span>R&amp;W estimate</span><em>{r.sat ? `${r.sat.low}–${r.sat.high}` : '200 ····· 800'}</em></div>
       </section>
 
       {!user && (

@@ -1,3 +1,4 @@
+import { satScore } from './scoring.js';
 /**
  * Question Bank: original SAT Reading & Writing questions grouped by the official
  * domains and skills (content/qbank/*.json, synced on start; the teacher can import more).
@@ -97,6 +98,7 @@ CREATE TABLE IF NOT EXISTS qbank_mocks (
 );
 CREATE INDEX IF NOT EXISTS idx_qbank_mocks_user ON qbank_mocks(user_id, started_at DESC);
 ALTER TABLE qbank_mocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qbank_mocks ADD COLUMN IF NOT EXISTS estimate INTEGER;
 `);
 }
 
@@ -168,7 +170,10 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const by = new Map(rows.map((q) => [q.id, q]));
     const qs = ids.map((id) => by.get(id)).filter(Boolean);
     const remaining = Math.max(0, Math.round((new Date(m.started_at).getTime() + MOCK_MINUTES * 60e3 - Date.now()) / 1000));
+    const given = JSON.parse(m.answers || '{}');
+    const sat = m.finished_at ? satScore(qs.map((q) => ({ correct: given[q.id] === q.answer, difficulty: q.difficulty }))) : null;
     return {
+      sat,
       id: m.id, minutes: MOCK_MINUTES, remaining, finished: !!m.finished_at, score: m.score, total: m.total, started_at: m.started_at, finished_at: m.finished_at,
       answers: JSON.parse(m.answers || '{}'),
       questions: qs.map((q) => (withKey ? { ...pub(q), answer: q.answer, explanation: q.explanation, tip: q.tip } : pub(q))),
@@ -176,7 +181,7 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
   };
 
   app.get('/api/qbank/mocks', requireStudent, h(async (req, res) => {
-    const list = await db.all('SELECT id, score, total, started_at, finished_at FROM qbank_mocks WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 10', [req.user.id]);
+    const list = await db.all('SELECT id, score, total, estimate, started_at, finished_at FROM qbank_mocks WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 10', [req.user.id]);
     const open = await db.one(`SELECT id FROM qbank_mocks WHERE user_id = ? AND finished_at IS NULL AND started_at > now() - interval '${MOCK_MINUTES} minutes' ORDER BY id DESC LIMIT 1`, [req.user.id]);
     const mockAcc = list.length ? Math.round((list.reduce((s, m) => s + m.score, 0) / list.reduce((s, m) => s + m.total, 0)) * 100) : null;
     res.json({ mocks: list, open: open?.id || null, accuracy: await accuracy(req.user.id), mock_accuracy: mockAcc, questions: MOCK_BLUEPRINT.reduce((s, [, n]) => s + n, 0), minutes: MOCK_MINUTES });
@@ -212,7 +217,7 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
       const ids = JSON.parse(m.question_ids);
       const answers = {};
       for (const id of ids) { const c = Number(req.body?.answers?.[id]); if (Number.isInteger(c) && c >= 0 && c <= 3) answers[id] = c; }
-      const keys = await db.all('SELECT id, answer FROM qbank_questions WHERE id = ANY(?::text[])', [ids]);
+      const keys = await db.all('SELECT id, answer, difficulty FROM qbank_questions WHERE id = ANY(?::text[])', [ids]);
       let score = 0;
       for (const k of keys) {
         if (answers[k.id] == null) continue;
@@ -221,7 +226,8 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
           ON CONFLICT (user_id, question_id) DO UPDATE SET choice = EXCLUDED.choice, correct = EXCLUDED.correct, tries = qbank_answers.tries + 1, answered_at = now()`,
         [req.user.id, k.id, answers[k.id], ok, ok]);
       }
-      await db.run('UPDATE qbank_mocks SET answers = ?, score = ?, finished_at = now() WHERE id = ? AND finished_at IS NULL', [JSON.stringify(answers), score, m.id]);
+      const est = satScore(keys.map((k) => ({ correct: answers[k.id] === k.answer, difficulty: k.difficulty })))?.score ?? null;
+      await db.run('UPDATE qbank_mocks SET answers = ?, score = ?, estimate = ?, finished_at = now() WHERE id = ? AND finished_at IS NULL', [JSON.stringify(answers), score, est, m.id]);
     }
     res.json(await mockState(await db.one('SELECT * FROM qbank_mocks WHERE id = ?', [m.id]), true));
   }));

@@ -3,11 +3,10 @@ import { db } from './db.js';
 const TZ_OFFSET_H = Number(process.env.APP_TZ_OFFSET ?? 5); // Asia/Tashkent
 const dayKey = (iso) => new Date(new Date(iso).getTime() + TZ_OFFSET_H * 3600e3).toISOString().slice(0, 10);
 
-export const estimateScore = (correct, total) => {
-  if (!total) return null;
-  const raw = 200 + (correct / total) * 600;
-  return Math.max(200, Math.min(800, Math.round(raw / 10) * 10));
-};
+import { satScoreFromCount } from './scoring.js';
+
+/** SAT R&W estimate when only "correct of total" is known (see scoring.js). */
+export const estimateScore = (correct, total) => (total ? satScoreFromCount(Math.max(0, Math.min(total, correct)), total).score : null);
 
 export async function userAnalytics(userId) {
   const user = await db.one('SELECT * FROM users WHERE id = ?', [userId]);

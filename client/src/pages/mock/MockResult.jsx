@@ -32,13 +32,16 @@ function Result({ m }) {
         <div>
           <small className="tq-eyebrow">RANDOM MODULE · RESULT</small>
           <h1>{pct >= 80 ? 'Test-ready accuracy.' : pct >= 60 ? 'Solid. Fix the misses below.' : 'Every miss here is a lesson.'}</h1>
-          <p>{m.score} of {m.total} correct. Every answer was added to your Question Bank progress, so “My mistakes” now includes the ones you missed.</p>
+          <p>{m.score} of {m.total} correct{m.sat ? <>, estimated Reading &amp; Writing score <b>{m.sat.score}</b> (likely {m.sat.low}–{m.sat.high})</> : null}. Harder questions count more, as on the real SAT. Every answer was added to your Question Bank progress, so “My mistakes” now includes the ones you missed.</p>
           <div className="row wrap" style={{ gap: 10, marginTop: 14 }}>
             <Link className="btn sun lg" to="/mock">New quiz <IconArrow /></Link>
             <Link className="btn on-dark lg" to="/question-bank">Practise in the Question Bank</Link>
           </div>
         </div>
-        <div className="mr-acc"><b>{pct}%</b><span>accuracy</span></div>
+        <div className="mr-side">
+          {m.sat && <div className="mr-acc"><b>{m.sat.score}</b><span>R&amp;W score</span></div>}
+          <small className="mr-pct">{pct}% accuracy</small>
+        </div>
       </section>
 
       <div className="mr-groups">
