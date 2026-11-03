@@ -352,11 +352,12 @@ app.post('/api/activity', h(async (req, res) => {
 }));
 
 // full report for the teacher: everything the student did on the platform
-app.get('/api/students/:id/report', requireMaster, h(async (req, res) => {
-  const id = Number(req.params.id);
-  if (!(await db.one("SELECT id FROM users WHERE id = ? AND role = 'student'", [id]))) return bad(res, 'Not found', 404);
+/** Everything one student did on the platform (teacher report and the student's own Results page). */
+async function buildReport(id) {
   const num = (v) => Number(v || 0);
-  const [time, assigned, qb, qbTot, mocks, vocab, vtests, arena, lessons, checks, quizzes, days] = await Promise.all([
+  const [practice, reviews, time, assigned, qb, qbTot, mocks, vocab, vtests, arena, lessons, checks, quizzes, days] = await Promise.all([
+    db.all(`SELECT id, score, total, finished_at, filters FROM practice_sessions WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 30`, [id]).catch(() => []),
+    db.all(`SELECT to_char(last_at, 'YYYY-MM-DD') AS day, COUNT(*) AS n FROM vocab_progress WHERE user_id = ? AND last_at > now() - interval '28 days' GROUP BY 1 ORDER BY 1`, [id]),
     db.all(`SELECT to_char(day, 'YYYY-MM-DD') AS day, section, seconds FROM user_activity WHERE user_id = ? AND day > CURRENT_DATE - 56 ORDER BY day`, [id]),
     db.one(`SELECT COUNT(*) AS n FROM quizzes q WHERE q.is_public OR EXISTS (SELECT 1 FROM quiz_groups qg JOIN users u ON u.group_id = qg.group_id WHERE qg.quiz_id = q.id AND u.id = ?)`, [id]).catch(() => ({ n: 0 })),
     db.all(`SELECT q.domain, q.skill, COUNT(*) AS n, SUM(CASE WHEN a.correct THEN 1 ELSE 0 END) AS ok
@@ -382,10 +383,12 @@ app.get('/api/students/:id/report', requireMaster, h(async (req, res) => {
         SELECT created_at FROM vocab_tests WHERE user_id = ? UNION ALL
         SELECT joined_at FROM game_players WHERE user_id = ? UNION ALL
         SELECT done_at FROM roadmap_done WHERE user_id = ? UNION ALL
-        SELECT finished_at FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL
-      ) x WHERE d > now() - interval '28 days' GROUP BY 1 ORDER BY 1`, [id, id, id, id, id, id]),
+        SELECT finished_at FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL UNION ALL
+        SELECT finished_at FROM practice_sessions WHERE user_id = ? AND finished_at IS NOT NULL UNION ALL
+        SELECT finished_at FROM qbank_mocks WHERE user_id = ? AND finished_at IS NOT NULL
+      ) x WHERE d > now() - interval '28 days' GROUP BY 1 ORDER BY 1`, [id, id, id, id, id, id, id, id]),
   ]);
-  res.json({
+  return {
     qbank: { answered: num(qbTot.n), correct: num(qbTot.ok), last: qbTot.last, skills: qb.map((r) => ({ domain: r.domain, skill: r.skill, answered: num(r.n), correct: num(r.ok) })) },
     mocks,
     vocab: { learned: num(vocab.learned), learning: num(vocab.learning), due: num(vocab.due), last: vocab.last, tests: vtests },
@@ -395,8 +398,17 @@ app.get('/api/students/:id/report', requireMaster, h(async (req, res) => {
     days: days.map((d) => ({ day: d.day, n: num(d.n) })),
     time: time.map((t) => ({ day: t.day, section: t.section, seconds: num(t.seconds) })),
     quizzes_available: num(assigned.n),
-  });
+    practice: practice.map((p) => ({ id: p.id, score: num(p.score), total: num(p.total), finished_at: p.finished_at })),
+    reviews: reviews.map((r) => ({ day: r.day, n: num(r.n) })),
+  };
+}
+
+app.get('/api/students/:id/report', requireMaster, h(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!(await db.one("SELECT id FROM users WHERE id = ? AND role = 'student'", [id]))) return bad(res, 'Not found', 404);
+  res.json(await buildReport(id));
 }));
+app.get('/api/me/report', h(async (req, res) => res.json(await buildReport(req.user.id))));
 app.post('/api/students', requireMaster, h(async (req, res) => {
   const { name, group_id, login, password } = req.body || {};
   const nm = String(name || '').trim();

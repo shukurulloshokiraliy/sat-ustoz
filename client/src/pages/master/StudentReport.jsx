@@ -17,30 +17,31 @@ const dayKey = (d) => d.toISOString().slice(0, 10);
 const daysBack = (n) => Array.from({ length: n }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (n - 1) + i); return dayKey(d); });
 
 /** Plain-language findings for the teacher. tone: good | warn | bad */
-function analyse(r) {
+function analyse(r, self) {
   const out = [];
+  const T = (teacher, you) => (self ? you : teacher);
   const last7 = new Set(daysBack(7)); const prev7 = new Set(daysBack(14).slice(0, 7));
   const sum = (set) => r.time.filter((t) => set.has(t.day)).reduce((s, t) => s + t.seconds, 0);
   const w = sum(last7); const pw = sum(prev7);
   const activeDays = new Set(r.time.filter((t) => last7.has(t.day) && t.seconds >= 60).map((t) => t.day)).size;
-  if (!w) out.push(['bad', 'No time on the platform in the last 7 days.']);
+  if (!w) out.push(['bad', T('No time on the platform in the last 7 days.', 'You have not studied on the platform in the last 7 days. Even 20 minutes a day makes a difference.')]);
   else {
     const change = pw ? Math.round(((w - pw) / pw) * 100) : null;
-    out.push([w >= 150 * 60 ? 'good' : w >= 60 * 60 ? 'warn' : 'bad', `${fmtMin(w)} on the platform this week${change == null ? '' : ` (${change >= 0 ? '+' : ''}${change}% vs the week before)`}.`]);
-    out.push([activeDays >= 5 ? 'good' : activeDays >= 3 ? 'warn' : 'bad', `Studied on ${activeDays} of the last 7 days${activeDays <= 2 ? ': not regular yet' : ''}.`]);
+    out.push([w >= 150 * 60 ? 'good' : w >= 60 * 60 ? 'warn' : 'bad', `${fmtMin(w)} ${T('on the platform', 'of study')} this week${change == null ? '' : ` (${change >= 0 ? '+' : ''}${change}% vs the week before)`}.`]);
+    out.push([activeDays >= 5 ? 'good' : activeDays >= 3 ? 'warn' : 'bad', `${T('Studied', 'You studied')} on ${activeDays} of the last 7 days${activeDays <= 2 ? T(': not regular yet', '. Try to study a little every day') : ''}.`]);
   }
   const by = {}; r.time.filter((t) => last7.has(t.day)).forEach((t) => { by[t.section] = (by[t.section] || 0) + t.seconds; });
   const top = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
   if (top && w) {
     const share = Math.round((top[1] / w) * 100);
-    out.push([top[0] === 'arena' && share > 50 ? 'warn' : 'good', `Most time this week: ${SECTIONS[top[0]]?.[0] || top[0]} (${share}%).${top[0] === 'arena' && share > 50 ? ' Mostly games: ask for more Question Bank or Take a quiz.' : ''}`]);
-    if (!by.qbank && !by.mock && !by.quiz) out.push(['warn', 'No SAT question practice this week (Question Bank, Take a quiz or quizzes).']);
+    out.push([top[0] === 'arena' && share > 50 ? 'warn' : 'good', `Most time this week: ${SECTIONS[top[0]]?.[0] || top[0]} (${share}%).${top[0] === 'arena' && share > 50 ? T(' Mostly games: ask for more Question Bank or Take a quiz.', ' Great for words, but add Question Bank or Take a quiz for SAT questions.') : ''}`]);
+    if (!by.qbank && !by.mock && !by.quiz) out.push(['warn', T('No SAT question practice this week (Question Bank, Take a quiz or quizzes).', 'No SAT questions this week yet: try the Question Bank or Take a quiz.')]);
   }
-  if (r.quizzes_available) out.push([r.quizzes.length >= r.quizzes_available ? 'good' : 'warn', `Finished ${new Set(r.quizzes.map((q) => q.title)).size} of ${r.quizzes_available} available teacher quizzes.`]);
-  if (r.vocab.due > 20) out.push(['warn', `${r.vocab.due} vocabulary words are waiting for review.`]);
-  else if (r.vocab.learned + r.vocab.learning === 0) out.push(['warn', 'Has not started Vocabulary yet.']);
+  if (r.quizzes_available) out.push([r.quizzes.length >= r.quizzes_available ? 'good' : 'warn', `${T('Finished', 'You finished')} ${new Set(r.quizzes.map((q) => q.title)).size} of ${r.quizzes_available} available teacher quizzes.`]);
+  if (r.vocab.due > 20) out.push(['warn', `${r.vocab.due} vocabulary words are waiting for review${T('', ': open Vocabulary and press Review')}.`]);
+  else if (r.vocab.learned + r.vocab.learning === 0) out.push(['warn', T('Has not started Vocabulary yet.', 'You have not started Vocabulary yet: Set 1 is open.')]);
   const weak = r.qbank.skills.filter((x) => x.answered >= 3 && x.correct / x.answered < 0.5).map((x) => `${x.skill} (${Math.round((x.correct / x.answered) * 100)}%)`);
-  if (weak.length) out.push(['bad', `Weak skills: ${weak.slice(0, 3).join(', ')}.`]);
+  if (weak.length) out.push(['bad', `${T('Weak skills', 'Practise these skills next')}: ${weak.slice(0, 3).join(', ')}.`]);
   if (r.mocks.length >= 4) {
     const avg = (a) => a.reduce((s, m) => s + m.score / m.total, 0) / a.length;
     const d = Math.round((avg(r.mocks.slice(0, 2)) - avg(r.mocks.slice(2, 4))) * 100);
@@ -84,7 +85,7 @@ function TimeBlock({ r }) {
               <div key={sec}><span><i style={{ background: SECTIONS[sec]?.[1] }} />{SECTIONS[sec]?.[0] || sec}</span><b>{fmtMin(v)}</b><em><u style={{ width: `${(v / mTotal) * 100}%`, background: SECTIONS[sec]?.[1] }} /></em></div>
             ))}
           </div>
-          <small className="muted">Bars: last 14 days. Breakdown: last 28 days. Only active time counts (tab open and in use).</small>
+          <small className="muted">Bars: last 14 days. Breakdown: last 28 days. Only active time counts (page open and in use).</small>
         </>
       )}
     </Card>
@@ -92,8 +93,8 @@ function TimeBlock({ r }) {
 }
 
 /** Everything a student did: time, activity, lessons, Question Bank, quizzes, vocabulary, Word Arena. */
-export default function StudentReport({ r }) {
-  const insights = analyse(r);
+export default function StudentReport({ r, self = false }) {
+  const insights = analyse(r, self);
   const qbP = pct(r.qbank.correct, r.qbank.answered);
   const mockAvg = r.mocks.length ? pct(r.mocks.reduce((s, m) => s + m.score, 0), r.mocks.reduce((s, m) => s + m.total, 0)) : null;
   const lessonP = pct(r.lessons.done, r.lessons.total);
@@ -110,7 +111,7 @@ export default function StudentReport({ r }) {
   return (
     <div className="stack">
       <Card className="sr-insights">
-        <h3 className="sr-h">Analysis</h3>
+        <h3 className="sr-h">{self ? 'What your results say' : 'Analysis'}</h3>
         <ul>{insights.map(([t, text], i) => <li key={i} className={t}>{text}</li>)}</ul>
       </Card>
       <TimeBlock r={r} />
@@ -162,6 +163,22 @@ export default function StudentReport({ r }) {
         <Card>
           <h3 className="sr-h">Lesson level checks</h3>
           {!r.lessons.checks.length ? <p className="muted">No level checks yet.</p> : <List rows={r.lessons.checks.slice(0, 8).map((c) => [when(c.finished_at), c.title, `${c.score}/${c.total}${c.passed ? ' · passed' : ''}`, pct(c.score, c.total)])} />}
+        </Card>
+      </div>
+
+      <div className="grid g2">
+        <Card>
+          <h3 className="sr-h">Practice tests (27 questions)</h3>
+          {!r.practice?.length ? <p className="muted">No practice tests yet.</p> : <List rows={r.practice.slice(0, 8).map((p) => [when(p.finished_at), 'Reading & Writing practice test', `${p.score}/${p.total}`, pct(p.score, p.total)])} />}
+        </Card>
+        <Card>
+          <h3 className="sr-h">Flashcard reviews</h3>
+          {!r.reviews?.length ? <p className="muted">No flashcards reviewed in the last 4 weeks.</p> : (
+            <>
+              <div className="sr-bars">{r.reviews.map((d) => <i key={d.day} title={`${d.day}: ${d.n} cards`} className="hi" style={{ height: `${Math.max(8, (d.n / Math.max(...r.reviews.map((x) => x.n))) * 100)}%` }} />)}</div>
+              <p className="muted" style={{ margin: 0 }}>{r.reviews.reduce((s2, d) => s2 + d.n, 0)} cards on {r.reviews.length} days · {r.vocab.learned} words learned, {r.vocab.due} due now</p>
+            </>
+          )}
         </Card>
       </div>
 

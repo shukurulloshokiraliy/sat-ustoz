@@ -61,26 +61,30 @@ const HighlighterIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fi
 
 /** Passage | question with a draggable divider. With no passage the question sits in the centre. */
 export function BBSplit({ left, right }) {
-  const [w, setW] = useState(() => { try { return Number(localStorage.getItem('bb-split')) || 50; } catch { return 50; } });
+  const read = (k, d) => { try { return Number(localStorage.getItem(k)) || d; } catch { return d; } };
+  const [w, setW] = useState(() => read('bb-split', 50)); // desktop: passage width %
+  const [h, setH] = useState(() => read('bb-split-top', 45)); // phone: passage height %
   const box = useRef(null);
   const drag = (e) => {
     e.preventDefault();
     const rect = box.current.getBoundingClientRect();
+    const narrow = window.matchMedia('(max-width: 860px)').matches;
     const move = (ev) => {
-      const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
-      setW(Math.min(72, Math.max(28, (x / rect.width) * 100)));
+      const p = ev.touches ? ev.touches[0] : ev;
+      if (narrow) setH(Math.min(78, Math.max(18, ((p.clientY - rect.top) / rect.height) * 100)));
+      else setW(Math.min(72, Math.max(28, ((p.clientX - rect.left) / rect.width) * 100)));
     };
     const up = () => {
       window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
-      setW((v) => { try { localStorage.setItem('bb-split', String(Math.round(v))); } catch { /* ignore */ } return v; });
+      try { localStorage.setItem('bb-split', String(Math.round(w))); localStorage.setItem('bb-split-top', String(Math.round(h))); } catch { /* ignore */ }
     };
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
   };
   if (!left) return <div className="bb-single"><div className="bb-pane bb-right">{right}</div></div>;
   return (
-    <div className="bb-split" ref={box} style={{ '--bb-left': `${w}%` }}>
+    <div className="bb-split" ref={box} style={{ '--bb-left': `${w}%`, '--bb-top': `${h}%` }}>
       <section className="bb-pane bb-left" aria-label="Passage">{left}</section>
-      <div className="bb-divider" onPointerDown={drag} role="separator" aria-orientation="vertical" aria-label="Drag to resize"><span /></div>
+      <div className="bb-divider" onPointerDown={drag} role="separator" aria-label="Drag to resize the passage and the question"><span /></div>
       <section className="bb-pane bb-right" aria-label="Question">{right}</section>
     </div>
   );

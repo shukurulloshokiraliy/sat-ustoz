@@ -1455,13 +1455,24 @@ a.card:hover, .card.clickable:hover { transform: translateY(-2px); box-shadow: 0
 .bb-directions { font-size: .95rem; line-height: 1.6; display: grid; gap: 10px; }
 
 @media (max-width: 860px) {
-  .bb-head { grid-template-columns: 1fr auto; } .bb-timer { order: 3; grid-column: 1 / -1; grid-auto-flow: column; justify-content: center; align-items: center; gap: 10px; } .bb-timer:empty { display: none; }
-  .bb-tool span { display: none; } .bb-tool { min-width: 40px; }
-  .bb-split { grid-template-columns: 1fr; grid-template-rows: auto auto; overflow: auto; }
-  .bb-split .bb-pane { overflow: visible; } .bb-divider { display: none; }
-  .bb-split .bb-left { border-bottom: 3px dashed var(--bb-line); padding-bottom: 24px; }
-  .bb-foot { grid-template-columns: auto 1fr; } .bb-who { display: none; } .bb-navbtn { justify-self: start; padding: 9px 12px; font-size: .85rem; }
-  .bb-btn { min-width: 0; padding: 0 16px; }
+  .bb-head { grid-template-columns: minmax(0, 1fr) auto; padding: 8px 12px; min-height: 0; gap: 6px; }
+  .bb-title b { font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bb-timer { order: 3; grid-column: 1 / -1; grid-auto-flow: column; justify-content: center; align-items: center; gap: 10px; } .bb-timer:empty { display: none; }
+  .bb-clock { font-size: 1.1rem; }
+  .bb-tool span { display: none; } .bb-tool { min-width: 40px; padding: 6px; }
+  /* passage and question scroll separately; the bar between them can be dragged */
+  .bb-split { grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--bb-top, 45%) 22px minmax(0, 1fr); overflow: hidden; }
+  .bb-split .bb-pane { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 16px 16px 24px; }
+  .bb-split .bb-left { border-bottom: 0; }
+  .bb-divider { display: block; cursor: row-resize; border: 0; border-top: 1px solid var(--bb-line); border-bottom: 1px solid var(--bb-line); }
+  .bb-divider span { width: 44px; height: 14px; border-radius: 7px; }
+  .bb-divider span::before { inset: 4px 12px; border: 0; border-top: 2px solid var(--bb-bg); border-bottom: 2px solid var(--bb-bg); }
+  .bb-passage { font-size: 1rem; line-height: 1.65; }
+  .bb-prompt { font-size: 1rem; margin-bottom: 14px; }
+  .bb-qbar { margin-bottom: 12px; }
+  .bb-opts { gap: 10px; } .bb-opt-main { min-height: 48px; padding: 8px 12px; font-size: .95rem; }
+  .bb-foot { grid-template-columns: auto 1fr; padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); } .bb-who { display: none; } .bb-navbtn { justify-self: start; padding: 9px 12px; font-size: .85rem; }
+  .bb-btn { min-width: 0; padding: 0 18px; height: 42px; }
 }
 .bb-sync { align-self: center; font: 600 .72rem var(--font); color: var(--muted); padding: 0 6px; } .bb-sync.off { color: #C0392B; }
 .bb-passage .qb-passage, .bb-passage .qb-notes, .bb-passage p, .bb-passage li { font: inherit; color: inherit; background: none; border: 0; padding: 0; }
