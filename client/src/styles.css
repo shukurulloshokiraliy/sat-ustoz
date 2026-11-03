@@ -1733,3 +1733,34 @@ em.hi, .sr-bars i.hi { background: #1E8E4E; } em.mid, .sr-bars i.mid { backgroun
   :root:not([data-theme='dark']) .pub-nav { background: #fff; }
   :root:not([data-theme='dark']) .pub-nav-mobile-cta .btn.on-dark { color: #161B3D; border-color: var(--line); }
 }
+/* practice hub on phones: nothing sticky over the list; a slim start bar at the bottom instead */
+.pt-mobile-go { display: none; }
+@media (max-width: 900px) {
+  .pt-side, .app .pt-side { position: static; top: auto; }
+  .pt-start { padding: 18px; gap: 10px; grid-template-columns: auto 1fr; justify-items: start; text-align: left; align-items: center; }
+  .pt-start > svg, .pt-start .ring { width: 72px !important; height: 72px !important; grid-row: span 2; }
+  .pt-start > .btn, .pt-start > small, .pt-start > .bad-text { grid-column: 1 / -1; }
+  .pt-mobile-go { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px -18px rgba(22,27,61,.5); }
+  .pt-mobile-go span { display: grid; line-height: 1.2; } .pt-mobile-go b { font-size: .95rem; } .pt-mobile-go small { color: var(--muted); font-size: .76rem; }
+  .pt-hub { padding-bottom: 96px; }
+  .app .pt-mobile-go { bottom: calc(64px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 900px) { .pt-start .ring svg { width: 100%; height: 100%; } .pt-start .ring-in strong { font-size: 1.1rem; } }
+
+/* ---------- phone fixes (Nov 3) ---------- */
+@media (max-width: 640px) {
+  /* vocabulary set header: title on its own line, buttons below */
+  .v-set-head { flex-wrap: wrap; row-gap: 10px; }
+  .v-set-head > .grow { flex: 1 1 calc(100% - 60px); min-width: 0; }
+  .v-set-head > .btn, .v-set-head > .icon-btn, .v-set-head > .chip { flex: none; }
+  /* students table: readable name column, no squeezed chips */
+  .t td .chip, .t td .tag { white-space: nowrap; }
+  .t td:first-child { min-width: 210px; }
+  /* website editor save bar: one compact row */
+  .web-savebar { flex-wrap: nowrap; padding: 8px; gap: 8px; }
+  .web-savebar > * { flex: 1 1 0; min-width: 0; }
+  .web-savebar .btn { padding: 10px 12px; font-size: .9rem; white-space: normal; line-height: 1.2; }
+  .web-savebar > .muted { display: none; }
+}
+/* sticky headers: lighter on phones (no heavy blur while scrolling) */
+@media (max-width: 980px) { .topbar, .pub-head { backdrop-filter: none; } .topbar { background: var(--bg); } }

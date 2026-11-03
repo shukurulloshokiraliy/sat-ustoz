@@ -13,7 +13,8 @@ export function useReveal(rootSel) {
   useEffect(() => {
     const root = document.querySelector(rootSel);
     if (!root || !('IntersectionObserver' in window)) return undefined;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    // phones scroll fast: content must be there immediately, so the fade-in runs on larger screens only
+    if (window.matchMedia('(prefers-reduced-motion: reduce), (max-width: 900px), (pointer: coarse)').matches) return undefined;
     const io = new IntersectionObserver((entries) => {
       let k = 0;
       for (const e of entries) {

@@ -18,7 +18,7 @@ const time = (iso) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', mo
 export default function SupportChat() {
   const { user } = useAuth();
   const { pathname } = useLocation();
-  const focus = /^\/(vocab\/(unit|review)|play|game|quiz\/|placement\/test|question-bank)|\/check$/.test(pathname);
+  const focus = /^\/(vocab\/(unit|review)|play|game|quiz\/|placement\/test|question-bank|practice)|\/check$/.test(pathname);
   const [open, setOpen] = useState(false);
   const [guest, setGuest] = useState(readGuest);
   const [d, setD] = useState({ ticket: null, msgs: [], unread: 0 });
