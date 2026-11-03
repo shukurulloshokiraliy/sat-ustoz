@@ -10,6 +10,38 @@ import { Credentials, SubscriptionModal } from './Students.jsx';
 import StudentReport from './StudentReport.jsx';
 import { IconCrown, IconEdit, IconKey, IconTrash } from '../../components/icons.jsx';
 
+const PLAN_NAME = { t1: 'Plan 1', t2: 'Plan 2', t3: 'Plan 3', t4: 'Plan 4', month: 'Old plan', quarter: 'Old plan' };
+
+/** Student balance: the teacher adds money after a card payment (or corrects it); every change is logged. */
+function Balance({ id }) {
+  const toast = useToast();
+  const st = useAsync(() => api.get(`/students/${id}/balance`), [id]);
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const save = async (sign) => {
+    try { await api.post(`/students/${id}/balance`, { amount: sign * Number(amount), note }); toast(sign > 0 ? 'Balance topped up' : 'Balance corrected'); setOpen(false); setAmount(''); setNote(''); st.reload(); }
+    catch (e) { toast(e.message, 'bad'); }
+  };
+  return (
+    <Card>
+      <small className="muted">Balance</small>
+      <b style={{ display: 'block' }}>{st.data ? `${Number(st.data.balance).toLocaleString('en-US').replace(/,/g, ' ')} so'm` : '…'}</b>
+      <button className="link-btn" onClick={() => setOpen(true)}>Top up or correct →</button>
+      {open && (
+        <Modal title="Balance" onClose={() => setOpen(false)}
+          footer={<><button className="btn danger-ghost" disabled={!Number(amount)} onClick={() => save(-1)}>Subtract</button><span className="grow" /><button className="btn primary" disabled={!Number(amount)} onClick={() => save(1)}>Add to balance</button></>}>
+          <Field label="Amount (so'm)"><input inputMode="numeric" autoFocus value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="20000" /></Field>
+          <Field label="Note" hint="e.g. card payment, receipt #12"><input value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+          {st.data?.history?.length > 0 && (
+            <div className="table-wrap"><table className="t"><tbody>{st.data.history.slice(0, 8).map((h, i) => <tr key={i}><td className="nowrap">{fmtDate(h.created_at)}</td><td>{h.reason}{h.note ? ` · ${h.note}` : ''}</td><td>{h.amount > 0 ? '+' : ''}{h.amount}</td></tr>)}</tbody></table></div>
+          )}
+        </Modal>
+      )}
+    </Card>
+  );
+}
+
 export default function StudentDetail() {
   const { id } = useParams();
   const nav = useNavigate();
@@ -39,9 +71,9 @@ export default function StudentDetail() {
                 : <b style={{ display: 'block' }}>{pl.open ? 'In progress' : 'Not taken'}</b>}
               {pl.results[0] && <small className={pl.results[0].admitted ? 'muted' : 'muted'}>{pl.results[0].admitted ? 'Ready for the course' : 'Below the course level'}</small>}</Card>
             <Card className={`sub-card ${s.sub_active ? 'on' : 'off'}`}><small className="muted">Subscription</small>
-              <b style={{ display: 'block', color: s.sub_active ? 'var(--good)' : 'var(--bad)' }}>{s.sub_active ? `Active until ${fmtDate(s.sub_until)}` : 'Not active'}</b>
+              <b style={{ display: 'block', color: s.sub_active ? 'var(--good)' : 'var(--bad)' }}>{s.sub_active ? `${PLAN_NAME[s.sub_plan] || 'Plan'} · until ${fmtDate(s.sub_until)}` : 'Free (no plan)'}</b>
               <button className="link-btn" onClick={() => setSub(true)}>{s.sub_active ? 'Extend or cancel' : 'Activate now'} →</button></Card>
-            <Card><small className="muted">Last sign-in</small><b style={{ display: 'block' }}>{s.last_login_at ? fmtDate(s.last_login_at) : '—'}</b></Card>
+            <Balance id={s.id} />
           </div>
           <Segmented value={tab} onChange={setTab} options={[{ value: 'report', label: 'Full report' }, { value: 'analytics', label: 'Quiz analysis' }, { value: 'portfolio', label: 'Portfolio' }, { value: 'payments', label: 'Payments', count: s.payments.length }]} />
           {tab === 'report' ? <StudentReport r={rep} /> : tab === 'analytics' ? <AnalyticsView a={a} /> : tab === 'portfolio' ? <PortfolioView data={pf} editable={false} onChange={() => {}} /> : (

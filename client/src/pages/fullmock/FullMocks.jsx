@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, fmtDate } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
-import { Card, Empty, Gate, PageHeader, useAsync } from '../../components/ui.jsx';
+import { Card, Confirm, Empty, Gate, PageHeader, useAsync } from '../../components/ui.jsx';
+import { fmtMoney } from '../student/Subscribe.jsx';
 import { IconArrow, IconClock, IconDoc, IconLock } from '../../components/icons.jsx';
 
-const PLAN = { free: 'Free', month: 'Monthly plan', quarter: '3-month plan' };
 
 /** Official full-length mocks: two Reading & Writing modules (adaptive), weekly limit by plan. */
 export default function FullMocks() {
@@ -14,9 +14,10 @@ export default function FullMocks() {
   const nav = useNavigate();
   const toast = useToast();
   const [busy, setBusy] = useState(0);
-  const start = async (m) => {
+  const [buy, setBuy] = useState(null);
+  const start = async (m, pay = false) => {
     setBusy(m.id);
-    try { const a = await api.post(`/full-mocks/${m.id}/start`); nav(`/full-mock/${a.id}`); }
+    try { const a = await api.post(`/full-mocks/${m.id}/start`, { pay }); nav(`/full-mock/${a.id}`); }
     catch (e) { toast(e.message, 'bad'); st.reload(); } finally { setBusy(0); }
   };
   return (
@@ -26,12 +27,13 @@ export default function FullMocks() {
         <>
           <div className={`fm-quota ${q.left ? '' : 'out'}`}>
             <div>
-              <small>{PLAN[q.plan] || q.plan} · this week</small>
+              <small>{q.plan_name} plan · this week</small>
               <b>{q.left} of {q.limit} left</b>
-              <span>{q.left ? 'A mock counts when you start it.' : `New mocks open ${fmtDate(q.resets_at)} (Monday).`}</span>
+              <span>{q.left ? 'A mock counts when you start it.' : `New mocks open ${fmtDate(q.resets_at)} (Monday). Extra mock: ${fmtMoney(q.extra_price, 'UZS')} from your balance.`}</span>
             </div>
             <div className="fm-dots" aria-hidden="true">{Array.from({ length: Math.min(q.limit, 7) }, (_, i) => <i key={i} className={i < q.used ? 'used' : ''} />)}</div>
-            {q.plan === 'free' && user.role === 'student' && <Link className="btn sun" to="/subscribe">Get up to 7 a week <IconArrow width={16} height={16} /></Link>}
+            <div className="fm-bal"><small>Balance</small><b>{fmtMoney(q.balance, 'UZS')}</b><Link to="/subscribe#pay">Top up</Link></div>
+            {q.plan === 'free' && user.role === 'student' && <Link className="btn sun" to="/subscribe">More mocks with a plan <IconArrow width={16} height={16} /></Link>}
           </div>
           {!mocks.length ? <Card><Empty icon={<IconDoc />} title="No full mocks yet" text="Your teacher will add official mocks here soon." /></Card> : (
             <div className="fm-list stagger">
@@ -62,13 +64,19 @@ export default function FullMocks() {
                     <div className="row" style={{ marginTop: 12 }}>
                       {open ? <button className="btn primary" onClick={() => nav(`/full-mock/${open.id}`)}>Continue <IconArrow width={16} height={16} /></button>
                         : q.left > 0 ? <button className="btn primary" disabled={busy === m.id} onClick={() => start(m)}>{done.length ? 'Take again' : 'Start mock'} <IconArrow width={16} height={16} /></button>
-                          : <button className="btn ghost" disabled><IconLock width={16} height={16} /> Weekly limit reached</button>}
+                          : q.extra_price > 0 ? <button className="btn soft" disabled={busy === m.id} onClick={() => setBuy(m)}><IconLock width={16} height={16} /> One more · {fmtMoney(q.extra_price, 'UZS')}</button>
+                            : <button className="btn ghost" disabled><IconLock width={16} height={16} /> Weekly limit reached</button>}
                     </div>
                   </Card>
                 );
               })}
             </div>
           )}
+          {buy && (q.balance >= q.extra_price
+            ? <Confirm danger={false} title="Take one extra mock?" confirmLabel={`Pay ${fmtMoney(q.extra_price, 'UZS')}`} onClose={() => setBuy(null)} onConfirm={() => { const m = buy; setBuy(null); start(m, true); }}
+              text={`${fmtMoney(q.extra_price, 'UZS')} will be taken from your balance (${fmtMoney(q.balance, 'UZS')}) and “${buy.title}” starts right away.`} />
+            : <Confirm danger={false} title="Not enough on your balance" confirmLabel="Top up" onClose={() => setBuy(null)} onConfirm={() => nav('/subscribe#pay')}
+              text={`An extra mock costs ${fmtMoney(q.extra_price, 'UZS')}; your balance is ${fmtMoney(q.balance, 'UZS')}. Pay by card and the teacher adds it to your balance.`} />)}
         </>
       )}</Gate>
     </div>

@@ -339,7 +339,12 @@ const DEFAULT_SETTINGS = {
   pay_holder: '',
   fm_free: '1',     // full mocks per week without a subscription
   fm_month: '3',    // ... with the monthly plan
-  fm_quarter: '7',  // ... with the 3-month plan (7 = every day)
+  fm_quarter: '7',  // (old, replaced by tiers)
+  tiers: '',        // JSON: names, prices and limits of the 4 plans (see tiers.js)
+  fm_extra_price: '20000', // one full mock beyond the weekly limit, paid from the balance
+  free_q_day: '20', // Question Bank answers per day without a subscription
+  live_link: '',    // live online lessons (plan 4): meeting link
+  live_note: '',    // ... and the schedule shown to students
 };
 export async function getSettings() {
   const rows = await db.all('SELECT key, value FROM settings');

@@ -7,6 +7,7 @@ import { IconArrow, IconCheck } from '../../components/icons.jsx';
 import { BBPracticeRunner } from '../../components/Bluebook.jsx';
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
+import AskTeacher from '../../components/AskTeacher.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
 const LEVEL = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
@@ -141,6 +142,7 @@ function Summary({ questions, rv, search }) {
                     {q.options.map((o, k) => <li key={k} className={k === res.answer ? 'ok' : k === res.choice ? 'bad' : ''}><b>{L[k]})</b> {rich(o)}{k === res.answer ? ' · correct' : k === res.choice ? ' · your answer' : ''}</li>)}
                   </ul>
                   <p className="muted">{rich(res.explanation)}</p>
+                  <AskTeacher about={`Question Bank ${q.id} (${q.skill}): ${String(q.prompt).slice(0, 120)}`} />
                 </>
               )}
             </Card>

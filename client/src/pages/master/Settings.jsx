@@ -5,11 +5,11 @@ import { Card, Confirm, Field, Gate, PageHeader, useAsync } from '../../componen
 import { IconCheck } from '../../components/icons.jsx';
 
 export default function Settings() {
-  const st = useAsync(() => api.get('/settings'), []);
+  const st = useAsync(() => Promise.all([api.get('/settings'), api.get('/plans')]), []);
   return (
     <div className="page" style={{ maxWidth: 860 }}>
       <PageHeader title="Settings" sub="Access rules, prices and integrations for the whole platform." />
-      <Gate state={st}>{(s) => <Form init={s} />}</Gate>
+      <Gate state={st}>{([s, p]) => <Form init={{ ...s, tiers: p.tiers }} />}</Gate>
     </div>
   );
 }
@@ -33,14 +33,32 @@ function Form({ init }) {
         </label>
       </Card>
       <Card className="stack">
-        <h2>Prices</h2>
+        <h2>Plans</h2>
+        <small className="muted">Price is per month. Limits: Question Bank answers a day, Take a quiz per day, full mocks per week. 0 a day = unlimited; 0 mocks a week = none.</small>
+        <div className="table-wrap"><table className="t plans-edit">
+          <thead><tr><th>Plan</th><th>Name</th><th>Price / month</th><th>Questions / day</th><th>Quizzes / day</th><th>Full mocks / week</th><th>Consultation every … days</th></tr></thead>
+          <tbody>{f.tiers.map((t, i) => (
+            <tr key={t.id}><td><b>{i + 1}</b></td>
+              {[['name', 'text'], ['price'], ['q_day'], ['quiz_day'], ['fm_week'], ['consult_days']].map(([k, type]) => (
+                <td key={k}><input type={type || 'number'} min="0" value={t[k]} disabled={k === 'consult_days' && i === 0}
+                  onChange={(e) => setF({ ...f, tiers: f.tiers.map((x) => (x.id === t.id ? { ...x, [k]: e.target.value } : x)) })} /></td>
+              ))}
+            </tr>
+          ))}</tbody>
+        </table></div>
+        <small className="muted">1: questions, Take a quiz, mocks, explanations and scores · 2: + roadmap lessons (no video), consultations · 3: + video lessons, ask the teacher, weekly 30-minute consultation · 4: + live online lessons.</small>
         <div className="grid g3">
-          <Field label="1 month"><input inputMode="numeric" value={f.price_month} onChange={set('price_month')} /></Field>
-          <Field label="3 months"><input inputMode="numeric" value={f.price_quarter} onChange={set('price_quarter')} /></Field>
+          <Field label="Free: questions / day"><input type="number" min="0" value={f.free_q_day} onChange={set('free_q_day')} /></Field>
+          <Field label="Free: full mocks / week"><input type="number" min="0" value={f.fm_free} onChange={set('fm_free')} /></Field>
+          <Field label="Extra full mock (from balance)"><input inputMode="numeric" value={f.fm_extra_price} onChange={set('fm_extra_price')} /></Field>
+        </div>
+        <div className="grid g3">
           <Field label="Currency"><input maxLength={3} value={f.currency} onChange={set('currency')} /></Field>
+          <Field label="Live lessons link" hint="plan 4"><input value={f.live_link || ''} onChange={set('live_link')} placeholder="https://meet.google.com/…" /></Field>
+          <Field label="Live lessons schedule"><input value={f.live_note || ''} onChange={set('live_note')} placeholder="Tue & Thu, 19:00" /></Field>
         </div>
         <div className="grid g2">
-          <Field label="Card for payments" hint="students see it in the Telegram bot"><input inputMode="numeric" value={f.pay_card || ''} onChange={set('pay_card')} placeholder="8600 0000 0000 0000" /></Field>
+          <Field label="Card for payments" hint="shown on the Subscription page and in the bot"><input inputMode="numeric" value={f.pay_card || ''} onChange={set('pay_card')} placeholder="8600 0000 0000 0000" /></Field>
           <Field label="Card holder name"><input value={f.pay_holder || ''} onChange={set('pay_holder')} placeholder="Name Surname" /></Field>
         </div>
       </Card>

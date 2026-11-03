@@ -5,6 +5,7 @@ import { Card, Confetti, Gate, Segmented, useAsync } from '../../components/ui.j
 import { IconArrow } from '../../components/icons.jsx';
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
+import AskTeacher from '../../components/AskTeacher.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
 
@@ -65,6 +66,7 @@ function Result({ a }) {
               </ul>
             )}
             {q.explanation && <p className="muted">{rich(q.explanation)}</p>}
+            <AskTeacher about={`Full mock “${a.mock.title}”, ${sec.label}, question ${q.n || i + 1}`} />
           </Card>
         ))}
         {!list.length && <Card><p className="muted center">Nothing here.</p></Card>}

@@ -17,6 +17,7 @@ import { lessonSummary, syncBundledModules } from './course/modules.js';
 import { registerLessons } from './course/lessons.js';
 import { registerQbank, syncQbank, migrateQbankMocks } from './qbank.js';
 import { registerFullMocks, migrateFullMocks } from './fullmock.js';
+import { registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
 import { migrateSite, seedSite, registerSitePublic, registerSiteAdmin } from './site.js';
@@ -55,6 +56,7 @@ await migrateBot();
 await migrateVocab();
 await migrateQbankMocks();
 await migrateFullMocks();
+await migrateTiers();
 await db.exec(`
 CREATE TABLE IF NOT EXISTS user_activity (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, day DATE NOT NULL, section TEXT NOT NULL,
@@ -136,10 +138,17 @@ const cleanQ = (q) => ({
 async function accessFor(user, settings) {
   settings ||= await getSettings();
   const required = settings.require_subscription === 'true';
+  const tier = tierOf(user, settings);
+  const open = user.role === 'master' || !required;
   return {
     subscription_required: required,
     sub_active: subActive(user),
-    can_practice: user.role === 'master' || !required || subActive(user),
+    tier: { id: tier.id, name: tier.name, q_day: open ? 0 : tier.q_day, quiz_day: open ? 0 : tier.quiz_day, fm_week: tier.fm_week, consult_days: tier.consult_days, consult_min: tier.consult_min },
+    roadmap: open || tier.roadmap,
+    video: open || tier.video,
+    ask: user.role === 'master' || tier.ask,
+    live: user.role === 'master' || tier.live,
+    can_practice: open || subActive(user),
     needs_placement: user.role === 'student' && !user.placement_at,
     needs_diagnostic: user.role === 'student' && !user.placement_at, // kept for older clients
   };
@@ -167,10 +176,14 @@ app.post('/api/auth/login', h(async (req, res) => {
   const { login, password } = req.body || {};
   if (req.body?.accept_terms !== true) return bad(res, TERMS_MSG);
   const id = String(login || '').trim().toLowerCase();
+  const failKey = `login:${id}`;
+  if (id && (await tooManyFails(failKey))) return bad(res, 'Too many wrong passwords. Wait 15 minutes and try again.', 429);
   const u = id && (await db.one('SELECT * FROM users WHERE login = ? OR email = ?', [id, id]));
   if (!u || !u.password_hash || !bcrypt.compareSync(String(password || ''), u.password_hash)) {
+    if (id && u?.password_hash) await noteFail(failKey);
     return bad(res, u && !u.password_hash ? 'This account uses Google — tap “Continue with Google”' : 'Incorrect login or password', 401);
   }
+  await clearFails(failKey);
   await db.run('UPDATE users SET last_login_at = now(), terms_accepted_at = COALESCE(terms_accepted_at, now()) WHERE id = ?', [u.id]);
   res.json({ token: signToken(u) });
 }));
@@ -238,8 +251,9 @@ registerVocab(app, { h, bad, requireMaster, requireStudent, accessFor: (u) => ac
 
 registerPlacement(app, { h, bad, requireStudent, requireMaster });
 registerLessons(app, { h, bad, requireStudent, requireMaster, roadmapFor: (u) => roadmapFor(u), accessFor: (u) => accessFor(u) });
-registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor: (u) => accessFor(u), upload });
+registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor: (u) => accessFor(u), upload, usedToday });
 registerFullMocks(app, { h, bad, requireStudent, requireMaster, upload });
+registerTiers(app, { h, bad, requireStudent, requireMaster });
 
 app.get('/api/me', h(async (req, res) => res.json(await mepayload(req.user))));
 app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
@@ -326,6 +340,11 @@ app.put('/api/settings', requireMaster, h(async (req, res) => {
   }
   if ('pay_card' in b) patch.pay_card = String(b.pay_card || '').replace(/[^\d ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 23);
   if ('pay_holder' in b) patch.pay_holder = String(b.pay_holder || '').trim().slice(0, 60);
+  if ('tiers' in b) patch.tiers = cleanTiers(b.tiers);
+  if ('fm_extra_price' in b) patch.fm_extra_price = digits(b.fm_extra_price) || '0';
+  if ('free_q_day' in b) patch.free_q_day = String(Math.max(0, Math.min(999, Math.round(+b.free_q_day || 0))));
+  if ('live_link' in b) patch.live_link = /^https?:\/\//i.test(String(b.live_link || '').trim()) ? String(b.live_link).trim().slice(0, 300) : '';
+  if ('live_note' in b) patch.live_note = String(b.live_note || '').trim().slice(0, 300);
   for (const k of ['fm_free', 'fm_month', 'fm_quarter']) if (k in b) patch[k] = String(Math.max(0, Math.min(99, Math.round(+b[k] || 0))));
   if ('telegram_bot' in b) patch.telegram_bot = String(b.telegram_bot || '').trim().replace(/^@/, '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 64);
   res.json(await setSettings(patch));
@@ -493,7 +512,7 @@ app.post('/api/students/:id/subscription', requireMaster, h(async (req, res) => 
   const s = await db.one("SELECT * FROM users WHERE id = ? AND role = 'student'", [req.params.id]);
   if (!s) return bad(res, 'Not found', 404);
   const days = Math.max(1, Math.min(730, Math.round(+req.body?.days || 30)));
-  const plan = String(req.body?.plan || (days >= 90 ? 'quarter' : 'month')).slice(0, 20);
+  const plan = ['t1', 't2', 't3', 't4'].includes(req.body?.plan) ? req.body.plan : (subActive(s) && s.sub_plan) || 't2';
   const amount = Math.max(0, Math.round(+req.body?.amount || 0));
   const settings = await getSettings();
   const from = subActive(s) ? new Date(s.sub_until) : new Date();
@@ -867,7 +886,13 @@ async function roadmapFor(user) {
   });
   return { steps: out, estimate };
 }
-app.get('/api/roadmap', h(async (req, res) => res.json(await roadmapFor(req.user))));
+app.get('/api/roadmap', h(async (req, res) => {
+  const r = await roadmapFor(req.user);
+  if (req.user.role === 'master' || (await accessFor(req.user)).video) return res.json(r);
+  // video links only reach students whose plan includes video (free lessons excepted)
+  const hide = (it) => ((it.kind === 'video' || (it.kind === 'lesson' && !it.lesson?.free)) && it.url ? { ...it, url: '', video_locked: true } : it);
+  res.json({ ...r, steps: r.steps.map((st) => ({ ...st, items: (st.items || []).map(hide) })) });
+}));
 
 app.post('/api/roadmap/items/:id/done', requireStudent, h(async (req, res) => {
   const it = await db.one('SELECT * FROM roadmap_items WHERE id = ?', [req.params.id]);
@@ -968,7 +993,7 @@ app.put('/api/roadmap/steps/:id', requireMaster, h(async (req, res) => {
 app.get('/api/roadmap/steps/:id/handout', h(async (req, res) => {
   const row = await db.one('SELECT name, data FROM step_handouts WHERE step_id = ?', [req.params.id]);
   if (!row) return bad(res, 'No rules sheet for this step', 404);
-  if (req.user.role !== 'master' && !(await accessFor(req.user)).can_practice) {
+  if (req.user.role !== 'master' && !(await accessFor(req.user)).roadmap) {
     const free = (await db.all("SELECT content FROM roadmap_items WHERE step_id = ? AND kind = 'lesson'", [req.params.id])).some((i) => { try { return JSON.parse(i.content || '{}').free; } catch { return false; } });
     if (!free) return bad(res, 'An active subscription is required', 402, { code: 'subscription_required' });
   }

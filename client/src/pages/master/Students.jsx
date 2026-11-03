@@ -150,12 +150,14 @@ function AddStudents({ groups, defaultGroup, onClose, onDone }) {
 export function SubscriptionModal({ student, onClose, onDone }) {
   const toast = useToast();
   const [days, setDays] = useState(30);
+  const plans = useAsync(() => api.get('/plans'), []);
+  const [plan, setPlan] = useState(['t1', 't2', 't3', 't4'].includes(student.sub_plan) && student.sub_active ? student.sub_plan : 't2');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const grant = async () => {
     setBusy(true);
-    try { await api.post(`/students/${student.id}/subscription`, { days, amount: Number(amount) || 0, note }); toast('Subscription activated'); onDone(); }
+    try { await api.post(`/students/${student.id}/subscription`, { days, plan, amount: Number(amount) || 0, note }); toast('Subscription activated'); onDone(); }
     catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); }
   };
   const cancel = async () => {
@@ -172,9 +174,10 @@ export function SubscriptionModal({ student, onClose, onDone }) {
         <button className="btn primary" disabled={busy} onClick={grant}>{student.sub_active ? `Extend by ${days} days` : `Activate ${days} days`}</button>
       </>}>
       <p className="muted">{student.sub_active ? `Active until ${fmtDate(student.sub_until)}. Extending adds days to the current end date.` : 'No active subscription. Activate access after the student has paid.'}</p>
+      {plans.data && <Segmented value={plan} onChange={setPlan} options={plans.data.tiers.map((t, i) => ({ value: t.id, label: `${i + 1} · ${t.name}` }))} />}
       <Segmented value={days} onChange={setDays} options={[{ value: 7, label: '7 days' }, { value: 30, label: '1 month' }, { value: 90, label: '3 months' }, { value: 365, label: '1 year' }]} />
       <div className="form-grid">
-        <Field label="Amount paid" hint="optional"><input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="149000" /></Field>
+        <Field label="Amount paid" hint="optional"><input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} placeholder={String((plans.data?.tiers.find((t) => t.id === plan)?.price || 0) * Math.max(1, Math.round(days / 30)))} /></Field>
         <Field label="Note" hint="optional"><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Paid by card, Click…" /></Field>
       </div>
     </Modal>

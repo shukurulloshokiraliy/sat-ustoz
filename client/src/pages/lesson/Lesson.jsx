@@ -5,7 +5,7 @@ import { useAuth, useToast } from '../../context.jsx';
 import { Card, Gate, useAsync } from '../../components/ui.jsx';
 import { IconArrow, IconCheck, IconCrown, IconLock, IconPlay } from '../../components/icons.jsx';
 import { Rich, rich } from '../../components/Rich.jsx';
-import { VideoPlayer } from '../student/Roadmap.jsx';
+import { VideoLocked, VideoPlayer } from '../student/Roadmap.jsx';
 import { HandoutRow } from '../../components/Handout.jsx';
 
 const shortTitle = (t) => t.replace(/^Lesson (\d+):.*/, 'Lesson $1').replace(/^(Vocabulary|Session check):.*/, '$1');
@@ -43,7 +43,7 @@ function LessonView({ l, reload }) {
         </Card>
       )}
       {l.locked === 'subscription' && (
-        <div className="banner"><span className="item-ic"><IconCrown /></span><div className="grow"><b>Subscribe to continue</b><small>The first lessons are free. Subscribe to open every lesson, level check, vocabulary and the session check.</small></div><Link className="btn primary sm" to="/subscribe">See plans <IconArrow width={16} height={16} /></Link></div>
+        <div className="banner"><span className="item-ic"><IconCrown /></span><div className="grow"><b>Roadmap lessons come with plan 2 and higher</b><small>The first lessons are free. Plan 2 (Roadmap) opens every lesson, level check and session check; plan 3 adds the video lessons.</small></div><Link className="btn primary sm" to="/subscribe">See plans <IconArrow width={16} height={16} /></Link></div>
       )}
 
       {l.type === 'session' && l.session && (
@@ -63,7 +63,7 @@ function LessonView({ l, reload }) {
       {!l.locked && l.type !== 'vocab' && (
         <>
           {l.type === 'section' && <section className="lesson-video">
-            {l.video_url ? <VideoPlayer url={l.video_url} /> : (
+            {l.video_locked ? <VideoLocked /> : l.video_url ? <VideoPlayer url={l.video_url} /> : (
               <div className="video-soon">
                 <span className="vs-ic"><IconPlay /></span>
                 <div>

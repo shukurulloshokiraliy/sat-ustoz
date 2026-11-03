@@ -4,6 +4,8 @@
  * and in the teacher panel (Support). The answer goes back to the student through the bot.
  * Anyone can write — a website account is not required.
  */
+import { tierOf } from './tiers.js';
+import { getSettings } from './db.js';
 import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { db } from './db.js';
@@ -222,8 +224,14 @@ export function registerSupportWeb(app, { h, bad }, ctx) {
 
   app.post('/api/chat', h(async (req, res) => {
     let me = webIdentity(req);
-    const text = String(req.body?.text || '').trim().slice(0, 2000);
+    let text = String(req.body?.text || '').trim().slice(0, 2000);
     if (!text) return bad(res, 'Write a message first');
+    // "Ask the teacher" about a question: a plan feature (Video plan and higher)
+    if (req.body?.about) {
+      const full = me.userId ? await db.one('SELECT * FROM users WHERE id = ?', [me.userId]) : null;
+      if (!full || !tierOf(full, await getSettings()).ask) return bad(res, 'Asking the teacher about questions comes with the Video plan and higher', 402, { code: 'subscription_required' });
+      text = `[About: ${String(req.body.about).slice(0, 300)}]\n${text}`;
+    }
     const category = CATS[req.body?.category] ? req.body.category : 'question';
     const user = me.userId ? await db.one('SELECT id, name, email, login FROM users WHERE id = ?', [me.userId]) : null;
     if (!me.chat) me = { chat: null, guest: crypto.randomBytes(16).toString('hex') };

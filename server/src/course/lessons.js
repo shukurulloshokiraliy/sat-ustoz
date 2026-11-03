@@ -29,15 +29,15 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     if (user.role !== 'master') {
       if (item.status !== 'ready') locked = 'soon';
       else if (state.locked) locked = step?.status === 'locked' ? 'step' : content.type === 'session' ? 'lessons' : 'previous';
-      else if (!access.can_practice && !content.free) locked = 'subscription';
+      else if (!access.roadmap && !content.free) locked = 'subscription';
     }
-    return { item, content, step, lessons, idx, state, locked };
+    return { item, content, step, lessons, idx, state, locked, access };
   }
 
   app.get('/api/lessons/:id', h(async (req, res) => {
     const L = await lessonFor(req.user, req.params.id);
     if (!L) return bad(res, 'Not found', 404);
-    const { item, content, step, lessons, idx, state, locked } = L;
+    const { item, content, step, lessons, idx, state, locked, access } = L;
     const history = req.user.role === 'student'
       ? await db.all('SELECT id, version, score, total, passed, finished_at FROM lesson_checks WHERE user_id = ? AND item_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC', [req.user.id, item.id])
       : [];
@@ -53,7 +53,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
       session: content.type === 'session' ? { time_minutes: content.time_minutes || 0, makeup: content.makeup || '', unlock: content.unlock || '',
         lessons_passed: sections.filter((i) => i.done).length, lessons_total: sections.length } : undefined,
       done: !!state.done,
-      id: item.id, title: item.title, status: item.status, video_url: showContent ? item.url || '' : '', locked,
+      id: item.id, title: item.title, status: item.status, video_url: showContent && (access.video || content.free) ? item.url || '' : '', video_locked: showContent && !!item.url && !(access.video || content.free), locked,
       module: { step_id: step?.id, title: step?.title, subtitle: step?.subtitle, step_status: step?.status, handout: step?.handout || null },
       sources: showContent ? content.sources || [] : [],
       order: idx + 1, count: lessons.length, sections: sections.length,

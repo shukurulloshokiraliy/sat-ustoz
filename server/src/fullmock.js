@@ -10,7 +10,7 @@
  * Weekly limit per student (settings fm_free / fm_month / fm_quarter), counted from Monday 00:00 Tashkent.
  */
 import { db, getSettings } from './db.js';
-import { subActive } from './auth.js';
+import { tierOf, moveBalance } from './tiers.js';
 import { parseUpload } from './parse.js';
 import { ROUTE_CUT, satScore } from './scoring.js';
 
@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS full_mock_attempts (
   answers TEXT NOT NULL DEFAULT '{}', m1_correct INTEGER, m2_correct INTEGER, m1_total INTEGER, m2_total INTEGER,
   score INTEGER, low INTEGER, high INTEGER, route TEXT, finished_at TIMESTAMPTZ
 );
+ALTER TABLE full_mock_attempts ADD COLUMN IF NOT EXISTS paid BOOLEAN NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS idx_fma_user ON full_mock_attempts(user_id, started_at DESC);
 ALTER TABLE full_mocks ENABLE ROW LEVEL SECURITY; ALTER TABLE full_mock_pdfs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE full_mock_questions ENABLE ROW LEVEL SECURITY; ALTER TABLE full_mock_attempts ENABLE ROW LEVEL SECURITY;
@@ -61,12 +62,13 @@ const cleanKey = (s) => String(s || '').toUpperCase().replace(/[^ABCD]/g, '');
 /** How many full mocks this student may start per week, and how many are used. */
 export async function fmQuota(user) {
   const s = await getSettings();
-  let limit = Number(s.fm_free) || 0;
-  if (user.role === 'master') limit = 999;
-  else if (subActive(user)) limit = Number(user.sub_plan === 'quarter' ? s.fm_quarter : s.fm_month) || 0;
-  const used = Number((await db.one(`SELECT COUNT(*) AS n FROM full_mock_attempts WHERE user_id = ? AND started_at >= ${WEEK}`, [user.id])).n);
+  const tier = tierOf(user, s);
+  const limit = user.role === 'master' ? 999 : tier.fm_week;
+  const used = Number((await db.one(`SELECT COUNT(*) AS n FROM full_mock_attempts WHERE user_id = ? AND started_at >= ${WEEK} AND NOT paid`, [user.id])).n);
+  const bal = await db.one('SELECT balance FROM users WHERE id = ?', [user.id]);
   const next = (await db.one(`SELECT (${WEEK}) + interval '7 days' AS t`)).t; // next Monday 00:00 Tashkent
-  return { limit, used, left: Math.max(0, limit - used), resets_at: next, plan: subActive(user) ? (user.sub_plan || 'month') : 'free' };
+  return { limit, used, left: Math.max(0, limit - used), resets_at: next, plan: tier.id, plan_name: tier.name,
+    extra_price: Number(s.fm_extra_price) || 0, balance: Number(bal?.balance || 0) };
 }
 
 async function moduleSets(mock) {
@@ -133,11 +135,19 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     if (open) return res.json(await advanceIfExpired(open, mock, sets));
     if (!ready(sets)) return bad(res, 'This mock is not ready yet');
     const q = await fmQuota(req.user);
-    if (q.left <= 0) return bad(res, q.plan === 'free'
-      ? `Free accounts can take ${q.limit} full mock${q.limit === 1 ? '' : 's'} a week. A subscription gives more.`
-      : `You have used all ${q.limit} full mocks for this week. New ones open on Monday.`, 402, { code: 'full_mock_limit', quota: q });
-    const r = await db.run('INSERT INTO full_mock_attempts (mock_id, user_id) VALUES (?, ?) RETURNING id', [mock.id, req.user.id]);
-    res.json(await state(await db.one('SELECT * FROM full_mock_attempts WHERE id = ?', [r.id]), mock, sets));
+    let paid = false;
+    if (q.left <= 0) {
+      // beyond the weekly limit: one extra mock for fm_extra_price from the balance (only when the student asks to pay)
+      if (!req.body?.pay || !q.extra_price) return bad(res, `You have used ${q.limit} of ${q.limit} full mocks this week. Take one more for ${q.extra_price.toLocaleString('en-US').replace(/,/g, ' ')} from your balance, or wait until Monday.`, 402, { code: 'full_mock_limit', quota: q });
+      paid = true;
+    }
+    const id = await db.tx(async (t) => {
+      const r = await t.run('INSERT INTO full_mock_attempts (mock_id, user_id, paid) VALUES (?, ?, ?) RETURNING id', [mock.id, req.user.id, paid]);
+      if (paid && (await moveBalance(t, req.user.id, -q.extra_price, 'full_mock', { note: mock.title, ref: `fm:${r.id}` })) == null) throw Object.assign(new Error('Not enough money on your balance. Top it up first.'), { status: 402 });
+      return r.id;
+    }).catch((e) => { if (e.status === 402) return { err: e.message }; throw e; });
+    if (id?.err) return bad(res, id.err, 402, { code: 'balance_low', quota: q });
+    res.json(await state(await db.one('SELECT * FROM full_mock_attempts WHERE id = ?', [id]), mock, sets));
   }));
 
   // time over for a module → move on automatically (module 1 → module 2, module 2 → finish)

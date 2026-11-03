@@ -102,7 +102,7 @@ ALTER TABLE qbank_mocks ADD COLUMN IF NOT EXISTS estimate INTEGER;
 `);
 }
 
-export function registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor, upload }) {
+export function registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor, upload, usedToday }) {
   const openLevels = async (user) => (user.role === 'master' || (await accessFor(user)).can_practice ? LEVELS : [FREE_LEVEL]);
 
   // overview: domains → skills with counts and the student's own progress
@@ -150,6 +150,10 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const q = await db.one('SELECT * FROM qbank_questions WHERE id = ? AND active', [req.params.id]);
     if (!q) return bad(res, 'Question not found', 404);
     if (!(await openLevels(req.user)).includes(q.difficulty)) return bad(res, 'This question needs an active subscription', 402, { code: 'subscription_required' });
+    const cap = (await accessFor(req.user)).tier?.q_day || 0;
+    if (cap && req.user.role !== 'master' && !(await db.one('SELECT 1 AS x FROM qbank_answers WHERE user_id = ? AND question_id = ?', [req.user.id, q.id]))) {
+      if ((await usedToday(req.user.id)).questions >= cap) return bad(res, `Your plan includes ${cap} new questions a day. Come back tomorrow or upgrade your plan.`, 402, { code: 'daily_limit' });
+    }
     const choice = Number(req.body?.choice);
     if (!Number.isInteger(choice) || choice < 0 || choice > 3) return bad(res, 'Choose an answer first');
     const correct = choice === q.answer;
@@ -191,6 +195,8 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
   app.post('/api/qbank/mock', requireStudent, h(async (req, res) => {
     const open = await db.one(`SELECT * FROM qbank_mocks WHERE user_id = ? AND finished_at IS NULL AND started_at > now() - interval '${MOCK_MINUTES} minutes' ORDER BY id DESC LIMIT 1`, [req.user.id]);
     if (open && !req.body?.fresh) return res.json(await mockState(open, false));
+    const qcap = (await accessFor(req.user)).tier?.quiz_day || 0;
+    if (qcap && req.user.role !== 'master' && (await usedToday(req.user.id)).quizzes >= qcap) return bad(res, `Your plan includes ${qcap} quiz${qcap === 1 ? '' : 'zes'} a day. Come back tomorrow or upgrade your plan.`, 402, { code: 'daily_limit' });
     const levels = await openLevels(req.user);
     const picked = [];
     for (const [skill, n] of MOCK_BLUEPRINT) {

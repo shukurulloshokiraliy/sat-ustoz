@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ExamCountdown, ExamPicker } from '../../components/ExamDate.jsx';
+import { Extras } from './Subscribe.jsx';
 import { api, daysUntil, fmtDate } from '../../api.js';
 import { useAuth } from '../../context.jsx';
 import { satScoreFromCount } from '../../../../server/src/scoring.js';
@@ -104,6 +105,8 @@ export default function Dashboard() {
               <Card className="stat"><div className="label"><IconQuiz /> {"Questions solved"}</div><div className="value"><CountUp value={all.answered} /></div></Card>
               <Card className="stat"><div className="label"><IconClock /> {"Time"}</div><div className="value"><CountUp value={all.minutes} /><small> {"min"}</small></div></Card>
             </div>
+
+            <Extras access={user.access} />
 
             <div className="grid g-main">
               <Card>

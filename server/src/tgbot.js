@@ -10,6 +10,7 @@
  * Teacher: connects the bot in Settings (token from @BotFather), then sends `/admin CODE` to the bot once
  *   to receive payment requests.
  */
+import { readTiers } from './tiers.js';
 import crypto from 'node:crypto';
 import { db, getSettings } from './db.js';
 import { getSecret, subActive } from './auth.js';
@@ -69,10 +70,9 @@ const ctx = { tg: (...a) => tg(...a), send: (...a) => send(...a), admins: () => 
 // ---------- plans ----------
 async function plans() {
   const s = await getSettings();
-  return [
-    { id: 'month', label: '1 oy', days: 30, amount: Number(s.price_month) || 0 },
-    { id: 'quarter', label: '3 oy', days: 90, amount: Number(s.price_quarter) || 0 },
-  ].filter((p) => p.amount > 0).map((p) => ({ ...p, currency: s.currency || 'UZS' }));
+  // one month of each plan (tier); names and prices come from Settings → Plans
+  return readTiers(s).map((t, i) => ({ id: t.id, label: `${i + 1}-tarif · ${t.name} · 1 oy`, days: 30, amount: t.price }))
+    .filter((p) => p.amount > 0).map((p) => ({ ...p, currency: s.currency || 'UZS' }));
 }
 const money = (n, cur = 'UZS') => `${Number(n || 0).toLocaleString('en-US').replace(/,/g, ' ')} ${cur === 'UZS' ? "so'm" : cur}`;
 const esc = (s) => String(s ?? '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));

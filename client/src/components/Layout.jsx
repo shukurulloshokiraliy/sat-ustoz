@@ -20,7 +20,7 @@ const STUDENT_NAV = [
   { to: '/analytics', label: 'Results', icon: IconChart, c: '#2A55E5' },
   { to: '/leaderboard', label: 'Leaderboard', icon: IconTrophy, c: '#E8A93C' },
   { to: '/saved', label: 'Saved', icon: IconBookmark, c: '#E0569B' },
-  { to: '/subscribe', label: 'Subscription', icon: IconCrown, c: '#E8A93C' },
+  { to: '/subscribe', label: 'Plans', icon: IconCrown, c: '#E8A93C' },
 ];
 // phones: the most used places sit in a bottom tab bar; "More" opens the full menu
 const STUDENT_TABS = [

@@ -44,16 +44,39 @@ export default function Roadmap() {
 const youtubeId = (url) => url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/)?.[1];
 const isFile = (url) => /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url) || /supabase\.co\/storage\//.test(url);
 
+/**
+ * Lesson video. Protection against copying: the link reaches only students whose plan includes video (server),
+ * no download / picture-in-picture / right-click, and a moving watermark with the student's name and email
+ * so a screen recording can be traced back.
+ */
 export function VideoPlayer({ url }) {
+  const { user } = useAuth();
+  const frame = (child) => (
+    <div className="video-frame protected" onContextMenu={(e) => e.preventDefault()}>
+      {child}
+      {user?.role === 'student' && <span className="video-mark" aria-hidden="true">{user.name} · {user.email || user.login} · #{user.id}</span>}
+    </div>
+  );
   const yt = youtubeId(url);
-  if (yt) return <div className="video-frame"><iframe src={`https://www.youtube-nocookie.com/embed/${yt}`} title="Video lesson" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen /></div>;
-  if (isFile(url)) return <div className="video-frame"><video src={url} controls preload="metadata" /></div>;
+  if (yt) return frame(<iframe src={`https://www.youtube-nocookie.com/embed/${yt}?rel=0&modestbranding=1&iv_load_policy=3`} title="Video lesson" allow="accelerometer; encrypted-media; gyroscope; fullscreen" allowFullScreen />);
+  if (isFile(url)) return frame(<video src={url} controls preload="metadata" controlsList="nodownload noplaybackrate" disablePictureInPicture onContextMenu={(e) => e.preventDefault()} />);
   const drive = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]{20,})/)?.[1];
-  if (drive) return <div className="video-frame"><iframe src={`https://drive.google.com/file/d/${drive}/preview`} title="Video lesson" allow="autoplay; fullscreen" allowFullScreen /></div>;
+  if (drive) return frame(<iframe src={`https://drive.google.com/file/d/${drive}/preview`} title="Video lesson" allow="autoplay; fullscreen" allowFullScreen />);
   const vimeo = url.match(/vimeo\.com\/(?:video\/)?(\d+)/)?.[1];
-  if (vimeo) return <div className="video-frame"><iframe src={`https://player.vimeo.com/video/${vimeo}`} title="Video lesson" allow="fullscreen; picture-in-picture" allowFullScreen /></div>;
+  if (vimeo) return frame(<iframe src={`https://player.vimeo.com/video/${vimeo}?dnt=1`} title="Video lesson" allow="fullscreen" allowFullScreen />);
   if (/^https?:\/\//.test(url)) return <a className="btn soft" href={url} target="_blank" rel="noreferrer">Open the video</a>;
   return null;
+}
+
+/** Shown instead of the video when the plan does not include video lessons. */
+export function VideoLocked() {
+  return (
+    <div className="video-soon locked">
+      <span className="vs-ic"><IconLock /></span>
+      <div><b>Video lessons come with plan 3 (Video) and higher</b><p>Your plan includes the written notes and level checks of this lesson.</p>
+        <Link className="btn soft sm" to="/subscribe">See plans</Link></div>
+    </div>
+  );
 }
 
 function StepDrawer({ step, index, prev, onClose, onChanged }) {
@@ -64,6 +87,7 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
   const [busy, setBusy] = useState(null);
   const locked = step.status === 'locked';
   const canPractice = user.access?.can_practice;
+  const canRoadmap = user.access?.roadmap ?? canPractice;
 
   const toggle = (id) => setExpanded((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const mark = async (it, value) => {
@@ -82,7 +106,7 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
         </div>
       )}
       {step.description && <p>{step.description}</p>}
-      {step.handout && <HandoutRow stepId={step.id} h={step.handout} locked={user.role === 'student' && !canPractice && !step.items.some((x) => x.lesson?.free)} />}
+      {step.handout && <HandoutRow stepId={step.id} h={step.handout} locked={user.role === 'student' && !canRoadmap && !step.items.some((x) => x.lesson?.free)} />}
       {step.focus && <div className="tag-list">{step.focus.split(',').filter(Boolean).map((f) => <span key={f} className="chip">{f.trim()}</span>)}</div>}
 
       {step.total > 0 ? (
@@ -99,7 +123,7 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
                 const t = it.lesson?.type || 'section';
                 const meta = t === 'vocab' ? `${it.lesson.words} SAT words · flashcards`
                   : t === 'session' ? `${it.lesson.check_count} questions · ${it.lesson.time_minutes} min · opens after all lessons`
-                  : [it.url ? 'Video' : 'Video soon', it.lesson?.has_notes && 'Notes', it.lesson?.check_count && `Level check · ${it.lesson.check_count} q`].filter(Boolean).join(' · ');
+                  : [it.url || it.video_locked ? 'Video' : 'Video soon', it.lesson?.has_notes && 'Notes', it.lesson?.check_count && `Level check · ${it.lesson.check_count} q`].filter(Boolean).join(' · ');
                 return (
                   <div key={it.id} className={`item-row ${it.done ? 'done' : ''} ${soon ? 'soon' : ''}`}>
                     <span className="item-ic lesson">{it.done ? <IconCheck /> : soon || it.locked ? <IconLock /> : (t === 'section' ? <span className="n">{it.lesson?.order}</span> : t === 'vocab' ? <IconDoc /> : <IconQuiz />)}</span>
@@ -108,7 +132,7 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
                       <small>{soon ? 'Coming soon' : meta}{it.best != null && !soon ? ` · best ${it.best}%` : ''}{it.lesson?.free && !soon ? ' · free' : ''}</small>
                     </div>
                     <div className="item-act row" style={{ gap: 6 }}>
-                      {!soon && (!canPractice && !it.lesson?.free && user.role === 'student'
+                      {!soon && (!canRoadmap && !it.lesson?.free && user.role === 'student'
                         ? <Link className="btn soft sm" to="/subscribe"><IconLock width={15} height={15} /> Subscribe</Link>
                         : <button className={`btn sm ${it.done ? 'ghost' : 'primary'}`} disabled={locked || it.locked} onClick={() => nav(`/lesson/${it.id}`)}>{it.done ? 'Review' : 'Open'} <IconArrow width={15} height={15} /></button>)}
                     </div>
@@ -142,8 +166,7 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
                   {isOpen && it.kind === 'reading' && <div className="item-body">{it.body}</div>}
                   {isOpen && it.kind === 'video' && (
                     <>
-                      <VideoPlayer url={it.url} />
-                      <a className="muted" style={{ gridColumn: '1 / -1', fontSize: '.84rem' }} href={it.url} target="_blank" rel="noreferrer">Open the video in a new tab ↗</a>
+                      {it.video_locked ? <VideoLocked /> : <VideoPlayer url={it.url} />}
                     </>
                   )}
                 </div>
