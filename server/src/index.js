@@ -979,8 +979,8 @@ app.delete('/api/portfolio/:id', requireStudent, h(async (req, res) => {
 // ---------- static client ----------
 const dist = path.join(__dirname, '..', '..', 'client', 'dist');
 if (fs.existsSync(dist)) {
-  app.use(express.static(dist));
-  app.get(/^(?!\/api).*/, (req, res) => res.sendFile(path.join(dist, 'index.html')));
+  app.use(express.static(dist, { extensions: ['html'] })); // /practice → practice.html (prerendered public pages)
+  app.get(/^(?!\/api).*/, (req, res) => res.sendFile(path.join(dist, fs.existsSync(path.join(dist, 'app.html')) ? 'app.html' : 'index.html')));
 }
 
 app.use((err, req, res, next) => {
