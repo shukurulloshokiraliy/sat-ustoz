@@ -1833,3 +1833,13 @@ em.hi, .sr-bars i.hi { background: #1E8E4E; } em.mid, .sr-bars i.mid { backgroun
 .lb-row b { flex: 1; } .lb-rank { width: 28px; font-weight: 800; color: var(--muted); text-align: center; } .lb-pts { font-weight: 800; }
 .lb-how { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
 .lb-how div { display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); font-size: .88rem; } .lb-how b { color: var(--good); }
+
+/* ---------- oferta agreement on the login page ---------- */
+.agree { display: flex; gap: 10px; align-items: center; font-size: .88rem; color: var(--muted); cursor: pointer; padding: 2px 0; }
+.agree input { width: 18px; height: 18px; accent-color: var(--primary); flex: none; margin: 0; }
+.agree a { color: var(--primary); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.agree.nudge { animation: shake .45s; color: var(--bad); }
+@keyframes shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+.google-gate { position: relative; }
+.google-gate.locked .google-slot { opacity: .55; }
+.google-cover { position: absolute; inset: 0; background: transparent; border: 0; cursor: pointer; border-radius: 99px; }

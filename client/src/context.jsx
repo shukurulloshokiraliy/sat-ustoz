@@ -27,9 +27,9 @@ export function AuthProvider({ children }) {
     setToken(r.token);
     setUser(await api.get('/me'));
   }, []);
-  const login = useCallback((loginName, password) => api.post('/auth/login', { login: loginName, password }).then(withToken), [withToken]);
-  const register = useCallback((body) => api.post('/auth/register', body).then(withToken), [withToken]);
-  const google = useCallback((credential) => api.post('/auth/google', { credential }).then(withToken), [withToken]);
+  const login = useCallback((loginName, password) => api.post('/auth/login', { login: loginName, password, accept_terms: true }).then(withToken), [withToken]);
+  const register = useCallback((body) => api.post('/auth/register', { ...body, accept_terms: true }).then(withToken), [withToken]);
+  const google = useCallback((credential) => api.post('/auth/google', { credential, accept_terms: true }).then(withToken), [withToken]);
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);

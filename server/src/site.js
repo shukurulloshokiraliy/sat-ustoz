@@ -1,4 +1,5 @@
 import { satScore } from './scoring.js';
+import { OFERTA } from './oferta.js';
 /**
  * Public website (no sign-in needed) + teacher-editable content.
  *
@@ -140,7 +141,9 @@ async function setBlock(key, data) {
 
 /** First start: example pages so the menu is not empty (only when there are none). */
 export async function seedSite() {
-  const n = await db.one('SELECT COUNT(*) AS n FROM site_pages');
+  // the public offer page always exists (the teacher can edit it, it is never overwritten)
+  await db.run('INSERT INTO site_pages (section, slug, title, summary, body, emoji, position) VALUES (?,?,?,?,?,?,?) ON CONFLICT (slug) DO NOTHING', [OFERTA.section, OFERTA.slug, OFERTA.title, OFERTA.summary, OFERTA.body, OFERTA.emoji, 999]);
+  const n = await db.one('SELECT COUNT(*) AS n FROM site_pages WHERE slug <> ?', ['oferta']);
   if (Number(n.n)) return;
   for (const [i, p] of DEFAULT_PAGES.entries()) {
     await db.run('INSERT INTO site_pages (section, slug, title, summary, body, emoji, position) VALUES (?,?,?,?,?,?,?) ON CONFLICT (slug) DO NOTHING', [p.section, p.slug, p.title, p.summary, p.body, p.emoji, i]);

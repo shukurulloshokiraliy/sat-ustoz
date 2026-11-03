@@ -159,14 +159,17 @@ app.get('/api/config', h(async (req, res) => {
 }));
 
 // ---------- auth ----------
+const TERMS_MSG = 'Please accept the terms of use (oferta) to continue';
+
 app.post('/api/auth/login', h(async (req, res) => {
   const { login, password } = req.body || {};
+  if (req.body?.accept_terms !== true) return bad(res, TERMS_MSG);
   const id = String(login || '').trim().toLowerCase();
   const u = id && (await db.one('SELECT * FROM users WHERE login = ? OR email = ?', [id, id]));
   if (!u || !u.password_hash || !bcrypt.compareSync(String(password || ''), u.password_hash)) {
     return bad(res, u && !u.password_hash ? 'This account uses Google — tap “Continue with Google”' : 'Incorrect login or password', 401);
   }
-  await db.run('UPDATE users SET last_login_at = now() WHERE id = ?', [u.id]);
+  await db.run('UPDATE users SET last_login_at = now(), terms_accepted_at = COALESCE(terms_accepted_at, now()) WHERE id = ?', [u.id]);
   res.json({ token: signToken(u) });
 }));
 
@@ -174,7 +177,8 @@ app.post('/api/auth/register', h(async (req, res) => {
   const name = String(req.body?.name || '').trim().slice(0, 80);
   const email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
-  if (name.length < 2) return bad(res, 'Please enter your full name');
+  if (req.body?.accept_terms !== true) return bad(res, TERMS_MSG);
+  if (name.split(/\s+/).filter((w) => w.length >= 2).length < 2) return bad(res, 'Please enter your real first and last name (e.g. Aziz Karimov)');
   if (!EMAIL_RE.test(email)) return bad(res, 'Please enter a valid email');
   if (password.length < 6) return bad(res, 'Password must be at least 6 characters (numbers are fine, e.g. 6 digits)');
   if (password.length > 100) return bad(res, 'Password is too long');
@@ -184,13 +188,14 @@ app.post('/api/auth/register', h(async (req, res) => {
     && !(await db.one("SELECT 1 AS x FROM users WHERE role = 'master'"));
   const role = owner ? 'master' : 'student';
   const r = await db.run(
-    "INSERT INTO users (name, login, email, password_hash, role, provider, last_login_at) VALUES (?,?,?,?,?,?, now()) RETURNING id",
+    "INSERT INTO users (name, login, email, password_hash, role, provider, last_login_at, terms_accepted_at) VALUES (?,?,?,?,?,?, now(), now()) RETURNING id",
     [name, email, email, bcrypt.hashSync(password, 10), role, owner ? 'teacher' : 'email']
   );
   res.json({ token: signToken({ id: r.id, role }) });
 }));
 
 app.post('/api/auth/google', h(async (req, res) => {
+  if (req.body?.accept_terms !== true) return bad(res, TERMS_MSG);
   const g = await verifyGoogleCredential(req.body?.credential, (await getSettings()).google_client_id);
   let u = await db.one('SELECT * FROM users WHERE email = ? OR login = ?', [g.email, g.email]);
   if (!u && (await emailTaken(g.email))) {
@@ -199,10 +204,10 @@ app.post('/api/auth/google', h(async (req, res) => {
     u = all.find((x) => canonEmail(x.email) === canonEmail(g.email)) || null;
   }
   if (u) {
-    await db.run("UPDATE users SET last_login_at = now(), avatar_url = CASE WHEN avatar_url = '' THEN ? ELSE avatar_url END WHERE id = ?", [g.avatar, u.id]);
+    await db.run("UPDATE users SET last_login_at = now(), terms_accepted_at = COALESCE(terms_accepted_at, now()), avatar_url = CASE WHEN avatar_url = '' THEN ? ELSE avatar_url END WHERE id = ?", [g.avatar, u.id]);
   } else {
     const r = await db.run(
-      "INSERT INTO users (name, login, email, password_hash, role, provider, avatar_url, last_login_at) VALUES (?,?,?,NULL,'student','google',?, now()) RETURNING id, role",
+      "INSERT INTO users (name, login, email, password_hash, role, provider, avatar_url, last_login_at, terms_accepted_at) VALUES (?,?,?,NULL,'student','google',?, now(), now()) RETURNING id, role",
       [g.name, g.email, g.email, g.avatar]
     );
     u = { id: r.id, role: 'student' };

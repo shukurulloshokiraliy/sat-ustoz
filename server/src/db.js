@@ -316,6 +316,7 @@ ALTER TABLE placement_attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS cefr TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS admitted BOOLEAN;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS placement_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;
 UPDATE users SET placement_at = created_at WHERE diagnostic_score IS NOT NULL AND placement_at IS NULL;
 `);
   // v2: “Ustoz tip” on questions; brand step colours
