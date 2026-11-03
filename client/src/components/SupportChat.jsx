@@ -10,11 +10,6 @@ const readGuest = () => { try { return localStorage.getItem(GUEST_KEY) || ''; } 
 const saveGuest = (g) => { try { localStorage.setItem(GUEST_KEY, g); } catch { /* private mode: the chat lasts this visit */ } };
 const time = (iso) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-const IconChat = (p) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
-    <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z" /><path d="M8.5 11h7M8.5 14.5h4.5" />
-  </svg>
-);
 
 /**
  * Website support chat: a floating button on the public site and in the student app.
@@ -115,9 +110,9 @@ export default function SupportChat() {
         </section>
       )}
       <button className={`sc-fab ${open ? 'on' : ''} ${focus ? 'focus' : ''}`} onClick={() => setOpen((x) => !x)} aria-label={open ? 'Close support chat' : 'Open support chat'}>
-        {open ? <IconX width={22} height={22} /> : <IconChat />}
+        {open ? <IconX width={22} height={22} /> : <span className="sc-owl"><img src="/characters/owl.webp" alt="" width="40" height="40" /><i className="sc-online" /></span>}
         {!open && d.unread > 0 && <span className="sc-dot">{d.unread}</span>}
-        {!open && <span className="sc-label">Support</span>}
+        {!open && <span className="sc-label"><b>Ask Ustoz</b><small>We reply fast</small></span>}
       </button>
     </>
   );

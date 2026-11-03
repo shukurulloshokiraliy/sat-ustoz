@@ -5,47 +5,47 @@ import { useAuth, useTheme } from '../context.jsx';
 import { Avatar } from './ui.jsx';
 import SupportChat from './SupportChat.jsx';
 import {
-  IconBookmark, IconBriefcase, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
+  IconBookmark, IconBriefcase, IconChats, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
   IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo,
 } from './icons.jsx';
 
 const STUDENT_NAV = [
-  { to: '/', label: 'Dashboard', icon: IconDashboard, end: true },
-  { to: '/roadmap', label: 'Roadmap', icon: IconRoad },
-  { to: '/vocab', label: 'Vocabulary', icon: IconBook },
-  { to: '/game', label: 'Word Arena', icon: IconGame },
-  { to: '/question-bank', label: 'Question Bank', icon: IconTarget },
-  { to: '/practice', label: 'Practice Tests', icon: IconBolt },
-  { to: '/quizzes', label: 'Quizzes', icon: IconQuiz },
-  { to: '/analytics', label: 'Results', icon: IconChart },
-  { to: '/saved', label: 'Saved', icon: IconBookmark },
-  { to: '/subscribe', label: 'Subscription', icon: IconCrown },
+  { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, c: '#2A55E5' },
+  { to: '/roadmap', label: 'Roadmap', icon: IconRoad, c: '#F28B4E' },
+  { to: '/vocab', label: 'Vocabulary', icon: IconBook, c: '#E8A93C' },
+  { to: '/game', label: 'Word Arena', icon: IconGame, c: '#8E5CF7' },
+  { to: '/question-bank', label: 'Question Bank', icon: IconTarget, c: '#1E8E4E' },
+  { to: '/practice', label: 'Practice Tests', icon: IconBolt, c: '#E2553D' },
+  { to: '/quizzes', label: 'Quizzes', icon: IconQuiz, c: '#12A39A' },
+  { to: '/analytics', label: 'Results', icon: IconChart, c: '#2A55E5' },
+  { to: '/saved', label: 'Saved', icon: IconBookmark, c: '#E0569B' },
+  { to: '/subscribe', label: 'Subscription', icon: IconCrown, c: '#E8A93C' },
 ];
 // phones: the most used places sit in a bottom tab bar; "More" opens the full menu
 const STUDENT_TABS = [
-  { to: '/', label: 'Home', icon: IconDashboard, end: true },
-  { to: '/roadmap', label: 'Roadmap', icon: IconRoad },
-  { to: '/vocab', label: 'Words', icon: IconBook },
-  { to: '/question-bank', label: 'Practice', icon: IconTarget },
+  { to: '/', label: 'Home', icon: IconDashboard, end: true, c: '#2A55E5' },
+  { to: '/roadmap', label: 'Roadmap', icon: IconRoad, c: '#F28B4E' },
+  { to: '/vocab', label: 'Words', icon: IconBook, c: '#E8A93C' },
+  { to: '/question-bank', label: 'Practice', icon: IconTarget, c: '#1E8E4E' },
 ];
 const MASTER_TABS = [
-  { to: '/', label: 'Overview', icon: IconDashboard, end: true },
-  { to: '/students', label: 'Students', icon: IconUsers },
-  { to: '/roadmap', label: 'Roadmap', icon: IconRoad },
-  { to: '/support', label: 'Support', icon: IconSend },
+  { to: '/', label: 'Overview', icon: IconDashboard, end: true, c: '#2A55E5' },
+  { to: '/students', label: 'Students', icon: IconUsers, c: '#2A55E5' },
+  { to: '/roadmap', label: 'Roadmap', icon: IconRoad, c: '#F28B4E' },
+  { to: '/support', label: 'Support', icon: IconChats, c: '#E0569B' },
 ];
 const MASTER_NAV = [
-  { to: '/', label: 'Overview', icon: IconDashboard, end: true },
-  { to: '/students', label: 'Students', icon: IconUsers },
-  { to: '/groups', label: 'Groups', icon: IconLayers },
-  { to: '/quizzes', label: 'Quizzes', icon: IconQuiz },
-  { to: '/roadmap', label: 'Roadmap', icon: IconRoad },
-  { to: '/question-bank/manage', label: 'Question Bank', icon: IconTarget },
-  { to: '/vocab', label: 'Vocabulary', icon: IconBook },
-  { to: '/game', label: 'Word Arena', icon: IconGame },
-  { to: '/website', label: 'Website', icon: IconGlobe },
-  { to: '/support', label: 'Support', icon: IconSend },
-  { to: '/settings', label: 'Settings', icon: IconSettings },
+  { to: '/', label: 'Overview', icon: IconDashboard, end: true, c: '#2A55E5' },
+  { to: '/students', label: 'Students', icon: IconUsers, c: '#2A55E5' },
+  { to: '/groups', label: 'Groups', icon: IconLayers, c: '#12A39A' },
+  { to: '/quizzes', label: 'Quizzes', icon: IconQuiz, c: '#12A39A' },
+  { to: '/roadmap', label: 'Roadmap', icon: IconRoad, c: '#F28B4E' },
+  { to: '/question-bank/manage', label: 'Question Bank', icon: IconTarget, c: '#1E8E4E' },
+  { to: '/vocab', label: 'Vocabulary', icon: IconBook, c: '#E8A93C' },
+  { to: '/game', label: 'Word Arena', icon: IconGame, c: '#8E5CF7' },
+  { to: '/website', label: 'Website', icon: IconGlobe, c: '#5C88FF' },
+  { to: '/support', label: 'Support', icon: IconChats, c: '#E0569B' },
+  { to: '/settings', label: 'Settings', icon: IconSettings, c: '#5B6380' },
 ];
 
 export default function Layout() {
@@ -68,8 +68,8 @@ export default function Layout() {
         </NavLink>
         <nav className="nav" aria-label={"Main menu"}>
           {nav.map((n) => (
-            <NavLink key={n.to} to={n.to} end={n.end}><n.icon />{n.label}
-              {n.to === '/subscribe' && !user.sub_active && user.access?.subscription_required && <span className="badge-n sun">Get</span>}</NavLink>
+            <NavLink key={n.to} to={n.to} end={n.end} style={{ '--c': n.c || '#2A55E5' }}>{({ isActive }) => (<><span className="nav-ic"><n.icon width={19} height={19} weight={isActive ? 'fill' : 'duotone'} /></span>{n.label}
+              {n.to === '/subscribe' && !user.sub_active && user.access?.subscription_required && <span className="badge-n sun">Get</span>}</>)}</NavLink>
           ))}
         </nav>
         <div className="side-foot">
@@ -95,7 +95,7 @@ export default function Layout() {
         <SupportChat />
         <nav className="tabbar" aria-label="Quick menu">
           {(user.role === 'master' ? MASTER_TABS : STUDENT_TABS).map((n) => (
-            <NavLink key={n.to} to={n.to} end={n.end}><n.icon width={22} height={22} /><span>{n.label}</span></NavLink>
+            <NavLink key={n.to} to={n.to} end={n.end} style={{ '--c': n.c || '#2A55E5' }}>{({ isActive }) => (<><n.icon width={22} height={22} weight={isActive ? 'fill' : 'duotone'} /><span>{n.label}</span></>)}</NavLink>
           ))}
           <button type="button" className={open ? 'active' : ''} onClick={() => setOpen(true)} aria-label="Open the full menu"><IconMore width={22} height={22} /><span>More</span></button>
         </nav>

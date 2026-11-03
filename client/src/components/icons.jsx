@@ -1,13 +1,13 @@
 // Icons: Phosphor (https://phosphoricons.com), wrapped so the app keeps one naming scheme.
 // <IconX width={18} /> sets the size; pass weight="duotone" | "bold" | "fill" where a heavier mark fits.
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowsClockwise, BookOpenText, BookmarkSimple, Briefcase, Cards, CaretDown, ChartLineUp, Check, Clock, Copy, Crown, DotsThree, DownloadSimple, Eye, EyeSlash, FileText, Fire, Flag, GameController, GearSix, Globe, InstagramLogo, Key, Lightning, Link, List, ListChecks, Lock, MagnifyingGlass, Medal, Moon, PaperPlaneRight, Path, PencilSimple, Play, Plus, Printer, Prohibit, SignOut, SpeakerHigh, SquaresFour, Stack, Sun, Target, TelegramLogo, Trash, UploadSimple, User, UsersThree, X } from '@phosphor-icons/react';
+import { House, MapTrifold, ChatsCircle, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowsClockwise, BookOpenText, BookmarkSimple, Briefcase, Cards, CaretDown, ChartLineUp, Check, Clock, Copy, Crown, DotsThree, DownloadSimple, Eye, EyeSlash, FileText, Fire, Flag, GameController, GearSix, Globe, InstagramLogo, Key, Lightning, Link, List, ListChecks, Lock, MagnifyingGlass, Medal, Moon, PaperPlaneRight, Path, PencilSimple, Play, Plus, Printer, Prohibit, SignOut, SpeakerHigh, SquaresFour, Stack, Sun, Target, TelegramLogo, Trash, UploadSimple, User, UsersThree, X } from '@phosphor-icons/react';
 
 const ph = (C, base = 'regular') => function Icon({ width, height, size, weight, strokeWidth, ...rest }) {
   return <C size={size || width || height || 20} weight={weight || base} aria-hidden="true" {...rest} />;
 };
 
-export const IconDashboard = ph(SquaresFour);
-export const IconRoad = ph(Path);
+export const IconDashboard = ph(House);
+export const IconRoad = ph(MapTrifold);
 export const IconQuiz = ph(ListChecks);
 export const IconChart = ph(ChartLineUp);
 export const IconBookmark = ph(BookmarkSimple);
@@ -56,6 +56,7 @@ export const IconInstagram = ph(InstagramLogo);
 export const IconTelegram = ph(TelegramLogo);
 export const IconRefresh = ph(ArrowsClockwise);
 export const IconSend = ph(PaperPlaneRight);
+export const IconChats = ph(ChatsCircle);
 export const IconBook = ph(BookOpenText);
 export const IconGame = ph(GameController);
 export const IconMore = ph(DotsThree);

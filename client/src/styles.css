@@ -1684,3 +1684,26 @@ em.hi, .sr-bars i.hi { background: #1E8E4E; } em.mid, .sr-bars i.mid { backgroun
 .sr-split > div { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: .86rem; font-weight: 600; }
 .sr-split span { display: inline-flex; align-items: center; gap: 8px; } .sr-split span i { width: 10px; height: 10px; border-radius: 3px; }
 .sr-split em { grid-column: 1 / -1; height: 6px; border-radius: 6px; background: var(--track); overflow: hidden; } .sr-split u { display: block; height: 100%; }
+
+/* ---------- colourful icon tiles (nav) ---------- */
+.nav a { gap: 10px; padding: 7px 10px; }
+.nav-ic { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; flex: none; color: var(--c); background: color-mix(in srgb, var(--c) 13%, transparent); transition: background .2s, color .2s, transform .2s, box-shadow .2s; }
+.nav a:hover .nav-ic { transform: rotate(-6deg) scale(1.06); }
+.nav a.active { background: color-mix(in srgb, var(--c) 10%, var(--surface)); color: var(--ink); }
+.nav a.active::before { background: var(--c); }
+.nav a.active .nav-ic { background: var(--c); color: #fff; box-shadow: 0 6px 14px -6px var(--c); }
+.nav a:hover svg, .nav a svg { transform: none; }
+:root[data-theme='dark'] .nav-ic { background: color-mix(in srgb, var(--c) 22%, transparent); color: color-mix(in srgb, var(--c) 70%, #fff); }
+:root[data-theme='dark'] .nav a.active { color: #fff; }
+@media (max-width: 980px) {
+  .tabbar a.active { color: var(--c); }
+  .tabbar a.active svg { background: color-mix(in srgb, var(--c) 15%, transparent); color: var(--c); }
+}
+/* support button with the mascot */
+.sc-fab { padding: 0 18px 0 6px; height: 56px; gap: 10px; }
+.sc-owl { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.12); }
+.sc-owl img { width: 40px; height: 40px; object-fit: contain; animation: bob 3s ease-in-out infinite; }
+.sc-online { position: absolute; right: 1px; bottom: 3px; width: 11px; height: 11px; border-radius: 50%; background: #4FD18A; box-shadow: 0 0 0 2px var(--night); }
+.sc-label { display: grid; text-align: left; line-height: 1.15; } .sc-label b { font-size: .95rem; } .sc-label small { font-size: .7rem; font-weight: 600; opacity: .7; }
+.sc-fab.on { padding: 0; width: 56px; }
+@media (max-width: 560px) { .sc-fab:not(.on) { width: 56px; height: 56px; padding: 0; } .sc-fab .sc-label { display: none; } }
