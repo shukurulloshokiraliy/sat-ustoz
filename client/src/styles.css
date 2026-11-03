@@ -1671,3 +1671,16 @@ em.hi, .sr-bars i.hi { background: #1E8E4E; } em.mid, .sr-bars i.mid { backgroun
 .sr-arena { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; } .sr-arena div { padding: 12px; border-radius: 12px; background: var(--surface-2); display: grid; } .sr-arena b { font: 800 1.3rem var(--display); } .sr-arena span { color: var(--muted); font-size: .8rem; }
 .sub-card.off { border-color: color-mix(in srgb, #C0392B 35%, var(--line)); }
 .link-btn { border: 0; background: none; padding: 0; margin-top: 4px; color: var(--primary); font: 700 .85rem var(--font); cursor: pointer; }
+.sr-insights ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sr-insights li { position: relative; padding: 10px 12px 10px 34px; border-radius: 12px; background: var(--surface-2); font-size: .92rem; line-height: 1.45; }
+.sr-insights li::before { content: ''; position: absolute; left: 13px; top: 15px; width: 10px; height: 10px; border-radius: 50%; }
+.sr-insights li.good::before { background: #1E8E4E; } .sr-insights li.warn::before { background: #FFCB3D; } .sr-insights li.bad::before { background: #C0392B; }
+.sr-time-kpis { display: flex; gap: 16px; flex-wrap: wrap; font-size: .85rem; color: var(--muted); } .sr-time-kpis b { color: var(--ink); font-size: 1rem; }
+.sr-stack { display: grid; grid-template-columns: repeat(14, 1fr); gap: 6px; align-items: end; height: 170px; margin: 16px 0 14px; }
+.sr-col { display: grid; grid-template-rows: 1fr auto; height: 100%; gap: 4px; text-align: center; } .sr-col small { color: var(--muted); font-size: .7rem; }
+.sr-col-bar { align-self: end; display: flex; flex-direction: column-reverse; min-height: 3px; border-radius: 6px 6px 2px 2px; overflow: hidden; background: var(--track); }
+.sr-col-bar i { display: block; min-height: 2px; }
+.sr-split { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 20px; margin-bottom: 10px; }
+.sr-split > div { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: .86rem; font-weight: 600; }
+.sr-split span { display: inline-flex; align-items: center; gap: 8px; } .sr-split span i { width: 10px; height: 10px; border-radius: 3px; }
+.sr-split em { grid-column: 1 / -1; height: 6px; border-radius: 6px; background: var(--track); overflow: hidden; } .sr-split u { display: block; height: 100%; }

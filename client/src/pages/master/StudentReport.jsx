@@ -6,8 +6,94 @@ const pct = (a, b) => (b ? Math.round((a / b) * 100) : null);
 const tone = (p) => (p == null ? '' : p >= 80 ? 'hi' : p >= 50 ? 'mid' : 'lo');
 const when = (d) => (d ? fmtDate(d, { day: 'numeric', month: 'short' }) : '—');
 
-/** Everything a student did: activity, lessons, Question Bank, quizzes, vocabulary, Word Arena. */
+export const SECTIONS = {
+  lessons: ['Lessons', '#2A55E5'], quiz: ['Quizzes', '#8E5CF7'], mock: ['Take a quiz', '#C0392B'], qbank: ['Question Bank', '#1E8E4E'],
+  practice: ['Practice tests', '#F28B4E'], vocab: ['Vocabulary', '#E8A93C'], arena: ['Word Arena', '#3CCB9A'], placement: ['Placement', '#5C88FF'],
+  home: ['Dashboard', '#9AA3BF'], other: ['Other pages', '#C9CFDB'],
+};
+const mins = (sec) => Math.round(sec / 60);
+const fmtMin = (sec) => { const m = mins(sec); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
+const dayKey = (d) => d.toISOString().slice(0, 10);
+const daysBack = (n) => Array.from({ length: n }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (n - 1) + i); return dayKey(d); });
+
+/** Plain-language findings for the teacher. tone: good | warn | bad */
+function analyse(r) {
+  const out = [];
+  const last7 = new Set(daysBack(7)); const prev7 = new Set(daysBack(14).slice(0, 7));
+  const sum = (set) => r.time.filter((t) => set.has(t.day)).reduce((s, t) => s + t.seconds, 0);
+  const w = sum(last7); const pw = sum(prev7);
+  const activeDays = new Set(r.time.filter((t) => last7.has(t.day) && t.seconds >= 60).map((t) => t.day)).size;
+  if (!w) out.push(['bad', 'No time on the platform in the last 7 days.']);
+  else {
+    const change = pw ? Math.round(((w - pw) / pw) * 100) : null;
+    out.push([w >= 150 * 60 ? 'good' : w >= 60 * 60 ? 'warn' : 'bad', `${fmtMin(w)} on the platform this week${change == null ? '' : ` (${change >= 0 ? '+' : ''}${change}% vs the week before)`}.`]);
+    out.push([activeDays >= 5 ? 'good' : activeDays >= 3 ? 'warn' : 'bad', `Studied on ${activeDays} of the last 7 days${activeDays <= 2 ? ': not regular yet' : ''}.`]);
+  }
+  const by = {}; r.time.filter((t) => last7.has(t.day)).forEach((t) => { by[t.section] = (by[t.section] || 0) + t.seconds; });
+  const top = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
+  if (top && w) {
+    const share = Math.round((top[1] / w) * 100);
+    out.push([top[0] === 'arena' && share > 50 ? 'warn' : 'good', `Most time this week: ${SECTIONS[top[0]]?.[0] || top[0]} (${share}%).${top[0] === 'arena' && share > 50 ? ' Mostly games: ask for more Question Bank or Take a quiz.' : ''}`]);
+    if (!by.qbank && !by.mock && !by.quiz) out.push(['warn', 'No SAT question practice this week (Question Bank, Take a quiz or quizzes).']);
+  }
+  if (r.quizzes_available) out.push([r.quizzes.length >= r.quizzes_available ? 'good' : 'warn', `Finished ${new Set(r.quizzes.map((q) => q.title)).size} of ${r.quizzes_available} available teacher quizzes.`]);
+  if (r.vocab.due > 20) out.push(['warn', `${r.vocab.due} vocabulary words are waiting for review.`]);
+  else if (r.vocab.learned + r.vocab.learning === 0) out.push(['warn', 'Has not started Vocabulary yet.']);
+  const weak = r.qbank.skills.filter((x) => x.answered >= 3 && x.correct / x.answered < 0.5).map((x) => `${x.skill} (${Math.round((x.correct / x.answered) * 100)}%)`);
+  if (weak.length) out.push(['bad', `Weak skills: ${weak.slice(0, 3).join(', ')}.`]);
+  if (r.mocks.length >= 4) {
+    const avg = (a) => a.reduce((s, m) => s + m.score / m.total, 0) / a.length;
+    const d = Math.round((avg(r.mocks.slice(0, 2)) - avg(r.mocks.slice(2, 4))) * 100);
+    out.push([d >= 0 ? 'good' : 'bad', `Take a quiz trend: ${d >= 0 ? 'up' : 'down'} ${Math.abs(d)} points (last 2 vs previous 2).`]);
+  }
+  if (r.lessons.total) out.push([r.lessons.done / r.lessons.total >= 0.5 ? 'good' : 'warn', `Lessons: ${r.lessons.done} of ${r.lessons.total} steps done${r.lessons.last ? `, last on ${when(r.lessons.last)}` : ''}.`]);
+  return out;
+}
+
+function TimeBlock({ r }) {
+  const days = daysBack(14);
+  const per = Object.fromEntries(days.map((d) => [d, {}]));
+  r.time.forEach((t) => { if (per[t.day]) per[t.day][t.section] = (per[t.day][t.section] || 0) + t.seconds; });
+  const totals = days.map((d) => Object.values(per[d]).reduce((s, x) => s + x, 0));
+  const max = Math.max(60 * 30, ...totals);
+  const today = totals[totals.length - 1];
+  const week = totals.slice(7).reduce((s, x) => s + x, 0);
+  const active = totals.slice(7).filter((x) => x >= 60).length;
+  const month = {}; r.time.filter((t) => daysBack(28).includes(t.day)).forEach((t) => { month[t.section] = (month[t.section] || 0) + t.seconds; });
+  const mTotal = Object.values(month).reduce((s, x) => s + x, 0);
+  return (
+    <Card>
+      <div className="row between wrap" style={{ gap: 10 }}>
+        <h3 className="sr-h" style={{ margin: 0 }}>Time on the platform</h3>
+        <div className="sr-time-kpis"><span><b>{fmtMin(today)}</b> today</span><span><b>{fmtMin(week)}</b> this week</span><span><b>{active ? fmtMin(week / active) : '0 min'}</b> per active day</span></div>
+      </div>
+      {!r.time.length ? <p className="muted" style={{ marginTop: 12 }}>No time recorded yet. Time is counted from now on while the student uses the site.</p> : (
+        <>
+          <div className="sr-stack" role="img" aria-label="Minutes per day, last 14 days">
+            {days.map((d, i) => (
+              <div key={d} className="sr-col" title={`${d}: ${fmtMin(totals[i])}`}>
+                <div className="sr-col-bar" style={{ height: `${(totals[i] / max) * 100}%` }}>
+                  {Object.entries(per[d]).sort((a, b) => b[1] - a[1]).map(([sec, v]) => <i key={sec} style={{ flexGrow: v, background: SECTIONS[sec]?.[1] || '#ccc' }} />)}
+                </div>
+                <small>{new Date(d).getDate()}</small>
+              </div>
+            ))}
+          </div>
+          <div className="sr-split">
+            {Object.entries(month).sort((a, b) => b[1] - a[1]).map(([sec, v]) => (
+              <div key={sec}><span><i style={{ background: SECTIONS[sec]?.[1] }} />{SECTIONS[sec]?.[0] || sec}</span><b>{fmtMin(v)}</b><em><u style={{ width: `${(v / mTotal) * 100}%`, background: SECTIONS[sec]?.[1] }} /></em></div>
+            ))}
+          </div>
+          <small className="muted">Bars: last 14 days. Breakdown: last 28 days. Only active time counts (tab open and in use).</small>
+        </>
+      )}
+    </Card>
+  );
+}
+
+/** Everything a student did: time, activity, lessons, Question Bank, quizzes, vocabulary, Word Arena. */
 export default function StudentReport({ r }) {
+  const insights = analyse(r);
   const qbP = pct(r.qbank.correct, r.qbank.answered);
   const mockAvg = r.mocks.length ? pct(r.mocks.reduce((s, m) => s + m.score, 0), r.mocks.reduce((s, m) => s + m.total, 0)) : null;
   const lessonP = pct(r.lessons.done, r.lessons.total);
@@ -23,6 +109,11 @@ export default function StudentReport({ r }) {
 
   return (
     <div className="stack">
+      <Card className="sr-insights">
+        <h3 className="sr-h">Analysis</h3>
+        <ul>{insights.map(([t, text], i) => <li key={i} className={t}>{text}</li>)}</ul>
+      </Card>
+      <TimeBlock r={r} />
       <div className="sr-kpis">
         <Kpi label="Question Bank accuracy" value={qbP == null ? '—' : `${qbP}%`} sub={`${r.qbank.correct}/${r.qbank.answered} answers`} t={tone(qbP)} />
         <Kpi label="Take a quiz average" value={mockAvg == null ? '—' : `${mockAvg}%`} sub={`${r.mocks.length} quizzes`} t={tone(mockAvg)} />

@@ -52,6 +52,13 @@ await migrateSite();
 await migrateBot();
 await migrateVocab();
 await migrateQbankMocks();
+await db.exec(`
+CREATE TABLE IF NOT EXISTS user_activity (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, day DATE NOT NULL, section TEXT NOT NULL,
+  seconds INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, day, section)
+);
+ALTER TABLE user_activity ENABLE ROW LEVEL SECURITY;
+`);
 await migrateGame();
 await initSecret();
 await seedSite();
@@ -314,7 +321,9 @@ app.delete('/api/groups/:id', requireMaster, h(async (req, res) => {
 const studentRow = `SELECT u.id, u.name, u.login, u.email, u.provider, u.avatar_url, u.group_id, g.name AS group_name, u.target_english, u.target_math,
   u.exam_date, u.created_at, u.last_login_at, u.diagnostic_score, u.cefr, u.admitted, u.placement_at, u.sub_until, u.sub_plan,
   (SELECT MAX(finished_at) FROM attempts a WHERE a.user_id = u.id) AS last_active,
-  (SELECT COUNT(*) FROM attempts a WHERE a.user_id = u.id AND a.finished_at IS NOT NULL) AS attempts
+  (SELECT COUNT(*) FROM attempts a WHERE a.user_id = u.id AND a.finished_at IS NOT NULL) AS attempts,
+  (SELECT COALESCE(SUM(seconds), 0) FROM user_activity x WHERE x.user_id = u.id AND x.day > CURRENT_DATE - 7) AS week_seconds,
+  (SELECT MAX(day) FROM user_activity x WHERE x.user_id = u.id) AS last_seen_day
   FROM users u LEFT JOIN groups g ON g.id = u.group_id WHERE u.role = 'student'`;
 const withSub = (s) => ({ ...s, sub_active: subActive(s) });
 app.get('/api/students', requireMaster, h(async (req, res) => {
@@ -331,12 +340,25 @@ app.get('/api/students/:id', requireMaster, h(async (req, res) => {
   const payments = await db.all('SELECT * FROM payments WHERE user_id = ? ORDER BY created_at DESC', [s.id]);
   res.json({ ...withSub(s), payments });
 }));
+// time on the platform: the student app sends a ping every ~30 s while the tab is visible and in use
+const SECTIONS = ['home', 'lessons', 'quiz', 'practice', 'qbank', 'mock', 'vocab', 'arena', 'placement', 'other'];
+app.post('/api/activity', h(async (req, res) => {
+  if (req.user.role !== 'student') return res.json({ ok: true });
+  const section = SECTIONS.includes(req.body?.section) ? req.body.section : 'other';
+  const seconds = Math.max(0, Math.min(60, Math.round(Number(req.body?.seconds) || 0)));
+  if (seconds) await db.run(`INSERT INTO user_activity (user_id, day, section, seconds) VALUES (?, (now() AT TIME ZONE 'Asia/Tashkent')::date, ?, ?)
+    ON CONFLICT (user_id, day, section) DO UPDATE SET seconds = user_activity.seconds + EXCLUDED.seconds`, [req.user.id, section, seconds]);
+  res.json({ ok: true });
+}));
+
 // full report for the teacher: everything the student did on the platform
 app.get('/api/students/:id/report', requireMaster, h(async (req, res) => {
   const id = Number(req.params.id);
   if (!(await db.one("SELECT id FROM users WHERE id = ? AND role = 'student'", [id]))) return bad(res, 'Not found', 404);
   const num = (v) => Number(v || 0);
-  const [qb, qbTot, mocks, vocab, vtests, arena, lessons, checks, quizzes, days] = await Promise.all([
+  const [time, assigned, qb, qbTot, mocks, vocab, vtests, arena, lessons, checks, quizzes, days] = await Promise.all([
+    db.all(`SELECT to_char(day, 'YYYY-MM-DD') AS day, section, seconds FROM user_activity WHERE user_id = ? AND day > CURRENT_DATE - 56 ORDER BY day`, [id]),
+    db.one(`SELECT COUNT(*) AS n FROM quizzes q WHERE q.is_public OR EXISTS (SELECT 1 FROM quiz_groups qg JOIN users u ON u.group_id = qg.group_id WHERE qg.quiz_id = q.id AND u.id = ?)`, [id]).catch(() => ({ n: 0 })),
     db.all(`SELECT q.domain, q.skill, COUNT(*) AS n, SUM(CASE WHEN a.correct THEN 1 ELSE 0 END) AS ok
       FROM qbank_answers a JOIN qbank_questions q ON q.id = a.question_id WHERE a.user_id = ? GROUP BY q.domain, q.skill ORDER BY q.domain, q.skill`, [id]),
     db.one('SELECT COUNT(*) AS n, SUM(CASE WHEN correct THEN 1 ELSE 0 END) AS ok, MAX(answered_at) AS last FROM qbank_answers WHERE user_id = ?', [id]),
@@ -371,6 +393,8 @@ app.get('/api/students/:id/report', requireMaster, h(async (req, res) => {
     lessons: { total: num(lessons.total), done: num(lessons.done), last: lessons.last, checks },
     quizzes,
     days: days.map((d) => ({ day: d.day, n: num(d.n) })),
+    time: time.map((t) => ({ day: t.day, section: t.section, seconds: num(t.seconds) })),
+    quizzes_available: num(assigned.n),
   });
 }));
 app.post('/api/students', requireMaster, h(async (req, res) => {

@@ -50,7 +50,7 @@ export default function Students() {
               {shown.length === 0 ? <Empty icon={<IconUsers />} title={"No students found"} text={"Add a new student or change the filter."} /> : (
                 <div className="table-wrap">
                   <table className="t">
-                    <thead><tr><th>Student</th><th>Subscription</th><th>Placement</th><th>R&amp;W estimate</th><th>Accuracy</th><th>Joined</th><th /></tr></thead>
+                    <thead><tr><th>Student</th><th>Subscription</th><th>Placement</th><th>R&amp;W estimate</th><th>Accuracy</th><th>This week</th><th>Joined</th><th /></tr></thead>
                     <tbody>
                       {shown.map((s) => (
                         <tr key={s.id} className="click" onClick={() => nav(`/students/${s.id}`)}>
@@ -64,6 +64,7 @@ export default function Students() {
                           <td>{s.cefr ? <span className="row" style={{ gap: 6 }}><span className={`chip ${s.admitted ? 'good' : 'warn'}`}>{s.cefr}</span><b>{s.diagnostic_score}</b></span> : s.diagnostic_score != null ? <b>{s.diagnostic_score}</b> : <span className="muted">Not taken</span>}</td>
                           <td><b>{s.estimates.english ?? '—'}</b></td>
                           <td>{s.attempts ? <span className={`chip ${pctTone(s.accuracy)}`}>{s.accuracy}%</span> : <span className="muted">—</span>}</td>
+                          <td className="nowrap">{Number(s.week_seconds) >= 60 ? <b>{Math.round(s.week_seconds / 60)} min</b> : <span className="muted">—</span>}</td>
                           <td className="muted nowrap">{fmtDate(s.created_at)}</td>
                           <td className="actions" onClick={(e) => e.stopPropagation()}>
                             <button className="icon-btn sm" title={"Reset password"} aria-label={"Reset password"} onClick={() => resetPw(s)}><IconKey width={16} height={16} /></button>{' '}

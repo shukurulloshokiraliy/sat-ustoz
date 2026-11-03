@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import MockTaker from './pages/mock/MockTaker.jsx';
+import ActivityTracker from './components/ActivityTracker.jsx';
 import MockResult from './pages/mock/MockResult.jsx';
 import { useAuth } from './context.jsx';
 import { Spinner } from './components/ui.jsx';
@@ -66,6 +67,7 @@ export default function App() {
   // the placement test is optional: new students see an invitation on the dashboard, nothing is blocked
 
   return (
+    <>{user.role === 'student' && <ActivityTracker />}
     <Routes>
       {user.role === 'student' && <Route path="/quiz/:id" element={<QuizTaker />} />}
       {user.role === 'student' && <Route path="/placement/test" element={<PlacementTest />} />}
@@ -124,6 +126,6 @@ export default function App() {
         <Route path="signup" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
-    </Routes>
+    </Routes></>
   );
 }
