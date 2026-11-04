@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { corsOptions, securityHeaders, rateLimit, migrateSecurity, audit, weakPassword, clientIp } from './security.js';
 import multer from 'multer';
+import compression from 'compression';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -43,6 +44,8 @@ class HttpError extends Error { constructor(msg, status = 400) { super(msg); thi
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(securityHeaders);
+// gzip for pages, scripts and JSON (students are mostly on mobile data); Vercel's CDN also compresses static files
+app.use(compression({ threshold: 1024 }));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '5mb' }));
 // floods and scripted guessing: a general cap per IP, a tight one on sign-in / sign-up
@@ -1333,7 +1336,8 @@ app.delete('/api/portfolio/:id', requireStudent, h(async (req, res) => {
 // ---------- static client ----------
 const dist = path.join(__dirname, '..', '..', 'client', 'dist');
 if (fs.existsSync(dist)) {
-  app.use(express.static(dist, { extensions: ['html'] })); // /practice → practice.html (prerendered public pages)
+  app.use('/assets', express.static(path.join(dist, 'assets'), { immutable: true, maxAge: '365d' })); // hashed build files
+  app.use(express.static(dist, { extensions: ['html'], setHeaders: (res, file) => { if (/sw\.js$/.test(file)) res.setHeader('Cache-Control', 'no-cache'); } })); // /practice → practice.html (prerendered public pages)
   app.get(/^(?!\/api).*/, (req, res) => res.sendFile(path.join(dist, fs.existsSync(path.join(dist, 'app.html')) ? 'app.html' : 'index.html')));
 }
 

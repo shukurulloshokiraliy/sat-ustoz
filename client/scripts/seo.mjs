@@ -129,7 +129,6 @@ function render(pg) {
     `<meta property="og:image:width" content="1200" />`, `<meta property="og:image:height" content="630" />`, `<meta property="og:locale" content="en_US" />`, `<meta property="og:locale:alternate" content="uz_UZ" />`,
     `<meta name="twitter:card" content="summary_large_image" />`, `<meta name="twitter:title" content="${esc(pg.title)}" />`,
     `<meta name="twitter:description" content="${esc(pg.desc)}" />`, `<meta name="twitter:image" content="${SITE}/og.png" />`,
-    `<link rel="manifest" href="/site.webmanifest" />`, `<link rel="apple-touch-icon" href="/icon-192.png" />`,
     ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : '',
     STYLE,
   ].join('\n    ');
@@ -214,5 +213,14 @@ SAT Ustoz (also written SATUstoz, Ustoz SAT; Uzbek: "SAT tayyorlov onlayn platfo
 ## FAQ
 ${FAQ.map(([q, a]) => `### ${q}\n${a}`).join('\n\n')}
 `);
-fs.writeFileSync(path.join(DIST, 'site.webmanifest'), JSON.stringify({ name: 'SAT Ustoz — Online SAT Prep', short_name: 'SAT Ustoz', start_url: '/', display: 'standalone', background_color: '#161B3D', theme_color: '#2A55E5', icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }] }, null, 2));
+// installable app (PWA): "Add to Home screen" with the SAT Ustoz icon
+fs.writeFileSync(path.join(DIST, 'site.webmanifest'), JSON.stringify({
+  id: '/', name: 'SAT Ustoz — Online SAT Prep', short_name: 'SAT Ustoz', description: 'SAT Reading & Writing from 200 to 800: lessons, practice, mocks and vocabulary.',
+  start_url: '/?source=pwa', scope: '/', display: 'standalone', orientation: 'portrait', background_color: '#161B3D', theme_color: '#2A55E5', lang: 'en', categories: ['education'],
+  icons: [
+    { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+  ],
+  shortcuts: [{ name: 'My mistakes', url: '/mistakes' }, { name: 'Vocabulary', url: '/vocab' }, { name: 'Roadmap', url: '/roadmap' }],
+}, null, 2));
 console.log(`[seo] ${PAGES.length} pages, sitemap, robots, llms.txt → ${DIST} (site ${SITE})`);

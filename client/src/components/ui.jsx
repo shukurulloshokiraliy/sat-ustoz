@@ -265,7 +265,7 @@ export function Confetti({ count = 44 }) {
 }
 
 export const Avatar = ({ name, size = 36, src }) => {
-  if (src) return <img className="avatar" src={src} alt="" referrerPolicy="no-referrer" style={{ width: size, height: size, objectFit: 'cover' }} />;
+  if (src) return <img className="avatar" loading="lazy" decoding="async" src={src} alt="" referrerPolicy="no-referrer" style={{ width: size, height: size, objectFit: 'cover' }} />;
   const initials = (name || '?').split(/\s+/).slice(0, 2).map((s) => s[0]).join('').toUpperCase();
   let h = 0; for (const c of name || '') h = (h * 31 + c.charCodeAt(0)) % 360;
   return <span className="avatar" style={{ width: size, height: size, fontSize: size * 0.38, background: `linear-gradient(135deg, hsl(${h} 70% 62%), hsl(${(h + 40) % 360} 70% 52%))` }}>{initials}</span>;

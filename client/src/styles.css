@@ -2500,3 +2500,14 @@ tr.pf-idle td:first-child b { color: var(--bad); }
 .fm-conv { display: grid; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
 .fm-conv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .fm-conv textarea { font-family: ui-monospace, monospace; font-size: .88rem; }
+/* phones: fold the passage (prompt 12) */
+.bb-fold { display: none; }
+@media (max-width: 860px) {
+  .bb-fold { display: inline-flex; gap: 4px; align-items: center; position: sticky; top: -16px; z-index: 2; float: right; margin: -6px -6px 6px 8px; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--bb-line, var(--line)); background: var(--bb-bg, var(--surface)); color: inherit; font: 600 .8rem var(--font); cursor: pointer; min-height: 32px; }
+  .bb-split.folded .bb-fold svg { transform: rotate(180deg); }
+  .bb-split.folded { grid-template-rows: 52px 0 minmax(0, 1fr); }
+  .bb-split.folded .bb-left { overflow: hidden; padding-top: 10px; padding-bottom: 10px; }
+  .bb-split.folded .bb-left-body { opacity: .5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: 1.6em; }
+  .bb-split.folded .bb-divider { display: none; }
+}
+.offline-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; box-shadow: 0 4px 16px rgba(10,13,38,.15); padding: 8px 14px; text-align: center; font: 600 .85rem var(--font); background: var(--warn-soft); color: var(--ink); border-bottom: 1px solid var(--line); }

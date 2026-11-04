@@ -22,7 +22,7 @@ const ytId = (u) => String(u || '').match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([
 export function Video({ url }) {
   const id = ytId(url);
   if (!url) return null;
-  if (id) return <div className="pub-video"><iframe src={`https://www.youtube-nocookie.com/embed/${id}`} title="Video" allow="accelerometer; encrypted-media; picture-in-picture" allowFullScreen /></div>;
+  if (id) return <div className="pub-video"><iframe loading="lazy" src={`https://www.youtube-nocookie.com/embed/${id}`} title="Video" allow="accelerometer; encrypted-media; picture-in-picture" allowFullScreen /></div>;
   return <a className="btn soft" href={url} target="_blank" rel="noreferrer">▶ Watch the video</a>;
 }
 

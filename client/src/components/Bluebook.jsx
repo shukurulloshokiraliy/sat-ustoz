@@ -79,6 +79,7 @@ export function BBSplit({ left, right }) {
   const [w, setW] = useState(() => read('bb-split', 50)); // desktop: passage width %
   const [h, setH] = useState(() => read('bb-split-top', 45)); // phone: passage height %
   const box = useRef(null);
+  const [folded, setFolded] = useState(false); // phones: the passage can fold to one line to give the question room
   const drag = (e) => {
     e.preventDefault();
     const rect = box.current.getBoundingClientRect();
@@ -96,8 +97,11 @@ export function BBSplit({ left, right }) {
   };
   if (!left) return <div className="bb-single"><div className="bb-pane bb-right">{right}</div></div>;
   return (
-    <div className="bb-split" ref={box} style={{ '--bb-left': `${w}%`, '--bb-top': `${h}%` }}>
-      <section className="bb-pane bb-left" aria-label="Passage">{left}</section>
+    <div className={`bb-split ${folded ? 'folded' : ''}`} ref={box} style={{ '--bb-left': `${w}%`, '--bb-top': `${h}%` }}>
+      <section className="bb-pane bb-left" aria-label="Passage">
+        <button type="button" className="bb-fold" onClick={() => setFolded((f) => !f)} aria-expanded={!folded}>{folded ? 'Show passage' : 'Hide passage'}<IconChevron width={14} height={14} /></button>
+        <div className="bb-left-body">{left}</div>
+      </section>
       <div className="bb-divider" onPointerDown={drag} role="separator" aria-label="Drag to resize the passage and the question"><span /></div>
       <section className="bb-pane bb-right" aria-label="Question">{right}</section>
     </div>

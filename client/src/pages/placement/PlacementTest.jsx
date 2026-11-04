@@ -6,6 +6,7 @@ import { Confirm, ErrorBox, Spinner } from '../../components/ui.jsx';
 import { IconArrow, IconX, Logo } from '../../components/icons.jsx';
 import { withBlanks } from '../../lib.js';
 import { BBExam } from '../../components/Bluebook.jsx';
+import { sendWhenOnline, useOnReconnect } from '../../offline.js';
 
 const L = ['A', 'B', 'C', 'D', 'E'];
 const pad = (n) => String(n).padStart(2, '0');
@@ -61,11 +62,14 @@ function Runner({ test, initial }) {
     const t = setTimeout(save, 600);
     return () => clearTimeout(t);
   }, [answers, cur, att.id, save]);
+  const resave = useCallback(() => { if (dirty.current) save(); }, [save]);
+  useOnReconnect(resave);
+  useEffect(() => { const t = setInterval(resave, 15000); return () => clearInterval(t); }, [resave]);
 
   const advance = useCallback(async () => {
     setBusy(true);
     try {
-      const r = await api.post(`/placement/${att.id}/next`, { answers });
+      const r = await sendWhenOnline(() => api.post(`/placement/${att.id}/next`, { answers }), { onWait: () => toast('No connection. Your answers are safe and will be sent as soon as you are back online.') });
       if (r.done) {
         try { localStorage.removeItem('placement:' + att.id); } catch { /* ignore */ }
         await refresh().catch(() => {});

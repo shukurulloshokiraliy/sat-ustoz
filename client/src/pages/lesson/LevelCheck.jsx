@@ -7,6 +7,7 @@ import { IconArrow, IconCheck, IconX, Logo } from '../../components/icons.jsx';
 import { BBExam } from '../../components/Bluebook.jsx';
 import { rich } from '../../components/Rich.jsx';
 import ReportMistake from '../../components/ReportMistake.jsx';
+import { sendWhenOnline, useOnReconnect } from '../../offline.js';
 
 const L = ['A', 'B', 'C', 'D', 'E'];
 
@@ -32,7 +33,9 @@ export default function LevelCheck() {
 function Runner({ c }) {
   const nav = useNavigate();
   const toast = useToast();
-  const [answers, setAnswers] = useState(c.answers || {});
+  // answers live on the phone too (lost connection): merged with what the server has
+  const lsKey = 'lc:' + c.id;
+  const [answers, setAnswers] = useState(() => { try { return { ...(c.answers || {}), ...JSON.parse(localStorage.getItem(lsKey) || '{}') }; } catch { return c.answers || {}; } });
   const [cur, setCur] = useState(() => Math.max(0, c.questions.findIndex((q) => answers[q.id] == null)));
   const [confirm, setConfirm] = useState(false);
   const [exit, setExit] = useState(false);
@@ -49,14 +52,22 @@ function Runner({ c }) {
   const autoSent = useRef(false);
 
   const save = useCallback(() => { dirty.current = false; return api.put(`/lesson-checks/${c.id}`, { answers }).catch(() => { dirty.current = true; }); }, [c.id, answers]);
+  useEffect(() => { try { localStorage.setItem(lsKey, JSON.stringify(answers)); } catch { /* private mode */ } }, [answers, lsKey]);
   useEffect(() => { if (!dirty.current) return; const t = setTimeout(save, 500); return () => clearTimeout(t); }, [answers, save]);
+  // a save that failed offline is sent again when the connection is back (and every 15 s meanwhile)
+  const resave = useCallback(() => { if (dirty.current) save(); }, [save]);
+  useOnReconnect(resave);
+  useEffect(() => { const t = setInterval(resave, 15000); return () => clearInterval(t); }, [resave]);
 
   const pick = (i) => { dirty.current = true; setAnswers((a) => ({ ...a, [q.id]: i })); };
   const go = (i) => { if (i >= 0 && i < c.questions.length) { setCur(i); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
   const submit = async () => {
     setBusy(true);
-    try { await api.post(`/lesson-checks/${c.id}/submit`, { answers }); nav(`/lesson-check/${c.id}`, { replace: true }); }
-    catch (e) { toast(e.message, 'bad'); setBusy(false); }
+    try {
+      await sendWhenOnline(() => api.post(`/lesson-checks/${c.id}/submit`, { answers }), { onWait: () => toast('No connection. Your answers are safe and will be sent as soon as you are back online.') });
+      try { localStorage.removeItem(lsKey); } catch { /* ignore */ }
+      nav(`/lesson-check/${c.id}`, { replace: true });
+    } catch (e) { toast(e.message, 'bad'); setBusy(false); }
   };
 
   useEffect(() => {

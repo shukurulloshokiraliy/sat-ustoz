@@ -58,14 +58,14 @@ export function VideoPlayer({ url }) {
     </div>
   );
   if (/^bunny:/.test(url)) return <div className="video-soon"><div><b>Video uploaded</b><p>It plays here once Bunny Stream has finished preparing it.</p></div></div>;
-  if (/^https:\/\/(player|iframe)\.mediadelivery\.net\/embed\//.test(url)) return frame(<iframe src={`${url}${url.includes('?') ? '&' : '?'}autoplay=false&preload=true`} title="Video lesson" allow="accelerometer; gyroscope; encrypted-media; fullscreen" allowFullScreen />);
+  if (/^https:\/\/(player|iframe)\.mediadelivery\.net\/embed\//.test(url)) return frame(<iframe loading="lazy" src={`${url}${url.includes('?') ? '&' : '?'}autoplay=false&preload=true`} title="Video lesson" allow="accelerometer; gyroscope; encrypted-media; fullscreen" allowFullScreen />);
   const yt = youtubeId(url);
-  if (yt) return frame(<iframe src={`https://www.youtube-nocookie.com/embed/${yt}?rel=0&modestbranding=1&iv_load_policy=3`} title="Video lesson" allow="accelerometer; encrypted-media; gyroscope; fullscreen" allowFullScreen />);
+  if (yt) return frame(<iframe loading="lazy" src={`https://www.youtube-nocookie.com/embed/${yt}?rel=0&modestbranding=1&iv_load_policy=3`} title="Video lesson" allow="accelerometer; encrypted-media; gyroscope; fullscreen" allowFullScreen />);
   if (isFile(url)) return frame(<video src={url} controls preload="metadata" controlsList="nodownload noplaybackrate" disablePictureInPicture onContextMenu={(e) => e.preventDefault()} />);
   const drive = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]{20,})/)?.[1];
-  if (drive) return frame(<iframe src={`https://drive.google.com/file/d/${drive}/preview`} title="Video lesson" allow="autoplay; fullscreen" allowFullScreen />);
+  if (drive) return frame(<iframe loading="lazy" src={`https://drive.google.com/file/d/${drive}/preview`} title="Video lesson" allow="autoplay; fullscreen" allowFullScreen />);
   const vimeo = url.match(/vimeo\.com\/(?:video\/)?(\d+)/)?.[1];
-  if (vimeo) return frame(<iframe src={`https://player.vimeo.com/video/${vimeo}?dnt=1`} title="Video lesson" allow="fullscreen" allowFullScreen />);
+  if (vimeo) return frame(<iframe loading="lazy" src={`https://player.vimeo.com/video/${vimeo}?dnt=1`} title="Video lesson" allow="fullscreen" allowFullScreen />);
   if (/^https?:\/\//.test(url)) return <a className="btn soft" href={url} target="_blank" rel="noreferrer">Open the video</a>;
   return null;
 }

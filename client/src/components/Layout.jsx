@@ -1,10 +1,10 @@
 import { setSound, soundOn } from './uiSound.js';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useReveal } from './reveal.js';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth, useTheme } from '../context.jsx';
-import { Avatar } from './ui.jsx';
+import { Avatar, Spinner } from './ui.jsx';
 import SupportChat from './SupportChat.jsx';
 import {
   IconBookmark, IconBriefcase, IconChats, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
@@ -123,7 +123,7 @@ export default function Layout() {
           
           <button className="icon-btn" onClick={toggle} aria-label={"Toggle theme"}>{theme === 'dark' ? <IconSun /> : <IconMoon />}</button>
         </div>
-        <main className="main"><Outlet /></main>
+        <main className="main"><Suspense fallback={<div style={{ minHeight: '50vh', display: 'grid', placeItems: 'center' }}><Spinner /></div>}><Outlet /></Suspense></main>
         <SupportChat />
         <nav className="tabbar" aria-label="Quick menu">
           {(user.role === 'master' ? MASTER_TABS : STUDENT_TABS).map((n) => (

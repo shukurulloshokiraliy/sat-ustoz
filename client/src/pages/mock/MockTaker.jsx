@@ -7,6 +7,7 @@ import { BBFooter, BBNavigator, BBOptions, BBQuestionBar, BBReview, BBShell, BBS
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
 import { fmtMoney } from '../student/Subscribe.jsx';
+import { sendWhenOnline, useOnReconnect } from '../../offline.js';
 
 const L = ['A', 'B', 'C', 'D'];
 const DIRECTIONS = (
@@ -71,12 +72,16 @@ function Runner({ m, exam }) {
   const q = qs[cur];
 
   useEffect(() => { try { localStorage.setItem(key, JSON.stringify(ans)); } catch { /* private mode */ } }, [ans, key]);
-  useEffect(() => { const t = setTimeout(() => api.put(`/qbank/mock/${m.id}/progress`, { answers: ans }).catch(() => {}), 1500); return () => clearTimeout(t); }, [ans, m.id]);
+  const failed = useRef(false);
+  const push = useCallback((a) => api.put(`/qbank/mock/${m.id}/progress`, { answers: a }).then(() => { failed.current = false; }).catch(() => { failed.current = true; }), [m.id]);
+  useEffect(() => { const t = setTimeout(() => push(ans), 1500); return () => clearTimeout(t); }, [ans, push]);
+  const ansNow = useRef(ans); ansNow.current = ans;
+  useOnReconnect(useCallback(() => { if (failed.current) push(ansNow.current); }, [push]));
   const submit = useCallback(async () => {
     if (sent.current) return;
     sent.current = true;
     try {
-      await api.post(`/qbank/mock/${m.id}/submit`, { answers: ans });
+      await sendWhenOnline(() => api.post(`/qbank/mock/${m.id}/submit`, { answers: ans }), { onWait: () => toast('No connection. Your answers are safe and will be sent as soon as you are back online.') });
       try { localStorage.removeItem(key); } catch { /* ignore */ }
       nav(`/mock/${m.id}`, { replace: true });
     } catch (e) { sent.current = false; toast(e.message, 'bad'); }

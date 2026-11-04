@@ -1,59 +1,76 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import MockTaker from './pages/mock/MockTaker.jsx';
+import { OfflineBar } from './offline.js';
 import ActivityTracker from './components/ActivityTracker.jsx';
-import MockResult from './pages/mock/MockResult.jsx';
-import Leaderboard from './pages/student/Leaderboard.jsx';
-import Finance from './pages/master/Finance.jsx';
-import Progress from './pages/master/Progress.jsx';
-import Reports from './pages/master/Reports.jsx';
-import Mistakes, { MistakeReview } from './pages/student/Mistakes.jsx';
-import Assignments from './pages/student/Assignments.jsx';
-import FullMocks from './pages/fullmock/FullMocks.jsx';
-import FullMockTaker from './pages/fullmock/FullMockTaker.jsx';
-import FullMockResult from './pages/fullmock/FullMockResult.jsx';
-import FullMockAdmin from './pages/master/FullMockAdmin.jsx';
-import Consultations from './pages/student/Consultations.jsx';
-import ConsultationsAdmin from './pages/master/ConsultationsAdmin.jsx';
 import { useAuth } from './context.jsx';
 import { Spinner } from './components/ui.jsx';
 import Layout from './components/Layout.jsx';
-import Login from './pages/Login.jsx';
 import Dashboard from './pages/student/Dashboard.jsx';
-import Roadmap from './pages/student/Roadmap.jsx';
-import Quizzes from './pages/student/Quizzes.jsx';
-import Analytics from './pages/student/Analytics.jsx';
-import Saved from './pages/student/Saved.jsx';
-import Portfolio from './pages/student/Portfolio.jsx';
-import Profile from './pages/Profile.jsx';
-import QuizTaker from './pages/quiz/QuizTaker.jsx';
-import Result from './pages/quiz/Result.jsx';
-import Overview from './pages/master/Overview.jsx';
-import Students from './pages/master/Students.jsx';
-import StudentDetail from './pages/master/StudentDetail.jsx';
-import Groups from './pages/master/Groups.jsx';
-import QuizManager from './pages/master/QuizManager.jsx';
-import QuizEditor from './pages/master/QuizEditor.jsx';
-import RoadmapEditor from './pages/master/RoadmapEditor.jsx';
-import Settings from './pages/master/Settings.jsx';
-import Welcome from './pages/student/Welcome.jsx';
-import Subscribe from './pages/student/Subscribe.jsx';
-import PlacementTest from './pages/placement/PlacementTest.jsx';
-import PlacementResult from './pages/placement/PlacementResult.jsx';
-import Lesson from './pages/lesson/Lesson.jsx';
-import QuestionBank from './pages/qbank/QuestionBank.jsx';
-import QbankPractice from './pages/qbank/QbankPractice.jsx';
-import QbankAdmin from './pages/master/QbankAdmin.jsx';
-import LevelCheck, { LevelCheckResult } from './pages/lesson/LevelCheck.jsx';
-import PublicLayout from './pages/public/PublicLayout.jsx';
-import Landing from './pages/public/Landing.jsx';
-import Practice from './pages/public/Practice.jsx';
-import { AboutPage, PageView, SectionPage } from './pages/public/Pages.jsx';
-import Website from './pages/master/Website.jsx';
-import Support from './pages/master/Support.jsx';
-import VocabHome from './pages/vocab/VocabHome.jsx';
-import VocabUnit, { VocabReview } from './pages/vocab/VocabUnit.jsx';
-import GameHub from './pages/game/GameHub.jsx';
-import Play, { JoinCode } from './pages/game/Play.jsx';
+
+// pages load on demand: a smaller first download on mobile data (each page is its own file).
+// After a new deploy an open tab may ask for an old file name: reload once to get the new version.
+const page = (load) => lazy(() => load().then((m) => { try { sessionStorage.removeItem('chunk-reload'); } catch { /* ignore */ } return m; }).catch((e) => {
+  let again = false; try { again = !sessionStorage.getItem('chunk-reload'); sessionStorage.setItem('chunk-reload', '1'); } catch { /* ignore */ }
+  if (again && navigator.onLine) { window.location.reload(); return new Promise(() => {}); }
+  throw e;
+}));
+const MockTaker = page(() => import('./pages/mock/MockTaker.jsx'));
+const MockResult = page(() => import('./pages/mock/MockResult.jsx'));
+const Leaderboard = page(() => import('./pages/student/Leaderboard.jsx'));
+const Finance = page(() => import('./pages/master/Finance.jsx'));
+const Progress = page(() => import('./pages/master/Progress.jsx'));
+const Reports = page(() => import('./pages/master/Reports.jsx'));
+const Mistakes = page(() => import('./pages/student/Mistakes.jsx'));
+const MistakeReview = page(() => import('./pages/student/Mistakes.jsx').then((m) => ({ default: m.MistakeReview })));
+const Assignments = page(() => import('./pages/student/Assignments.jsx'));
+const FullMocks = page(() => import('./pages/fullmock/FullMocks.jsx'));
+const FullMockTaker = page(() => import('./pages/fullmock/FullMockTaker.jsx'));
+const FullMockResult = page(() => import('./pages/fullmock/FullMockResult.jsx'));
+const FullMockAdmin = page(() => import('./pages/master/FullMockAdmin.jsx'));
+const Consultations = page(() => import('./pages/student/Consultations.jsx'));
+const ConsultationsAdmin = page(() => import('./pages/master/ConsultationsAdmin.jsx'));
+const Roadmap = page(() => import('./pages/student/Roadmap.jsx'));
+const Quizzes = page(() => import('./pages/student/Quizzes.jsx'));
+const Analytics = page(() => import('./pages/student/Analytics.jsx'));
+const Saved = page(() => import('./pages/student/Saved.jsx'));
+const Portfolio = page(() => import('./pages/student/Portfolio.jsx'));
+const Profile = page(() => import('./pages/Profile.jsx'));
+const QuizTaker = page(() => import('./pages/quiz/QuizTaker.jsx'));
+const Result = page(() => import('./pages/quiz/Result.jsx'));
+const Students = page(() => import('./pages/master/Students.jsx'));
+const StudentDetail = page(() => import('./pages/master/StudentDetail.jsx'));
+const Groups = page(() => import('./pages/master/Groups.jsx'));
+const QuizManager = page(() => import('./pages/master/QuizManager.jsx'));
+const QuizEditor = page(() => import('./pages/master/QuizEditor.jsx'));
+const RoadmapEditor = page(() => import('./pages/master/RoadmapEditor.jsx'));
+const Settings = page(() => import('./pages/master/Settings.jsx'));
+const Welcome = page(() => import('./pages/student/Welcome.jsx'));
+const Subscribe = page(() => import('./pages/student/Subscribe.jsx'));
+const PlacementTest = page(() => import('./pages/placement/PlacementTest.jsx'));
+const PlacementResult = page(() => import('./pages/placement/PlacementResult.jsx'));
+const Lesson = page(() => import('./pages/lesson/Lesson.jsx'));
+const QuestionBank = page(() => import('./pages/qbank/QuestionBank.jsx'));
+const QbankPractice = page(() => import('./pages/qbank/QbankPractice.jsx'));
+const QbankAdmin = page(() => import('./pages/master/QbankAdmin.jsx'));
+const LevelCheck = page(() => import('./pages/lesson/LevelCheck.jsx'));
+const LevelCheckResult = page(() => import('./pages/lesson/LevelCheck.jsx').then((m) => ({ default: m.LevelCheckResult })));
+const Practice = page(() => import('./pages/public/Practice.jsx'));
+const AboutPage = page(() => import('./pages/public/Pages.jsx').then((m) => ({ default: m.AboutPage })));
+const PageView = page(() => import('./pages/public/Pages.jsx').then((m) => ({ default: m.PageView })));
+const SectionPage = page(() => import('./pages/public/Pages.jsx').then((m) => ({ default: m.SectionPage })));
+const Website = page(() => import('./pages/master/Website.jsx'));
+const Support = page(() => import('./pages/master/Support.jsx'));
+const VocabHome = page(() => import('./pages/vocab/VocabHome.jsx'));
+const VocabUnit = page(() => import('./pages/vocab/VocabUnit.jsx'));
+const VocabReview = page(() => import('./pages/vocab/VocabUnit.jsx').then((m) => ({ default: m.VocabReview })));
+const GameHub = page(() => import('./pages/game/GameHub.jsx'));
+const Play = page(() => import('./pages/game/Play.jsx'));
+const JoinCode = page(() => import('./pages/game/Play.jsx').then((m) => ({ default: m.JoinCode })));
+const Login = page(() => import('./pages/Login.jsx'));
+const Overview = page(() => import('./pages/master/Overview.jsx'));
+const PublicLayout = page(() => import('./pages/public/PublicLayout.jsx'));
+const Landing = page(() => import('./pages/public/Landing.jsx'));
+const Wait = () => <div style={{ minHeight: '60vh', display: 'grid', placeItems: 'center' }}><Spinner /></div>;
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -61,6 +78,7 @@ export default function App() {
   if (loading) return <div style={{ height: '100vh', display: 'grid', placeItems: 'center' }}><Spinner /></div>;
   // visitors: the website (home, free practice tests, guides) — sign-in only when they want it
   if (!user) return (
+    <Suspense fallback={<Wait />}><OfflineBar />
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Login />} />
@@ -74,12 +92,12 @@ export default function App() {
         <Route path="about" element={<AboutPage />} />
         <Route path="*" element={<Landing />} />
       </Route>
-    </Routes>
+    </Routes></Suspense>
   );
   // the placement test is optional: new students see an invitation on the dashboard, nothing is blocked
 
   return (
-    <>{user.role === 'student' && <ActivityTracker />}
+    <Suspense fallback={<Wait />}><OfflineBar />{user.role === 'student' && <ActivityTracker />}
     <Routes>
       {user.role === 'student' && <Route path="/quiz/:id" element={<QuizTaker />} />}
       {user.role === 'student' && <Route path="/placement/test" element={<PlacementTest />} />}
@@ -154,6 +172,6 @@ export default function App() {
         <Route path="signup" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
-    </Routes></>
+    </Routes></Suspense>
   );
 }

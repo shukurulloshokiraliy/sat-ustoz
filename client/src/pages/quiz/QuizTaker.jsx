@@ -7,6 +7,7 @@ import { BBFooter, BBNavigator, BBOptions, BBQuestionBar, BBReview, BBShell, BBS
 import PracticeTaker from './PracticeTaker.jsx';
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
+import { sendWhenOnline, useOnReconnect } from '../../offline.js';
 
 
 /** Loads (or resumes) the attempt, then shows the exam layout or the practice layout. */
@@ -61,10 +62,9 @@ function ExamTaker({ initial }) {
     let alive = true;
     Promise.resolve(initial).then((d) => {
       if (!alive) return;
+      // what the server has, plus anything chosen while the connection was lost
       let a = d.progress?.answers || {};
-      if (!Object.keys(a).length) {
-        try { a = JSON.parse(localStorage.getItem('draft:' + d.attempt.id) || '{}').answers || {}; } catch { /* ignore */ }
-      }
+      try { a = { ...a, ...(JSON.parse(localStorage.getItem('draft:' + d.attempt.id) || '{}').answers || {}) }; } catch { /* ignore */ }
       setAnswers(a);
       setCur(Math.min(d.attempt.current || 0, d.questions.length - 1));
       endAt.current = d.remaining != null ? Date.now() + d.remaining * 1000 : null;
@@ -96,6 +96,9 @@ function ExamTaker({ initial }) {
     const t = setTimeout(save, 500);
     return () => clearTimeout(t);
   }, [answers, cur, attemptId, save]);
+  const resave = useCallback(() => { if (dirty.current) save(); }, [save]);
+  useOnReconnect(resave);
+  useEffect(() => { const t = setInterval(resave, 15000); return () => clearInterval(t); }, [resave]);
   useEffect(() => {
     const f = () => document.visibilityState === 'hidden' && dirty.current && save();
     document.addEventListener('visibilitychange', f);
@@ -106,7 +109,7 @@ function ExamTaker({ initial }) {
     if (finishing.current) return;
     finishing.current = true;
     try {
-      const r = await api.post(`/attempts/${attemptId}/finish`, { progress: { answers } });
+      const r = await sendWhenOnline(() => api.post(`/attempts/${attemptId}/finish`, { progress: { answers } }), { onWait: () => toast('No connection. Your answers are safe and will be sent as soon as you are back online.') });
       try { localStorage.removeItem('draft:' + attemptId); } catch { /* ignore */ }
       if (data?.quiz?.kind === 'diagnostic') await refresh().catch(() => {});
       nav(`/result/${r.id}`, { replace: true });

@@ -24,3 +24,8 @@ createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </React.StrictMode>
 );
+
+// installable app + faster repeat visits (production only; the dev server must not be cached)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => { /* not supported here */ }); });
+}

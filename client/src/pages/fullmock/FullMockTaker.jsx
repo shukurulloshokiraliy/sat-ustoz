@@ -6,6 +6,7 @@ import { Confirm, ErrorBox, Spinner } from '../../components/ui.jsx';
 import { BBFooter, BBNavigator, BBOptions, BBQuestionBar, BBReview, BBShell, BBSplit, Highlightable, useElimination, useQuestionTimer } from '../../components/Bluebook.jsx';
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
+import { sendWhenOnline, useOnReconnect } from '../../offline.js';
 
 const L = ['A', 'B', 'C', 'D'];
 const DIRECTIONS = (
@@ -58,11 +59,12 @@ function Module({ a, onNext }) {
   useEffect(() => { const t = setTimeout(() => api.put(`/full-mocks/attempt/${a.id}`, { answers: ans, times: times.current }).catch(() => {}), 1500); return () => clearTimeout(t); }, [ans, a.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(() => !document.hidden && api.put(`/full-mocks/attempt/${a.id}`, { answers: ansRef.current, times: times.current }).catch(() => {}), 30000); return () => clearInterval(t); }, [a.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const ansRef = useRef(ans); ansRef.current = ans;
+  useOnReconnect(useCallback(() => api.put(`/full-mocks/attempt/${a.id}`, { answers: ansRef.current, times: times.current }).catch(() => {}), [a.id])); // eslint-disable-line react-hooks/exhaustive-deps
   const finish = useCallback(async () => {
     if (sent.current) return;
     sent.current = true;
     try {
-      const d = await api.post(`/full-mocks/attempt/${a.id}/next`, { answers: ans, times: times.current });
+      const d = await sendWhenOnline(() => api.post(`/full-mocks/attempt/${a.id}/next`, { answers: ans, times: times.current }), { onWait: () => toast('No connection. Your answers are safe and will be sent as soon as you are back online.') });
       try { localStorage.removeItem(key); } catch { /* ignore */ }
       onNext(d);
     } catch (e) { sent.current = false; toast(e.message, 'bad'); }
