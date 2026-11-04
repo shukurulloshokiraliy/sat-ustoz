@@ -74,6 +74,8 @@ await migrateGifs();
 await migrateFinance();
 await migrateAssignments();
 await migrateReserved();
+// roadmap history starts with today's roadmap, so even the first change can be undone
+if (!(await db.one('SELECT 1 AS x FROM roadmap_versions LIMIT 1'))) setTimeout(() => rmVersion({ user: { id: null, name: 'System' } }, 'Starting point'), 0);
 // keep exam questions out of practice: the first start scans every quiz and lesson check once
 if (!(await db.one("SELECT 1 AS x FROM settings WHERE key = '_reserved_v1'"))) {
   await scanReserved().catch((e) => console.error('[reserved]', e.message));
@@ -1263,8 +1265,6 @@ async function rmVersion(req, action) {
   } catch (e) { console.error('[roadmap version]', e.message); }
 }
 app.get('/api/roadmap/versions', requireMaster, h(async (req, res) => {
-  // the first time history is opened: keep today's roadmap as the starting point
-  if (!(await db.one('SELECT 1 AS x FROM roadmap_versions LIMIT 1'))) await rmVersion({ user: { id: null, name: 'System' } }, 'Starting point');
   res.json(await db.all("SELECT id, user_name, action, created_at, (length(data) > 0) AS ok FROM roadmap_versions ORDER BY id DESC LIMIT 60"));
 }));
 app.post('/api/roadmap/versions/:id/restore', requireMaster, h(async (req, res) => {
