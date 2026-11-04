@@ -2339,3 +2339,30 @@ body.menu-open .sc-fab, body.menu-open .sc-panel { display: none; }
   }
 }
 :root[data-theme='dark'] .pub, :root[data-theme='dark'] .pr { background: transparent; }
+
+/* ---------- login / sign-up on phones: compact, one tidy card ---------- */
+@media (max-width: 860px) {
+  .login { min-height: 100dvh; }
+  .login-form { place-items: start center; padding: 14px 14px 28px; }
+  .login-top { top: 14px; right: 14px; }
+  .login-top .btn.sm { padding: 7px 12px; font-size: .84rem; min-height: 0; }
+  .login-top .icon-btn { width: 38px; height: 38px; }
+  .login-card { gap: 12px; padding: 4px 0 0; }
+  .login-mark { display: flex; align-items: center; height: 40px; margin-bottom: 6px; }
+  .login-mark svg, .login-mark img { height: 26px; width: auto; }
+  .login-card h1 { font-size: 1.55rem; line-height: 1.15; margin: 4px 0 0; }
+  .login-card h1 + p { font-size: .88rem; margin-top: 4px !important; }
+  .login-card .segmented { padding: 3px; border-radius: 14px; }
+  .login-card .segmented button { padding: 9px 8px; font-size: .9rem; }
+  .login-card .field { gap: 4px; }
+  .login-card .field > span { font-size: .82rem; }
+  .login-card .field small { font-size: .74rem; line-height: 1.35; }
+  .login-card input { height: 46px; font-size: 16px; border-radius: 13px; padding: 0 14px; }
+  .login-card .pw-eye { font-size: .84rem; }
+  .login-card .btn.lg { height: 50px; padding: 0 16px; font-size: 1rem; border-radius: 14px; }
+  .login-card .agree { font-size: .86rem; padding: 10px 12px; border-radius: 13px; background: var(--surface-2); }
+  .login-card .or { margin: 2px 0; }
+  .login-card > p.center { margin: 2px 0 0; }
+}
+:root[data-theme='dark'] .segmented button.on { background: #343A7A; color: #fff; box-shadow: 0 2px 10px -4px rgba(0,0,0,.5); }
+@media (max-width: 860px) { .login-card .agree { padding: 8px 12px; } }
