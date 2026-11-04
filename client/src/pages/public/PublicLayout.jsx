@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useReveal } from '../../components/reveal.js';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth, useTheme } from '../../context.jsx';
-import { IconChevron, IconMenu, IconMoon, IconSun, IconX, Logo } from '../../components/icons.jsx';
+import { IconBolt, IconBook, IconChevron, IconCrown, IconUser, IconMenu, IconMoon, IconSun, IconX, Logo } from '../../components/icons.jsx';
 import SupportChat from '../../components/SupportChat.jsx';
 import { useSite } from './site.jsx';
 
@@ -52,6 +52,13 @@ export default function PublicLayout() {
           <Link to="/" className="pub-logo" aria-label="SAT Ustoz — home"><Logo size={24} tone={theme === "dark" ? "white" : "auto"} /></Link>
           <nav className={`pub-nav ${open ? 'open' : ''}`} aria-label="Site menu">
             {menus.map((m) => <Menu key={m.label} m={m} />)}
+            {/* phones: one short, flat list instead of the dropdown panels */}
+            <div className="pub-mnav">
+              <Link to="/practice"><IconBolt width={20} height={20} /><span><b>Free practice test</b><small>27 questions · score estimate</small></span></Link>
+              {sections.map((s) => <Link key={s.id} to={`/s/${s.id}`}><IconBook width={20} height={20} /><span><b>{s.label}</b><small>{pagesOf(s.id).length} {pagesOf(s.id).length === 1 ? 'page' : 'pages'}</small></span></Link>)}
+              <Link to="/#pricing" onClick={() => { setOpen(false); setTimeout(() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }), 80); }}><IconCrown width={20} height={20} /><span><b>Pricing</b><small>Free and 4 plans</small></span></Link>
+              <Link to="/about"><IconUser width={20} height={20} /><span><b>About</b><small>Who teaches here</small></span></Link>
+            </div>
             <NavLink to="/about" className="pub-nav-link">About</NavLink>
             <Link to="/#pricing" className="pub-nav-link" onClick={() => setTimeout(() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }), 60)}>Pricing</Link>
             <div className="pub-nav-mobile-cta">
@@ -71,6 +78,7 @@ export default function PublicLayout() {
           </div>
         </div>
       </header>
+      {open && <div className="pub-scrim" onClick={() => setOpen(false)} aria-hidden="true" />}
       <main className="pub-main"><Outlet /></main>
       <SupportChat />
       <footer className="pub-foot">

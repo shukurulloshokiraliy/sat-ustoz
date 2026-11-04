@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getConfig } from '../../config.js';
 import { useAuth } from '../../context.jsx';
@@ -6,6 +6,7 @@ import { Spinner } from '../../components/ui.jsx';
 import { IconArrow, IconCheck } from '../../components/icons.jsx';
 import { useSite } from './site.jsx';
 import ScoreCalc from './ScoreCalc.jsx';
+import { tierPerks } from '../student/Subscribe.jsx';
 
 const money = (n) => Number(n || 0).toLocaleString('ru-RU').replace(/,/g, ' ');
 
@@ -91,27 +92,7 @@ export default function Landing() {
       </section>
 
       {/* ---------- pricing ---------- */}
-      <section className="pub-wrap" id="pricing">
-        <h2 className="pub-h2">Simple pricing</h2>
-        <div className="pub-prices">
-          <div className="pub-price">
-            <small>Free</small><b>0</b><span>forever</span>
-            <ul><li><IconCheck /> Unlimited practice tests</li><li><IconCheck /> Explanations and Ustoz tips</li><li><IconCheck /> Readiness check</li><li><IconCheck /> First roadmap lessons</li></ul>
-            <Link className="btn ghost lg block" to="/practice">Take a free test</Link>
-          </div>
-          <div className="pub-price hot">
-            <span className="ribbon">Most popular</span>
-            <small>Month</small><b>{money(cfg?.prices?.month || 149000)}</b><span>{cfg?.prices?.currency || 'UZS'} / month</span>
-            <ul><li><IconCheck /> Full roadmap 200 → 800</li><li><IconCheck /> Video lessons and notes</li><li><IconCheck /> Whole Question Bank</li><li><IconCheck /> Mock exams, analytics</li></ul>
-            <Link className="btn sun lg block" to={trial}>{h.cta_primary}</Link>
-          </div>
-          <div className="pub-price">
-            <small>3 months</small><b>{money(cfg?.prices?.quarter || 399000)}</b><span>{cfg?.prices?.currency || 'UZS'} / 3 months</span>
-            <ul><li><IconCheck /> Everything in Month</li><li><IconCheck /> Best value</li><li><IconCheck /> Enough time for +150</li></ul>
-            <Link className="btn ghost lg block" to={trial}>Choose</Link>
-          </div>
-        </div>
-      </section>
+      <Pricing cfg={cfg} trial={trial} />
 
       {/* ---------- final CTA ---------- */}
       <section className="pub-final">
@@ -123,5 +104,42 @@ export default function Landing() {
         </div>
       </section>
     </>
+  );
+}
+
+/** Plans: free + 4 paid plans. On phones the cards are a swipeable slider with dots. */
+function Pricing({ cfg, trial }) {
+  const [at, setAt] = useState(0);
+  const rail = useRef(null);
+  if (!cfg?.tiers) return null;
+  const cur = cfg.prices?.currency || 'UZS';
+  const cards = [
+    { id: 'free', name: 'Free', price: 0, perks: [[true, `${cfg.free.q_day} questions a day`], [true, 'Free practice tests'], [true, `${cfg.free.fm_week} full mock a week`], [true, 'First roadmap lessons']] },
+    ...cfg.tiers.map((t) => ({ ...t, perks: tierPerks(t).filter(([on]) => on) })),
+  ];
+  const onScroll = () => {
+    const el = rail.current; if (!el) return;
+    const w = el.firstElementChild?.getBoundingClientRect().width || 1;
+    setAt(Math.round(el.scrollLeft / (w + 12)));
+  };
+  const go = (i) => { const el = rail.current; const c = el?.children[i]; if (c) el.scrollTo({ left: c.offsetLeft - el.offsetLeft, behavior: 'smooth' }); };
+  return (
+    <section className="pub-wrap" id="pricing">
+      <h2 className="pub-h2">Simple pricing</h2>
+      <div className="pub-prices tiers5" ref={rail} onScroll={onScroll}>
+        {cards.map((t, i) => (
+          <div key={t.id} className={`pub-price ${i === 3 ? 'hot' : ''}`}>
+            {i === 3 && <span className="ribbon">Most popular</span>}
+            <small>{i === 0 ? 'Start' : `Plan ${i}`}</small>
+            <h3 className="pp-name">{t.name}</h3>
+            <b>{t.price ? money(t.price) : '0'}</b><span>{t.price ? `${cur} / month` : 'forever'}</span>
+            <ul>{t.perks.map(([, x]) => <li key={x}><IconCheck /> {x}</li>)}</ul>
+            <Link className={`btn ${i === 3 ? 'sun' : 'ghost'} lg block`} to={i === 0 ? '/practice' : trial}>{i === 0 ? 'Take a free test' : 'Choose'}</Link>
+          </div>
+        ))}
+      </div>
+      <div className="pp-dots" aria-hidden="true">{cards.map((c, i) => <button key={c.id} className={at === i ? 'on' : ''} onClick={() => go(i)} tabIndex={-1} />)}</div>
+      <p className="muted center pp-note">Swipe to see every plan · extra full mock {money(cfg.fm_extra_price)} {cur} from your wallet</p>
+    </section>
   );
 }

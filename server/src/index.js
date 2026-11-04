@@ -20,7 +20,7 @@ import { registerLessons } from './course/lessons.js';
 import { registerQbank, syncQbank, migrateQbankMocks } from './qbank.js';
 import { registerFullMocks, migrateFullMocks } from './fullmock.js';
 import { registerVideo, playUrl, isBunny } from './video.js';
-import { registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails } from './tiers.js';
+import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
 import { migrateSite, seedSite, registerSitePublic, registerSiteAdmin } from './site.js';
@@ -177,6 +177,7 @@ app.get('/api/config', h(async (req, res) => {
     google: !!(process.env.GOOGLE_CLIENT_ID || s.google_client_id),
     telegram_bot: s.telegram_bot,
     prices: { month: +s.price_month || 0, quarter: +s.price_quarter || 0, currency: s.currency },
+    tiers: readTiers(s), free: tierOf({ role: 'student' }, s), fm_extra_price: Number(s.fm_extra_price) || 0,
   });
 }));
 
