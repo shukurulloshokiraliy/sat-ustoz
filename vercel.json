@@ -17,8 +17,8 @@
       "destination": "/api/index"
     },
     {
-      "source": "/((?!assets/|characters/).*)",
-      "destination": "/app.html"
+      "source": "/(.*)",
+      "destination": "/app"
     }
   ],
   "cleanUrls": true,
