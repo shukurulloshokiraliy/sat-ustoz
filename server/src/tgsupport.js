@@ -51,13 +51,14 @@ export const CATS = {
 export const MENU = {
   plans: '💳 Obuna',
   mine: '📊 Mening obunam',
+  wallet: '👛 Hamyon',
   question: '💬 Savol berish',
   idea: '💡 Taklif',
   complaint: '⚠️ Shikoyat',
   faq: "❓ Ko'p so'raladigan savollar",
 };
 export const menuKeyboard = () => ({
-  keyboard: [[{ text: MENU.plans }, { text: MENU.mine }], [{ text: MENU.question }, { text: MENU.idea }], [{ text: MENU.complaint }, { text: MENU.faq }]],
+  keyboard: [[{ text: MENU.plans }, { text: MENU.wallet }], [{ text: MENU.mine }, { text: MENU.faq }], [{ text: MENU.question }, { text: MENU.idea }], [{ text: MENU.complaint }]],
   resize_keyboard: true, is_persistent: true,
 });
 

@@ -1916,3 +1916,9 @@ em.hi, .sr-bars i.hi { background: #1E8E4E; } em.mid, .sr-bars i.mid { backgroun
 .vup { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .vup-bar { flex: 1; min-width: 120px; height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; } .vup-bar i { display: block; height: 100%; background: var(--primary); transition: width .3s; }
 .vup-ok { color: var(--good); font-weight: 600; }
+.wallet-col { display: grid; gap: 10px; align-content: start; }
+.paycard.wallet { width: 100%; max-width: 420px; background: radial-gradient(circle at 15% 0%, rgba(255,203,61,.35), transparent 45%), linear-gradient(135deg, #161B3D 0%, #2A55E5 120%); }
+.wallet-logo { font: 800 1.15rem var(--display); letter-spacing: -.01em; } .wallet-logo i { font-style: normal; font-size: .62rem; background: #FFCB3D; color: #161B3D; border-radius: 6px; padding: 1px 6px; margin-left: 4px; vertical-align: super; }
+.wallet-bal { align-self: center; display: grid; z-index: 1; } .wallet-bal small { font-size: .66rem; text-transform: uppercase; letter-spacing: .1em; opacity: .7; } .wallet-bal span { font: 800 1.8rem var(--display); color: #FFCB3D; }
+.mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: .04em; text-transform: none !important; }
+.warn-text { color: var(--warn); font-weight: 600; font-size: .88rem; }

@@ -235,7 +235,7 @@ function RequestsCard() {
             <div key={r.id} className={`tg-req ${r.status}`}>
               <div className="grow">
                 <b>№{r.id} · {r.name}</b> <small className="muted">{r.email || r.login}</small>
-                <div className="muted" style={{ fontSize: '.86rem' }}>{r.plan === 'quarter' ? '3 months' : '1 month'} · {money(r.amount)} {r.currency} · {new Date(r.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                <div className="muted" style={{ fontSize: '.86rem' }}>{r.plan === 'topup' ? 'Wallet top-up' : { t1: 'Plan 1', t2: 'Plan 2', t3: 'Plan 3', t4: 'Plan 4', quarter: '3 months' }[r.plan] || '1 month'} · {money(r.amount)} {r.currency} · {new Date(r.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                 {img[r.id] && <img src={img[r.id]} alt={`Receipt ${r.id}`} className="tg-img" />}
               </div>
               <div className="row wrap" style={{ gap: 6 }}>

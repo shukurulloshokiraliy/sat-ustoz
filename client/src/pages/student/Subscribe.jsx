@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth, useToast } from '../../context.jsx';
 import { api, fmtDate } from '../../api.js';
 import { getConfig } from '../../config.js';
-import { Card, Field, Gate, PageHeader, useAsync } from '../../components/ui.jsx';
+import { Card, Field, Gate, Modal, PageHeader, Segmented, useAsync } from '../../components/ui.jsx';
 import { IconCheck, IconCopy, IconCrown, IconSend, IconX } from '../../components/icons.jsx';
 
 export const fmtMoney = (n, cur) => `${Number(n || 0).toLocaleString('en-US').replace(/,/g, ' ')} ${cur === 'UZS' ? "so'm" : cur || ''}`.trim();
@@ -38,8 +38,9 @@ export function PayCard({ card }) {
 }
 
 export default function Subscribe() {
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const toast = useToast();
+  const [buy, setBuy] = useState(null);
   const st = useAsync(() => Promise.all([api.get('/plans'), api.get('/me/balance')]), []);
   const [cfg, setCfg] = useState(null);
   const [opening, setOpening] = useState(false);
@@ -66,11 +67,13 @@ export default function Subscribe() {
                 <p className="muted" style={{ fontSize: '.88rem' }}>{user.sub_active ? `Active until ${fmtDate(user.sub_until)}.` : `Free: ${p.free.q_day} questions a day and ${p.free.fm_week} full mock a week.`}</p>
               </div>
             </Card>
-            <Card className="sub-bal">
-              <small className="muted">Balance</small>
-              <b className="sub-plan">{fmtMoney(bal.balance, p.currency)}</b>
-              <p className="muted" style={{ fontSize: '.88rem' }}>One extra full mock beyond your weekly limit: {fmtMoney(p.fm_extra_price, p.currency)}.</p>
-            </Card>
+            <div className="wallet-col">
+              <WalletCard no={bal.wallet_no} name={user.name} balance={fmtMoney(bal.balance, p.currency)} />
+              <div className="row wrap" style={{ gap: 8 }}>
+                {cfg?.telegram_bot ? <button className="btn primary" disabled={opening} onClick={pay}><IconSend width={16} height={16} /> Top up in Telegram</button> : <a className="btn primary" href="#pay">Top up</a>}
+                <small className="muted" style={{ flex: 1, minWidth: 180 }}>Any amount. Use it for plans, extra full mocks ({fmtMoney(p.fm_extra_price, p.currency)}) and, soon, books.</small>
+              </div>
+            </div>
           </div>
 
           <div className="tiers stagger">
@@ -81,8 +84,9 @@ export default function Subscribe() {
                 <b className="tier-name">{t.name}</b>
                 <div className="price">{fmtMoney(t.price, p.currency)}<small> / month</small></div>
                 <ul className="tier-perks">{tierPerks(t).map(([on, x]) => <li key={x} className={on ? '' : 'off'}>{on ? <IconCheck width={16} height={16} /> : <IconX width={14} height={14} />}{x}</li>)}</ul>
+                {bal.balance >= t.price && <button className="btn primary" onClick={() => setBuy(t)}>{t.id === tierId ? 'Extend from wallet' : 'Buy from wallet'}</button>}
                 {t.id === tierId ? <span className="chip good" style={{ justifySelf: 'start' }}><IconCheck width={14} height={14} /> Your plan</span>
-                  : cfg?.telegram_bot ? <button className="btn primary" disabled={opening} onClick={pay}><IconSend width={18} height={18} /> Pay via Telegram</button>
+                  : bal.balance >= t.price ? null : cfg?.telegram_bot ? <button className="btn primary" disabled={opening} onClick={pay}><IconSend width={18} height={18} /> Pay via Telegram</button>
                     : <a className="btn soft" href="#pay">Pay by card</a>}
               </Card>
             ))}
@@ -102,6 +106,7 @@ export default function Subscribe() {
           </Card>
 
           <Extras access={user.access} />
+          {buy && <BuyModal tier={buy} balance={bal.balance} currency={p.currency} onClose={() => setBuy(null)} onDone={() => { setBuy(null); st.reload(); refresh(); }} />}
 
           {bal.history.length > 0 && (
             <Card>
@@ -116,6 +121,41 @@ export default function Subscribe() {
         </>
       )}</Gate>
     </div>
+  );
+}
+
+/** The student's own wallet on the platform, drawn as a card. */
+export function WalletCard({ no, name, balance }) {
+  return (
+    <div className="paycard wallet">
+      <div className="paycard-top"><span className="wallet-logo">SAT<i>Ustoz</i></span><b>WALLET</b></div>
+      <div className="wallet-bal"><small>Balance</small><span>{balance}</span></div>
+      <div className="paycard-bottom"><div><small>Owner</small><span>{name}</span></div><div style={{ textAlign: 'right' }}><small>Wallet No.</small><span className="mono">{no}</span></div></div>
+    </div>
+  );
+}
+
+/** Pay a plan from the wallet: 1, 3 or 6 months, one confirmation, charged once. */
+function BuyModal({ tier, balance, currency, onClose, onDone }) {
+  const toast = useToast();
+  const { user } = useAuth();
+  const [months, setMonths] = useState(1);
+  const [busy, setBusy] = useState(false);
+  const [key] = useState(() => Math.random().toString(36).slice(2) + Date.now().toString(36));
+  const total = tier.price * months;
+  const go = async () => {
+    setBusy(true);
+    try { const r = await api.post('/plans/buy', { plan: tier.id, months, key: `${key}-${months}` }); toast(`${tier.name} is active until ${fmtDate(r.until)}`); onDone(); }
+    catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); }
+  };
+  return (
+    <Modal title={`${tier.name} from your wallet`} onClose={onClose}
+      footer={<><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn primary" disabled={busy || total > balance} onClick={go}>Pay {fmtMoney(total, currency)}</button></>}>
+      <Segmented value={months} onChange={setMonths} options={[1, 3, 6].map((m) => ({ value: m, label: `${m} month${m > 1 ? 's' : ''}` }))} />
+      <p className="muted">Wallet: {fmtMoney(balance, currency)} → after payment {fmtMoney(Math.max(0, balance - total), currency)}.</p>
+      {total > balance && <p className="bad-text">Not enough in the wallet for {months} months.</p>}
+      {user.sub_active && user.access?.tier?.id !== tier.id && <p className="warn-text">Your current plan ({user.access?.tier?.name}, until {fmtDate(user.sub_until)}) is replaced by {tier.name} from today.</p>}
+    </Modal>
   );
 }
 

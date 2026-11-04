@@ -10,7 +10,7 @@
  * Teacher: connects the bot in Settings (token from @BotFather), then sends `/admin CODE` to the bot once
  *   to receive payment requests.
  */
-import { readTiers } from './tiers.js';
+import { readTiers, moveBalance, walletNo, buyPlan, MIN_TOPUP, MAX_TOPUP } from './tiers.js';
 import crypto from 'node:crypto';
 import { db, getSettings } from './db.js';
 import { getSecret, subActive } from './auth.js';
@@ -109,10 +109,54 @@ async function showPlans(chat, user) {
   const head = active
     ? `✅ <b>${esc(user.name)}</b>, obunangiz <b>${day(user.sub_until)}</b> gacha faol.\nUzaytirish uchun tarifni tanlang:`
     : `👋 Assalomu alaykum, <b>${esc(user.name)}</b>!\n\n<b>SAT Ustoz</b> obunasi: to'liq roadmap, video darslar, butun Question Bank, mock imtihonlar va cheksiz practice testlar.\n\nTarifni tanlang:`;
-  await send(chat, head, { reply_markup: { inline_keyboard: ps.map((p) => [{ text: `${p.label} — ${money(p.amount, p.currency)}`, callback_data: `plan:${p.id}` }]) } });
+  const bal = Number((await db.one('SELECT balance FROM users WHERE id = ?', [user.id]))?.balance || 0);
+  await send(chat, `${head}\n\n👛 Hamyon: <b>${money(bal)}</b>`, { reply_markup: { inline_keyboard: [
+    ...ps.map((p) => [{ text: `${p.label} — ${money(p.amount, p.currency)}`, callback_data: `plan:${p.id}` }]),
+    [{ text: "👛 Hamyonni to'ldirish", callback_data: 'topup' }],
+  ] } });
 }
 
-async function chooseMethod(chat, planId) {
+/** Wallet: balance, wallet number and a top-up button. */
+async function showWallet(chat, user) {
+  const u = await db.one('SELECT balance FROM users WHERE id = ?', [user.id]);
+  const last = await db.all('SELECT amount, reason, created_at FROM balance_ledger WHERE user_id = ? ORDER BY id DESC LIMIT 5', [user.id]);
+  const why = { top_up: "To'ldirish", full_mock: 'Full mock', subscription: 'Obuna', correction: 'Tuzatish', book: 'Kitob' };
+  await send(chat, [
+    `👛 <b>SAT Ustoz hamyoni</b>`,
+    `Raqam: <code>${walletNo(user.id)}</code>`,
+    `Egasi: <b>${esc(user.name)}</b>`,
+    `Balans: <b>${money(u?.balance)}</b>`,
+    '',
+    "Hamyondagi pul platformada qoladi: obuna, qo'shimcha full mock va (tez orada) kitoblar uchun ishlatasiz.",
+    last.length ? `\n<b>Oxirgi amallar</b>\n${last.map((x) => `${day(x.created_at)} · ${why[x.reason] || x.reason} · ${x.amount > 0 ? '+' : ''}${money(x.amount)}`).join('\n')}` : '',
+  ].filter((x) => x !== '').join('\n'), { reply_markup: { inline_keyboard: [[{ text: "➕ Hamyonni to'ldirish", callback_data: 'topup' }], [{ text: '💳 Obuna olish', callback_data: 'plans' }]] } });
+}
+
+async function askTopup(chat) {
+  const s = await getSettings();
+  if (!s.pay_card) return send(chat, "To'lov kartasi hali kiritilmagan — ustoz tez orada qo'shadi.");
+  await setState(chat, { topup: true });
+  return send(chat, `Hamyonga qancha so'm qo'shmoqchisiz? Faqat raqam yozing (masalan <b>100000</b>).\nKamida ${money(MIN_TOPUP)}.`, { reply_markup: { inline_keyboard: [[{ text: 'Bekor qilish', callback_data: 'cancel' }]] } });
+}
+
+async function topupCard(chat, amount) {
+  const s = await getSettings();
+  await setState(chat, {});
+  await setKey(`_tg_wait_${chat}`, JSON.stringify({ plan: 'topup', amount, at: Date.now() }));
+  await send(chat, [
+    `👛 <b>Hamyonni to'ldirish</b>`,
+    '',
+    `Karta: <code>${esc(s.pay_card)}</code>`,
+    s.pay_holder ? `Egasi: <b>${esc(s.pay_holder)}</b>` : null,
+    `Summa: <b>${money(amount)}</b>`,
+    '',
+    `1️⃣ Shu kartaga aynan shu summani o'tkazing.`,
+    `2️⃣ <b>Chek rasmini (skrinshot) shu yerga yuboring.</b>`,
+    `3️⃣ O'qituvchi tasdiqlashi bilan pul hamyoningizga tushadi.`,
+  ].filter((x) => x !== null).join('\n'));
+}
+
+async function chooseMethod(chat, planId, user = null) {
   const p = (await plans()).find((x) => x.id === planId);
   if (!p) return send(chat, 'Bu tarif topilmadi. /start bosing.');
   const payToken = await getKey('_tg_pay_token');
@@ -120,6 +164,10 @@ async function chooseMethod(chat, planId) {
   const rows = [];
   if (payToken) rows.push([{ text: '💳 Click / Payme orqali (avtomatik)', callback_data: `click:${p.id}` }]);
   if (s.pay_card) rows.push([{ text: '🏦 Karta orqali o\'tkazish', callback_data: `card:${p.id}` }]);
+  if (user) {
+    const bal = Number((await db.one('SELECT balance FROM users WHERE id = ?', [user.id]))?.balance || 0);
+    if (bal >= p.amount) rows.unshift([{ text: `👛 Hamyondan to'lash (${money(bal)})`, callback_data: `wallet:${p.id}` }]);
+  }
   if (!rows.length) return send(chat, "To'lov kartasi hali kiritilmagan — ustoz tez orada qo'shadi. Savolingiz bo'lsa, «💬 Savol berish» tugmasini bosing.");
   await send(chat, `<b>${p.label}</b> — ${money(p.amount, p.currency)}\nTo'lov usulini tanlang:`, { reply_markup: { inline_keyboard: rows } });
 }
@@ -159,15 +207,17 @@ async function receipt(chat, user, msg) {
   if (!wait || Date.now() - wait.at > 3 * 86400e3) {
     return send(chat, "Avval tarifni tanlang, keyin chek rasmini yuboring. /start");
   }
-  const p = (await plans()).find((x) => x.id === wait.plan);
-  if (!p) return send(chat, 'Tarif topilmadi. /start');
+  const p = wait.plan === 'topup'
+    ? { id: 'topup', label: "Hamyonni to'ldirish", days: 0, amount: Math.round(wait.amount), currency: 'UZS' }
+    : (await plans()).find((x) => x.id === wait.plan);
+  if (!p || !p.amount) return send(chat, 'Tarif topilmadi. /start');
   const photo = msg.photo?.[msg.photo.length - 1];
   const file_id = photo?.file_id || msg.document?.file_id;
   const kind = photo ? 'photo' : 'document';
   const r = await db.run('INSERT INTO tg_requests (user_id, chat_id, plan, days, amount, currency, method, file_id, file_kind) VALUES (?,?,?,?,?,?,?,?,?) RETURNING id',
     [user.id, String(chat), p.id, p.days, p.amount, p.currency, 'card', file_id, kind]);
   await setKey(`_tg_wait_${chat}`, '');
-  await send(chat, `✅ Chek qabul qilindi (№${r.id}). O'qituvchi tekshirib, obunangizni yoqadi — odatda bir necha daqiqada. Bot sizga xabar beradi.`);
+  await send(chat, `✅ Chek qabul qilindi (№${r.id}). O'qituvchi tekshirib, ${p.id === 'topup' ? "pulni hamyoningizga qo'shadi" : 'obunangizni yoqadi'} — odatda bir necha daqiqada. Bot sizga xabar beradi.`);
   // to the teacher(s)
   const caption = `🧾 <b>To'lov cheki №${r.id}</b>\n👤 ${esc(user.name)} (${esc(user.email || user.login)})\n📦 ${p.label} — ${money(p.amount, p.currency)}\n${subActive(user) ? `Hozirgi obuna: ${day(user.sub_until)} gacha` : 'Hozir obunasi yo\'q'}`;
   const kb = { inline_keyboard: [[{ text: '✅ Tasdiqlash', callback_data: `ok:${r.id}` }, { text: '❌ Rad etish', callback_data: `no:${r.id}` }]] };
@@ -188,11 +238,17 @@ export async function decide(id, ok, by) {
   if (!r) throw Object.assign(new Error('Request not found'), { status: 404 });
   if (r.status !== 'pending') return { already: r.status, r };
   let until = null;
-  if (ok) until = await activate(r.user_id, { plan: r.plan, days: r.days, amount: r.amount, currency: r.currency, provider: 'card', note: `Telegram chek №${r.id}` });
-  await db.run('UPDATE tg_requests SET status = ?, decided_at = now(), decided_by = ? WHERE id = ?', [ok ? 'approved' : 'rejected', String(by || ''), id]);
-  await send(r.chat_id, ok
-    ? `🎉 To'lov tasdiqlandi! Obunangiz <b>${day(until)}</b> gacha faol.\nSaytga kiring va o'qishni davom ettiring. Omad! 💪`
-    : `❌ Chek №${r.id} tasdiqlanmadi. Summani va kartani tekshirib, qayta yuboring yoki o'qituvchingizga yozing.`);
+  let balance = null;
+  // claim the request first so two clicks (Telegram + website) can never credit twice
+  const claimed = await db.one("UPDATE tg_requests SET status = ?, decided_at = now(), decided_by = ? WHERE id = ? AND status = 'pending' RETURNING id", [ok ? 'approved' : 'rejected', String(by || ''), id]);
+  if (!claimed) return { already: (await db.one('SELECT status FROM tg_requests WHERE id = ?', [id])).status, r };
+  if (ok && r.plan === 'topup') balance = await db.tx((t) => moveBalance(t, r.user_id, r.amount, 'top_up', { note: `Telegram chek №${r.id}`, ref: `tg:${r.id}` }));
+  else if (ok) until = await activate(r.user_id, { plan: r.plan, days: r.days, amount: r.amount, currency: r.currency, provider: 'card', note: `Telegram chek №${r.id}` });
+  await send(r.chat_id, !ok
+    ? `❌ Chek №${r.id} tasdiqlanmadi. Summani va kartani tekshirib, qayta yuboring yoki o'qituvchingizga yozing.`
+    : r.plan === 'topup'
+      ? `🎉 Hamyoningizga <b>${money(r.amount)}</b> qo'shildi. Balans: <b>${money(balance)}</b>.\nUni saytda obuna, qo'shimcha mock va kitoblar uchun ishlatasiz.`
+      : `🎉 To'lov tasdiqlandi! Obunangiz <b>${day(until)}</b> gacha faol.\nSaytga kiring va o'qishni davom ettiring. Omad! 💪`);
   // update the teacher messages
   let msgs = [];
   try { msgs = JSON.parse(r.admin_msgs || '[]'); } catch {}
@@ -244,7 +300,15 @@ async function handle(u) {
     const user = await db.one('SELECT * FROM users WHERE tg_chat_id = ?', [String(chat)]);
     if (!user) return send(chat, "Avval saytga kiring: Subscription → <b>Pay via Telegram</b> tugmasini bosing.");
     if (act === 'plans') return showPlans(chat, user);
-    if (act === 'plan') return chooseMethod(chat, arg);
+    if (act === 'plan') return chooseMethod(chat, arg, user);
+    if (act === 'topup') return askTopup(chat);
+    if (act === 'wallet') {
+      try {
+        const r = await buyPlan(user.id, arg, 1, `tg-${q.id}`);
+        const p = (await plans()).find((x) => x.id === arg);
+        return send(chat, `🎉 ${p?.label || 'Obuna'} hamyondan to'landi. Obuna <b>${day(r.until)}</b> gacha faol. Hamyonda qoldi: <b>${money(r.balance)}</b>.`);
+      } catch (e) { return send(chat, e.status === 402 ? "Hamyonda pul yetarli emas. Avval to'ldiring." : 'Xatolik yuz berdi, qayta urinib ko\'ring.', { reply_markup: { inline_keyboard: [[{ text: "👛 Hamyonni to'ldirish", callback_data: 'topup' }]] } }); }
+    }
     if (act === 'card') return cardInfo(chat, arg);
     if (act === 'click') return sendInvoice(chat, user, arg);
     return;
@@ -321,6 +385,16 @@ async function handle(u) {
     const site = await getKey('_site_url');
     return send(chat, "Obuna uchun saytga kiring → <b>Subscription</b> → <b>Pay via Telegram</b>. Bot hisobingizni taniydi va tariflarni ko'rsatadi.",
       site ? { reply_markup: { inline_keyboard: [[{ text: 'Saytni ochish', url: `${site}/subscribe` }]] } } : {});
+  }
+  if (text === MENU.wallet) {
+    const user = await linked();
+    if (!user) return send(chat, "Hisobingiz hali ulanmagan: saytda <b>Plans</b> → <b>Pay via Telegram</b> tugmasini bosing.");
+    return showWallet(chat, user);
+  }
+  if (st.topup && text) {
+    const n = Math.round(Number(text.replace(/[\s,._']/g, '')));
+    if (!Number.isFinite(n) || n < MIN_TOPUP || n > MAX_TOPUP) return send(chat, `Faqat raqam yozing: ${money(MIN_TOPUP)} dan ${money(MAX_TOPUP)} gacha. Masalan <b>100000</b>.`);
+    return topupCard(chat, n);
   }
   if (text === MENU.mine) {
     const user = await linked();

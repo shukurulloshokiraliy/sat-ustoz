@@ -115,10 +115,14 @@ export function registerTiers(app, { h, bad, requireMaster, requireStudent }) {
       card: s.pay_card ? { number: s.pay_card, holder: s.pay_holder } : null, live: s.live_note || '' });
   }));
 
+  app.post('/api/plans/buy', requireStudent, h(async (req, res) => {
+    res.json(await buyPlan(req.user.id, req.body?.plan, req.body?.months, req.body?.key));
+  }));
+
   app.get('/api/me/balance', h(async (req, res) => {
     const u = await db.one('SELECT balance FROM users WHERE id = ?', [req.user.id]);
     const rows = await db.all('SELECT amount, balance_after, reason, note, created_at FROM balance_ledger WHERE user_id = ? ORDER BY id DESC LIMIT 30', [req.user.id]);
-    res.json({ balance: Number(u?.balance || 0), history: rows });
+    res.json({ balance: Number(u?.balance || 0), wallet_no: walletNo(req.user.id), history: rows });
   }));
   // teacher: top up (or correct) a student's balance — the only way money is added
   app.post('/api/students/:id/balance', requireMaster, h(async (req, res) => {
@@ -191,3 +195,36 @@ export async function noteFail(key) {
     first_at = CASE WHEN auth_fails.first_at > now() - interval '${FAIL_WINDOW_MIN} minutes' THEN auth_fails.first_at ELSE now() END`, [key]);
 }
 export const clearFails = (key) => db.run('DELETE FROM auth_fails WHERE key = ?', [key]);
+
+/* ---------- wallet ---------- */
+/** The student's wallet number on the platform (not a bank card): SU 0000 0000 0012. */
+export const walletNo = (id) => `SU ${String(id).padStart(12, '0').replace(/(\d{4})(?=\d)/g, '$1 ')}`;
+export const MIN_TOPUP = 5000;
+export const MAX_TOPUP = 10_000_000;
+
+/**
+ * Buy a plan from the wallet: one transaction takes the money and extends the subscription.
+ * `key` (a random id from the client) makes a double click charge only once.
+ */
+export async function buyPlan(userId, tierId, months, key) {
+  const s = await getSettings();
+  const tier = readTiers(s).find((t) => t.id === tierId);
+  if (!tier || !tier.price) throw Object.assign(new Error('Choose a plan'), { status: 400 });
+  months = [1, 3, 6, 12].includes(Number(months)) ? Number(months) : 1;
+  const price = tier.price * months;
+  if (key && (await db.one('SELECT id FROM balance_ledger WHERE ref = ?', [`buy:${userId}:${String(key).slice(0, 40)}`]))) {
+    const u = await db.one('SELECT sub_until, balance FROM users WHERE id = ?', [userId]);
+    return { until: u.sub_until, balance: Number(u.balance), plan: tier.id, already: true };
+  }
+  return db.tx(async (t) => {
+    const u = await t.one('SELECT * FROM users WHERE id = ? FOR UPDATE', [userId]);
+    const after = await moveBalance(t, userId, -price, 'subscription', { note: `${tier.name} · ${months} mo`, ref: key ? `buy:${userId}:${String(key).slice(0, 40)}` : null });
+    if (after == null) throw Object.assign(new Error('Not enough money in your wallet. Top it up first.'), { status: 402 });
+    const active = subActive(u) && u.sub_plan === tier.id;
+    const from = active ? new Date(u.sub_until) : new Date();
+    const until = new Date(from.getTime() + months * 30 * 86400e3).toISOString();
+    await t.run('UPDATE users SET sub_until = ?, sub_plan = ? WHERE id = ?', [until, tier.id, userId]);
+    await t.run("INSERT INTO payments (user_id, provider, plan, days, amount, currency, note) VALUES (?, 'wallet', ?, ?, ?, ?, ?)", [userId, tier.id, months * 30, price, s.currency || 'UZS', `From wallet · ${tier.name}`]);
+    return { until, balance: after, plan: tier.id };
+  });
+}
