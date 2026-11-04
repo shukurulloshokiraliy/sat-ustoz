@@ -1,3 +1,4 @@
+import PracticeTabs from '../../components/PracticeTabs.jsx';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api.js';
@@ -12,6 +13,7 @@ export default function QuestionBank() {
   const st = useAsync(() => api.get('/qbank'), []);
   return (
     <div className="page">
+      <PracticeTabs />
       <Gate state={st}>{(d) => <Bank d={d} />}</Gate>
     </div>
   );

@@ -157,9 +157,9 @@ const cleanSeed = (s) => String(s || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 3
 
 /** The visible pool for one visit: a stable random part (pool_percent %) of the active bank. */
 async function poolIds(seed, cfg) {
-  const total = Number((await db.one('SELECT COUNT(*) AS n FROM qbank_questions WHERE active')).n);
+  const total = Number((await db.one('SELECT COUNT(*) AS n FROM qbank_questions WHERE active AND NOT premium')).n);
   const size = Math.max(Math.min(total, cfg.test_size), Math.ceil((total * Math.min(100, Math.max(10, cfg.pool_percent))) / 100));
-  const rows = await db.all('SELECT id FROM qbank_questions WHERE active ORDER BY md5(id || ?) LIMIT ?', [seed, size]);
+  const rows = await db.all('SELECT id FROM qbank_questions WHERE active AND NOT premium ORDER BY md5(id || ?) LIMIT ?', [seed, size]);
   return { ids: rows.map((r) => r.id), total };
 }
 
@@ -201,7 +201,7 @@ export function registerSitePublic(app, { h, bad, secret }) {
   app.get('/api/public/site', h(async (req, res) => {
     const [home, faq, sections, practice, about] = await Promise.all(['home', 'faq', 'sections', 'practice', 'about'].map(getBlock));
     const pages = await db.all('SELECT id, section, slug, title, summary, emoji FROM site_pages WHERE published ORDER BY section, position, id');
-    const q = await db.one('SELECT COUNT(*) AS n FROM qbank_questions WHERE active');
+    const q = await db.one('SELECT COUNT(*) AS n FROM qbank_questions WHERE active AND NOT premium');
     const st = await db.one("SELECT COUNT(*) AS n FROM users WHERE role = 'student'");
     const tests = await db.one('SELECT COUNT(*) AS n FROM practice_sessions WHERE finished_at IS NOT NULL');
     res.json({ home, faq, about, sections: sections.filter((s) => s.enabled), pages, practice,
@@ -243,7 +243,7 @@ export function registerSitePublic(app, { h, bad, secret }) {
     const q = await quota(req, u, cfg);
     const size = q.unlimited ? cfg.test_size : Math.min(cfg.test_size, q.left);
     if (size < 3) return bad(res, 'You have used today’s free questions. The limit resets 24 hours after your first test — or get unlimited practice with a subscription.', 429, { code: 'daily_limit', quota: pubQuota(q) });
-    const rows = await db.all(`SELECT * FROM qbank_questions WHERE active AND id = ANY(?::text[])
+    const rows = await db.all(`SELECT * FROM qbank_questions WHERE active AND NOT premium AND id = ANY(?::text[])
       ${skills.length ? 'AND skill_id = ANY(?::text[])' : ''} ${levels.length ? 'AND difficulty = ANY(?::text[])' : ''}
       ORDER BY random() LIMIT ?`, [ids, ...(skills.length ? [skills] : []), ...(levels.length ? [levels] : []), size]);
     if (rows.length < 3) return bad(res, 'Not enough questions for these filters today — choose more skills or levels.');
@@ -291,7 +291,7 @@ export function registerSiteAdmin(app, { h, bad, requireMaster }) {
       SUM(CASE WHEN finished_at IS NOT NULL AND user_id IS NULL THEN 1 ELSE 0 END) AS guests,
       AVG(CASE WHEN finished_at IS NOT NULL AND total > 0 THEN score * 100.0 / total END) AS avg_pct,
       SUM(CASE WHEN started_at > now() - interval '7 days' THEN 1 ELSE 0 END) AS week FROM practice_sessions`);
-    const bank = await db.one('SELECT COUNT(*) AS n FROM qbank_questions WHERE active');
+    const bank = await db.one('SELECT COUNT(*) AS n FROM qbank_questions WHERE active AND NOT premium');
     res.json({ blocks, pages, stats: { started: Number(stats.started || 0), finished: Number(stats.finished || 0), guests: Number(stats.guests || 0), week: Number(stats.week || 0), avg_pct: stats.avg_pct == null ? null : Math.round(stats.avg_pct), bank: Number(bank.n) } });
   }));
   app.put('/api/site/blocks/:key', requireMaster, h(async (req, res) => {

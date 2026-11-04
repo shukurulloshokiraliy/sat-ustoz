@@ -1,3 +1,5 @@
+import ReportMistake from '../../components/ReportMistake.jsx';
+import PracticeTabs from '../../components/PracticeTabs.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../api.js';
@@ -79,6 +81,7 @@ export default function Practice() {
 
   return (
     <div className="pt-hub">
+      <PracticeTabs />
       <section className="pt-hub-head">
         <div>
           <small className="eyebrow">FREE PRACTICE TEST · NO SIGN-UP</small>
@@ -321,6 +324,7 @@ function ReviewItem({ x, n }) {
       </ul>
       {x.explanation && <p className="muted">{rich(x.explanation)}</p>}
       {x.tip && <div className="tip"><b>Ustoz tip:</b> {rich(x.tip)}</div>}
+      <ReportMistake about={`Practice test question ${x.id} (${x.skill})`} />
     </div>
   );
 }

@@ -185,7 +185,6 @@ const TERMS_MSG = 'Please accept the terms of use (oferta) to continue';
 
 app.post('/api/auth/login', h(async (req, res) => {
   const { login, password } = req.body || {};
-  if (req.body?.accept_terms !== true) return bad(res, TERMS_MSG);
   const id = String(login || '').trim().toLowerCase();
   const failKey = `login:${id}`;
   if (id && (await tooManyFails(failKey))) return bad(res, 'Too many wrong passwords. Wait 15 minutes and try again.', 429);
@@ -201,7 +200,7 @@ app.post('/api/auth/login', h(async (req, res) => {
     await audit({ ...req, user: u }, 'login', `teacher ${u.id}`);
     if (!seen) notifyAdmins(`🔐 Teacher account signed in from a new network. IP: ${clientIp(req)}. If this was not you, change the password and press “Sign out everywhere”.`);
   }
-  await db.run('UPDATE users SET last_login_at = now(), terms_accepted_at = COALESCE(terms_accepted_at, now()) WHERE id = ?', [u.id]);
+  await db.run('UPDATE users SET last_login_at = now() WHERE id = ?', [u.id]);
   res.json({ token: signToken(u) });
 }));
 
@@ -227,7 +226,6 @@ app.post('/api/auth/register', h(async (req, res) => {
 }));
 
 app.post('/api/auth/google', h(async (req, res) => {
-  if (req.body?.accept_terms !== true) return bad(res, TERMS_MSG);
   const g = await verifyGoogleCredential(req.body?.credential, (await getSettings()).google_client_id);
   let u = await db.one('SELECT * FROM users WHERE email = ? OR login = ?', [g.email, g.email]);
   if (!u && (await emailTaken(g.email))) {
@@ -236,8 +234,10 @@ app.post('/api/auth/google', h(async (req, res) => {
     u = all.find((x) => canonEmail(x.email) === canonEmail(g.email)) || null;
   }
   if (u) {
-    await db.run("UPDATE users SET last_login_at = now(), terms_accepted_at = COALESCE(terms_accepted_at, now()), avatar_url = CASE WHEN avatar_url = '' THEN ? ELSE avatar_url END WHERE id = ?", [g.avatar, u.id]);
+    await db.run("UPDATE users SET last_login_at = now(), avatar_url = CASE WHEN avatar_url = '' THEN ? ELSE avatar_url END WHERE id = ?", [g.avatar, u.id]);
   } else {
+    // a new account: the oferta is accepted once, when the account is created
+    if (req.body?.accept_terms !== true) return bad(res, 'New account: tick “I agree to the oferta” to create it', 400, { code: 'terms_required' });
     const r = await db.run(
       "INSERT INTO users (name, login, email, password_hash, role, provider, avatar_url, last_login_at, terms_accepted_at) VALUES (?,?,?,NULL,'student','google',?, now(), now()) RETURNING id, role",
       [g.name, g.email, g.email, g.avatar]

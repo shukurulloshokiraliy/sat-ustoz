@@ -227,8 +227,10 @@ export function registerSupportWeb(app, { h, bad }, ctx) {
     let me = webIdentity(req);
     let text = String(req.body?.text || '').trim().slice(0, 2000);
     if (!text) return bad(res, 'Write a message first');
+    // "Report a mistake" in a question: open to every signed-in student
+    if (req.body?.report && me.userId) text = `[Mistake report: ${String(req.body.report).slice(0, 300)}]\n${text}`;
     // "Ask the teacher" about a question: a plan feature (Video plan and higher)
-    if (req.body?.about) {
+    else if (req.body?.about) {
       const full = me.userId ? await db.one('SELECT * FROM users WHERE id = ?', [me.userId]) : null;
       if (!full || !tierOf(full, await getSettings()).ask) return bad(res, 'Asking the teacher about questions comes with the Video plan and higher', 402, { code: 'subscription_required' });
       text = `[About: ${String(req.body.about).slice(0, 300)}]\n${text}`;

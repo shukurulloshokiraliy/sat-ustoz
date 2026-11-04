@@ -6,6 +6,7 @@ import { IconArrow } from '../../components/icons.jsx';
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
 import AskTeacher from '../../components/AskTeacher.jsx';
+import ReportMistake from '../../components/ReportMistake.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
 const GROUP = { 'Words in Context': 'Words in Context', 'Text Structure and Purpose': 'Reading', 'Cross-Text Connections': 'Reading', 'Central Ideas and Details': 'Reading',
@@ -64,7 +65,7 @@ function Result({ m }) {
             </ul>
             {q.explanation && <p className="muted">{rich(q.explanation)}</p>}
             {q.tip && <div className="tip"><b>Ustoz tip:</b> {rich(q.tip)}</div>}
-            <AskTeacher about={`Take a quiz #${m.id}, question ${i + 1} (${q.skill}): ${String(q.prompt).slice(0, 120)}`} />
+            <div className="row wrap" style={{ gap: 8 }}><AskTeacher about={`Take a quiz #${m.id}, question ${i + 1} (${q.skill}): ${String(q.prompt).slice(0, 120)}`} /><ReportMistake about={`Question ${q.id} (${q.skill})`} /></div>
           </Card>
         ))}
         {!list.length && <p className="muted">Nothing here.</p>}

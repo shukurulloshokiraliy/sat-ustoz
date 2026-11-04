@@ -1933,3 +1933,9 @@ em.hi, .sr-bars i.hi { background: #1E8E4E; } em.mid, .sr-bars i.mid { backgroun
 .consult-hist { display: grid; } .consult-hist > div { display: grid; grid-template-columns: 180px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .consult-card { display: grid; gap: 8px; }
 @media (max-width: 600px) { .consult-hist > div { grid-template-columns: 1fr auto; } .consult-hist > div span:nth-child(2) { display: none; } }
+.ptabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); margin-bottom: 14px; }
+.ptabs a { display: inline-flex; gap: 8px; align-items: center; padding: 9px 16px; border-radius: 10px; color: var(--muted); font-weight: 700; text-decoration: none; font-size: .92rem; }
+.ptabs a.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(22,27,61,.12); }
+.fm-sec { font-size: 1.15rem; margin: 6px 0 -4px; }
+.key-fix { margin-left: 8px; font-size: .78rem; opacity: .6; } .key-fix:hover { opacity: 1; }
+.ask-t.report { color: var(--muted); }

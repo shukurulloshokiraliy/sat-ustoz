@@ -24,7 +24,7 @@ export default function Login() {
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const submit = async (e) => {
     e.preventDefault();
-    if (!agree) return needAgree();
+    if (mode === 'signup' && !agree) return needAgree();
     if (mode === 'signup' && form.name.trim().split(/\s+/).filter((w) => w.length >= 2).length < 2) { setErr('Please write your real first and last name (e.g. Aziz Karimov).'); return; }
     if (mode === 'signup' && form.password !== form.password2) { setErr('Passwords do not match'); return; }
     setBusy(true); setErr('');
@@ -36,10 +36,14 @@ export default function Login() {
     finally { setBusy(false); }
   };
   const google = async (credential) => {
-    if (!agree) return needAgree();
+    if (mode === 'signup' && !agree) return needAgree();
     setErr(''); setBusy(true);
-    try { await googleLogin(credential); window.history.replaceState(null, '', '/'); }
-    catch (ex) { setErr(ex.message); }
+    try { await googleLogin(credential, mode === 'signup' && agree); window.history.replaceState(null, '', '/'); }
+    catch (ex) {
+      // a Google account that is new here: creating the account needs the oferta once
+      if (ex.data?.code === 'terms_required') { setMode('signup'); setTimeout(() => { setErr('This Google account is new here. Tick “I agree to the oferta”, then press the Google button again to create your account.'); setNudge(true); setTimeout(() => setNudge(false), 900); }, 50); }
+      else setErr(ex.message);
+    }
     finally { setBusy(false); }
   };
 
@@ -61,15 +65,15 @@ export default function Login() {
             <p className="muted" style={{ marginTop: 6 }}>{mode === 'signup' ? 'Free practice tests, your results saved, a roadmap to 800.' : 'Sign in to continue your SAT prep.'}</p>
           </div>
           <Segmented value={mode} onChange={setMode} options={[{ value: 'signin', label: 'Sign in' }, { value: 'signup', label: 'Create account' }]} />
-          <label className={`agree ${nudge ? 'nudge' : ''}`}>
+          {mode === 'signup' && <label className={`agree ${nudge ? 'nudge' : ''}`}>
             <input type="checkbox" checked={agree} onChange={(e) => { setAgree(e.target.checked); if (e.target.checked) setErr(''); }} />
             <span>I agree to the <a href="/p/oferta" target="_blank" rel="noreferrer">oferta (terms of use)</a></span>
-          </label>
+          </label>}
           {cfg?.google && (
             <>
-              <div className={`google-gate ${agree ? '' : 'locked'}`}>
+              <div className={`google-gate ${agree || mode !== 'signup' ? '' : 'locked'}`}>
                 <GoogleButton clientId={cfg.googleClientId} mode={mode} theme={theme} onCredential={google} onError={setErr} />
-                {!agree && <button type="button" className="google-cover" onClick={needAgree} aria-label="Accept the oferta first" />}
+                {!agree && mode === 'signup' && <button type="button" className="google-cover" onClick={needAgree} aria-label="Accept the oferta first" />}
               </div>
               <div className="or"><span>or</span></div>
             </>

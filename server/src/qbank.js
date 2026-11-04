@@ -50,7 +50,8 @@ async function upsertBank(file, src) {
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT (id) DO UPDATE SET domain = EXCLUDED.domain, skill_id = EXCLUDED.skill_id, skill = EXCLUDED.skill, difficulty = EXCLUDED.difficulty,
           passage = EXCLUDED.passage, data_table = EXCLUDED.data_table, prompt = EXCLUDED.prompt, options = EXCLUDED.options, answer = EXCLUDED.answer,
-          explanation = EXCLUDED.explanation, tip = EXCLUDED.tip, position = EXCLUDED.position, src = EXCLUDED.src`,
+          explanation = EXCLUDED.explanation, tip = EXCLUDED.tip, position = EXCLUDED.position, src = EXCLUDED.src
+        WHERE qbank_questions.edited IS NOT TRUE`,
       [id, sk.domain, sk.id, sk.name, q.difficulty, q.passage || '', q.table ? JSON.stringify(q.table) : '', q.prompt, JSON.stringify(q.options.map(String)), q.answer,
         q.explanation || '', q.tip || '', (src === 'bundled' ? 0 : 1000) + i, src]);
     }
@@ -91,6 +92,8 @@ const LV = { easy: 0, medium: 1, hard: 2 };
 
 export async function migrateQbankMocks() {
   await db.exec(`
+ALTER TABLE qbank_questions ADD COLUMN IF NOT EXISTS premium BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE qbank_questions ADD COLUMN IF NOT EXISTS edited BOOLEAN NOT NULL DEFAULT false;
 CREATE TABLE IF NOT EXISTS qbank_mocks (
   id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   question_ids TEXT NOT NULL, answers TEXT NOT NULL DEFAULT '{}', score INTEGER, total INTEGER NOT NULL,
@@ -107,10 +110,10 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
 
   // overview: domains → skills with counts and the student's own progress
   app.get('/api/qbank', h(async (req, res) => {
-    const counts = await db.all('SELECT skill_id, difficulty, COUNT(*) AS n FROM qbank_questions WHERE active GROUP BY skill_id, difficulty');
+    const counts = await db.all('SELECT skill_id, difficulty, COUNT(*) AS n FROM qbank_questions WHERE active AND NOT premium GROUP BY skill_id, difficulty');
     const mine = req.user.role === 'student' ? await db.all(`SELECT q.skill_id, COUNT(*) AS answered, SUM(CASE WHEN a.correct THEN 1 ELSE 0 END) AS correct,
         SUM(CASE WHEN a.first_correct THEN 1 ELSE 0 END) AS first_correct
-      FROM qbank_answers a JOIN qbank_questions q ON q.id = a.question_id WHERE a.user_id = ? AND q.active GROUP BY q.skill_id`, [req.user.id]) : [];
+      FROM qbank_answers a JOIN qbank_questions q ON q.id = a.question_id WHERE a.user_id = ? AND q.active AND NOT q.premium GROUP BY q.skill_id`, [req.user.id]) : [];
     const levels = await openLevels(req.user);
     const by = new Map(mine.map((r) => [r.skill_id, r]));
     const domains = DOMAINS.map((d) => {
@@ -139,7 +142,7 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const limit = Math.min(30, Math.max(1, Number(req.query.limit) || 10));
     const rows = await db.all(`SELECT q.*, a.correct AS last_correct FROM qbank_questions q
       LEFT JOIN qbank_answers a ON a.question_id = q.id AND a.user_id = ?
-      WHERE q.active AND q.skill_id = ANY(?::text[]) AND q.difficulty = ANY(?::text[])
+      WHERE q.active AND NOT q.premium AND q.skill_id = ANY(?::text[]) AND q.difficulty = ANY(?::text[])
         ${status === 'new' ? 'AND a.question_id IS NULL' : status === 'mistakes' ? 'AND a.correct = false' : ''}
       ORDER BY (a.question_id IS NOT NULL), random() LIMIT ?`, [req.user.id, skillIds, allowed, limit]);
     res.json({ questions: rows.map(pub), status, levels: allowed });
@@ -147,7 +150,7 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
 
   // check one answer → reveal the key, explanation and tip; remember the result
   app.post('/api/qbank/questions/:id/check', requireStudent, h(async (req, res) => {
-    const q = await db.one('SELECT * FROM qbank_questions WHERE id = ? AND active', [req.params.id]);
+    const q = await db.one('SELECT * FROM qbank_questions WHERE id = ? AND active AND NOT premium', [req.params.id]);
     if (!q) return bad(res, 'Question not found', 404);
     if (!(await openLevels(req.user)).includes(q.difficulty)) return bad(res, 'This question needs an active subscription', 402, { code: 'subscription_required' });
     const cap = (await accessFor(req.user)).tier?.q_day || 0;
@@ -202,7 +205,7 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     for (const [skill, n] of MOCK_BLUEPRINT) {
       // questions the student has not seen come first; inside a skill, easier questions first (as on the test)
       const rows = await db.all(`SELECT q.id, q.difficulty FROM qbank_questions q LEFT JOIN qbank_answers a ON a.question_id = q.id AND a.user_id = ?
-        WHERE q.active AND q.skill_id = ? AND q.difficulty = ANY(?::text[]) ORDER BY (a.question_id IS NOT NULL), random() LIMIT ?`, [req.user.id, skill, levels, n]);
+        WHERE q.active AND NOT q.premium AND q.skill_id = ? AND q.difficulty = ANY(?::text[]) ORDER BY (a.question_id IS NOT NULL), random() LIMIT ?`, [req.user.id, skill, levels, n]);
       picked.push(...rows.sort((a, b) => LV[a.difficulty] - LV[b.difficulty]).map((r) => r.id));
     }
     if (picked.length < 10) return bad(res, 'The Question Bank does not have enough questions yet');
@@ -249,11 +252,18 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const rows = await db.all(`SELECT q.*, COUNT(a.user_id) AS answered, SUM(CASE WHEN a.first_correct THEN 1 ELSE 0 END) AS first_correct
       FROM qbank_questions q LEFT JOIN qbank_answers a ON a.question_id = q.id
       GROUP BY q.id ORDER BY q.skill_id, q.position`);
-    res.json(rows.map((q) => ({ ...pub(q), answer: q.answer, explanation: q.explanation, tip: q.tip, src: q.src, active: q.active,
+    res.json(rows.map((q) => ({ ...pub(q), answer: q.answer, explanation: q.explanation, tip: q.tip, src: q.src, active: q.active, premium: q.premium, edited: q.edited,
       answered: Number(q.answered || 0), first_correct: Number(q.first_correct || 0) })));
   }));
   app.put('/api/qbank/admin/:id', requireMaster, h(async (req, res) => {
-    await db.run('UPDATE qbank_questions SET active = ? WHERE id = ?', [!!req.body?.active, req.params.id]);
+    const q = await db.one('SELECT * FROM qbank_questions WHERE id = ?', [req.params.id]);
+    if (!q) return bad(res, 'Not found', 404);
+    const b = req.body || {};
+    const answer = Number.isInteger(b.answer) && b.answer >= 0 && b.answer <= 3 ? b.answer : q.answer;
+    const fixed = answer !== q.answer || (b.explanation != null && b.explanation !== q.explanation);
+    await db.run('UPDATE qbank_questions SET active = ?, premium = ?, answer = ?, explanation = ?, edited = edited OR ? WHERE id = ?', [
+      'active' in b ? !!b.active : q.active, 'premium' in b ? !!b.premium : q.premium, answer,
+      b.explanation != null ? String(b.explanation).slice(0, 4000) : q.explanation, fixed, q.id]);
     res.json({ ok: true });
   }));
   app.delete('/api/qbank/admin/:id', requireMaster, h(async (req, res) => {
@@ -272,6 +282,7 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const clash = await db.all("SELECT id FROM qbank_questions WHERE src = 'bundled' AND id = ANY(?::text[])", [file.questions.map((q) => String(q.id))]);
     if (clash.length) return bad(res, `These ids belong to built-in questions — use different ids: ${clash.map((c) => c.id).slice(0, 5).join(', ')}`);
     const ids = await upsertBank(file, 'upload');
-    res.json({ imported: ids.length, skill: SKILL.get(file.skill_id).name });
+    if (req.body?.premium === 'true' || file.premium === true) await db.run('UPDATE qbank_questions SET premium = true WHERE id = ANY(?::text[])', [ids]);
+    res.json({ imported: ids.length, skill: SKILL.get(file.skill_id).name, premium: req.body?.premium === 'true' || file.premium === true });
   }));
 }

@@ -4,6 +4,7 @@ import { api, fmtDate } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Card, Confirm, Empty, Gate, PageHeader, useAsync } from '../../components/ui.jsx';
 import { fmtMoney } from '../student/Subscribe.jsx';
+import FullMockCard from '../mock/FullMockCard.jsx';
 import { IconArrow, IconClock, IconDoc, IconLock } from '../../components/icons.jsx';
 
 
@@ -22,7 +23,9 @@ export default function FullMocks() {
   };
   return (
     <div className="page">
-      <PageHeader title="Full Mocks" sub="Official full-length practice tests: Module 1, then a harder or easier Module 2, as on test day." />
+      <PageHeader title="Full Mocks" sub="Full Reading & Writing sections: Module 1, then a harder or easier Module 2, scored like the SAT." />
+      {user.role === 'student' && <FullMockCard />}
+      <h2 className="fm-sec">Official practice tests</h2>
       <Gate state={st}>{({ quota: q, mocks }) => (
         <>
           <div className={`fm-quota ${q.left ? '' : 'out'}`}>

@@ -13,8 +13,7 @@ const STUDENT_NAV = [
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad, c: '#F28B4E' },
   { to: '/vocab', label: 'Vocabulary', icon: IconBook, c: '#E8A93C' },
   { to: '/game', label: 'Word Arena', icon: IconGame, c: '#8E5CF7' },
-  { to: '/question-bank', label: 'Question Bank', icon: IconTarget, c: '#1E8E4E' },
-  { to: '/practice', label: 'Practice Tests', icon: IconBolt, c: '#E2553D' },
+  { to: '/practice', label: 'Practice', icon: IconBolt, c: '#E2553D', also: ['/question-bank'] },
   { to: '/quizzes', label: 'Quizzes', icon: IconQuiz, c: '#12A39A' },
   { to: '/full-mocks', label: 'Full Mocks', icon: IconDoc, c: '#C2410C' },
   { to: '/analytics', label: 'Results', icon: IconChart, c: '#2A55E5' },
@@ -28,7 +27,7 @@ const STUDENT_TABS = [
   { to: '/', label: 'Home', icon: IconDashboard, end: true, c: '#2A55E5' },
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad, c: '#F28B4E' },
   { to: '/vocab', label: 'Words', icon: IconBook, c: '#E8A93C' },
-  { to: '/question-bank', label: 'Practice', icon: IconTarget, c: '#1E8E4E' },
+  { to: '/practice', label: 'Practice', icon: IconBolt, c: '#E2553D', also: ['/question-bank'] },
 ];
 const MASTER_TABS = [
   { to: '/', label: 'Overview', icon: IconDashboard, end: true, c: '#2A55E5' },
@@ -58,6 +57,7 @@ export default function Layout() {
   const { theme, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const loc = useLocation();
+  const on = (n) => !!n.also?.some((pfx) => loc.pathname.startsWith(pfx));
   useEffect(() => { setOpen(false); window.scrollTo({ top: 0 }); }, [loc.pathname]);
   const nav = user.role === 'master' ? MASTER_NAV : STUDENT_NAV;
 
@@ -72,7 +72,7 @@ export default function Layout() {
         </NavLink>
         <nav className="nav" aria-label={"Main menu"}>
           {nav.map((n) => (
-            <NavLink key={n.to} to={n.to} end={n.end} style={{ '--c': n.c || '#2A55E5' }}>{({ isActive }) => (<><span className="nav-ic"><n.icon width={19} height={19} weight={isActive ? 'fill' : 'duotone'} /></span>{n.label}
+            <NavLink key={n.to} to={n.to} end={n.end} style={{ '--c': n.c || '#2A55E5' }} className={({ isActive }) => (isActive || on(n) ? 'active' : '')}>{({ isActive }) => (<><span className="nav-ic"><n.icon width={19} height={19} weight={isActive || on(n) ? 'fill' : 'duotone'} /></span>{n.label}
               {n.to === '/subscribe' && !user.sub_active && user.access?.subscription_required && <span className="badge-n sun">Get</span>}</>)}</NavLink>
           ))}
         </nav>
@@ -99,7 +99,7 @@ export default function Layout() {
         <SupportChat />
         <nav className="tabbar" aria-label="Quick menu">
           {(user.role === 'master' ? MASTER_TABS : STUDENT_TABS).map((n) => (
-            <NavLink key={n.to} to={n.to} end={n.end} style={{ '--c': n.c || '#2A55E5' }}>{({ isActive }) => (<><n.icon width={22} height={22} weight={isActive ? 'fill' : 'duotone'} /><span>{n.label}</span></>)}</NavLink>
+            <NavLink key={n.to} to={n.to} end={n.end} style={{ '--c': n.c || '#2A55E5' }} className={({ isActive }) => (isActive || on(n) ? 'active' : '')}>{({ isActive }) => (<><n.icon width={22} height={22} weight={isActive || on(n) ? 'fill' : 'duotone'} /><span>{n.label}</span></>)}</NavLink>
           ))}
           <button type="button" className={open ? 'active' : ''} onClick={() => setOpen(true)} aria-label="Open the full menu"><IconMore width={22} height={22} /><span>More</span></button>
         </nav>

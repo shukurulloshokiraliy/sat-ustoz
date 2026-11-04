@@ -8,6 +8,7 @@ import { BBPracticeRunner } from '../../components/Bluebook.jsx';
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
 import AskTeacher from '../../components/AskTeacher.jsx';
+import ReportMistake from '../../components/ReportMistake.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
 const LEVEL = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
@@ -142,7 +143,7 @@ function Summary({ questions, rv, search }) {
                     {q.options.map((o, k) => <li key={k} className={k === res.answer ? 'ok' : k === res.choice ? 'bad' : ''}><b>{L[k]})</b> {rich(o)}{k === res.answer ? ' · correct' : k === res.choice ? ' · your answer' : ''}</li>)}
                   </ul>
                   <p className="muted">{rich(res.explanation)}</p>
-                  <AskTeacher about={`Question Bank ${q.id} (${q.skill}): ${String(q.prompt).slice(0, 120)}`} />
+                  <div className="row wrap" style={{ gap: 8 }}><AskTeacher about={`Question Bank ${q.id} (${q.skill}): ${String(q.prompt).slice(0, 120)}`} /><ReportMistake about={`Question ${q.id} (${q.skill})`} /></div>
                 </>
               )}
             </Card>
