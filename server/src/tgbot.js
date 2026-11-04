@@ -127,7 +127,7 @@ async function showWallet(chat, user) {
   const why = { top_up: "To'ldirish", full_mock: 'Full mock', subscription: 'Obuna', correction: 'Tuzatish', book: 'Kitob' };
   await send(chat, [
     `👛 <b>SAT Ustoz hamyoni</b>`,
-    `Raqam: <code>${walletNo(user.id)}</code>`,
+    `Raqam: <code>${await walletNo(user.id)}</code>`,
     `Egasi: <b>${esc(user.name)}</b>`,
     `Balans: <b>${money(u?.balance)}</b>`,
     '',

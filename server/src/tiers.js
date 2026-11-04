@@ -12,6 +12,7 @@
  * the balance. The balance changes only on the server: teacher top-ups and purchases, each a ledger row,
  * with a CHECK (balance >= 0) and a conditional UPDATE so it can never be inflated or go negative.
  */
+import crypto from 'node:crypto';
 import { db, getSettings } from './db.js';
 import { subActive } from './auth.js';
 
@@ -72,6 +73,8 @@ export async function usedToday(userId) {
 export async function migrateTiers() {
   await db.exec(`
 ALTER TABLE users ADD COLUMN IF NOT EXISTS balance INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS wallet_no TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_wallet_no ON users(wallet_no) WHERE wallet_no IS NOT NULL;
 CREATE TABLE IF NOT EXISTS balance_ledger (
   id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   amount INTEGER NOT NULL, balance_after INTEGER NOT NULL, reason TEXT NOT NULL, note TEXT NOT NULL DEFAULT '',
@@ -125,7 +128,7 @@ export function registerTiers(app, { h, bad, requireMaster, requireStudent }) {
   app.get('/api/me/balance', h(async (req, res) => {
     const u = await db.one('SELECT balance FROM users WHERE id = ?', [req.user.id]);
     const rows = await db.all('SELECT amount, balance_after, reason, note, created_at FROM balance_ledger WHERE user_id = ? ORDER BY id DESC LIMIT 30', [req.user.id]);
-    res.json({ balance: Number(u?.balance || 0), wallet_no: walletNo(req.user.id), history: rows });
+    res.json({ balance: Number(u?.balance || 0), wallet_no: await walletNo(req.user.id), history: rows });
   }));
   // teacher: top up (or correct) a student's balance — the only way money is added
   app.post('/api/students/:id/balance', requireMaster, h(async (req, res) => {
@@ -211,8 +214,27 @@ export async function noteFail(key) {
 export const clearFails = (key) => db.run('DELETE FROM auth_fails WHERE key = ?', [key]);
 
 /* ---------- wallet ---------- */
-/** The student's wallet number on the platform (not a bank card): SU 0000 0000 0012. */
-export const walletNo = (id) => `SU ${String(id).padStart(12, '0').replace(/(\d{4})(?=\d)/g, '$1 ')}`;
+/**
+ * The student's wallet number on the platform: 16 digits like a card ("7800 4821 0937 1645"), made once per student
+ * at random, saved in users.wallet_no (unique) and never changed. It is not a bank card: money only comes in through
+ * the teacher (receipts in the Telegram bot) and only pays for things inside SAT Ustoz.
+ * 7800 = the platform's own prefix (no bank uses it for UZCARD / HUMO / Visa / Mastercard); the last digit is a Luhn check.
+ */
+const luhn = (d) => { let sum = 0; for (let i = 0; i < d.length; i++) { let x = Number(d[d.length - 1 - i]); if (i % 2 === 0) { x *= 2; if (x > 9) x -= 9; } sum += x; } return String((10 - (sum % 10)) % 10); };
+const newWalletNo = () => { let d = '7800'; while (d.length < 15) d += crypto.randomInt(0, 10); return d + luhn(d); };
+export const fmtWalletNo = (n) => String(n || '').replace(/(\d{4})(?=\d)/g, '$1 ');
+export async function walletNo(userId) {
+  const u = await db.one('SELECT wallet_no FROM users WHERE id = ?', [userId]);
+  if (u?.wallet_no) return fmtWalletNo(u.wallet_no);
+  for (let i = 0; i < 6; i++) {
+    try {
+      await db.run('UPDATE users SET wallet_no = ? WHERE id = ? AND wallet_no IS NULL', [newWalletNo(), userId]);
+      const r = await db.one('SELECT wallet_no FROM users WHERE id = ?', [userId]);
+      if (r?.wallet_no) return fmtWalletNo(r.wallet_no);
+    } catch { /* the same number already exists (1 in 10^11): try another */ }
+  }
+  return '';
+}
 export const MIN_TOPUP = 5000;
 export const MAX_TOPUP = 10_000_000;
 

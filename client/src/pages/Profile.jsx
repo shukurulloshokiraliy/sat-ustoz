@@ -2,7 +2,8 @@ import { SatDateSelect } from '../components/ExamDate.jsx';
 import { useRef, useState } from 'react';
 import { api, setToken } from '../api.js';
 import { useAuth, useToast } from '../context.jsx';
-import { Avatar, Card, Field, PageHeader } from '../components/ui.jsx';
+import { Avatar, Card, Field, Modal, PageHeader } from '../components/ui.jsx';
+import { IconLock } from '../components/icons.jsx';
 import StudentCard from '../components/StudentCard.jsx';
 
 export default function Profile() {
@@ -18,46 +19,58 @@ export default function Profile() {
   };
   const savePw = async (e) => {
     e.preventDefault();
-    try { const r = await api.put('/me/password', pw); if (r.token) setToken(r.token); setPw({ current: '', next: '' }); toast('Password saved. Other devices were signed out.'); refresh?.(); } catch (ex) { toast(ex.message, 'err'); }
+    try { const r = await api.put('/me/password', pw); if (r.token) setToken(r.token); setPw({ current: '', next: '' }); toast('Password saved. Other devices were signed out.'); refresh?.(); return true; } catch (ex) { toast(ex.message, 'err'); return false; }
   };
   const logoutAll = async () => {
     try { const r = await api.post('/me/logout-all'); setToken(r.token); toast('Signed out on every other device'); } catch (ex) { toast(ex.message, 'err'); }
   };
 
+  const [pwOpen, setPwOpen] = useState(false);
+
+  const profileCard = (
+    <Card className="pf-card">
+      <form className="stack" onSubmit={saveProfile}>
+        <div className="row wrap pf-who">
+          <PhotoPicker user={user} onDone={refresh} />
+          <div className="grow" style={{ minWidth: 0 }}><b>{user.name}</b><div className="muted" style={{ fontSize: '.85rem', overflowWrap: 'anywhere' }}>{user.login}{user.group ? ` · ${user.group.name}` : ''}</div></div>
+        </div>
+        <Field label={"Name"}><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required /></Field>
+        {student && (
+          <div className="pf-goals">
+            <Field label={"Goal: R&W"}><input type="number" min="200" max="800" step="10" value={f.target_english} onChange={(e) => setF({ ...f, target_english: e.target.value })} /></Field>
+            <Field label={"Goal: Math"}><input type="number" min="200" max="800" step="10" value={f.target_math} onChange={(e) => setF({ ...f, target_math: e.target.value })} /></Field>
+            <Field label={"SAT date"}><SatDateSelect value={f.exam_date} onChange={(v) => setF({ ...f, exam_date: v })} /></Field>
+          </div>
+        )}
+        <div className="row wrap pf-actions">
+          <button className="btn primary">{"Save"}</button>
+          <span className="grow" />
+          <button type="button" className="btn ghost sm" onClick={() => setPwOpen(true)}><IconLock width={15} height={15} /> {user.has_password ? 'Change password' : 'Set a password'}</button>
+          <button type="button" className="btn danger-ghost sm" onClick={logoutAll} title="Ends every other session (lost phone, shared computer)">Sign out everywhere</button>
+        </div>
+      </form>
+    </Card>
+  );
+
   return (
     <div className="page">
       <PageHeader title={"Profile"} sub={student ? "Your wallet card, photo and goals." : "Teacher account."} />
-      {student && <div className="profile-card-row"><StudentCard user={user} history /></div>}
-      <div className="grid g2">
-        <Card>
-          <form className="stack" onSubmit={saveProfile}>
-            <div className="row wrap">
-              <PhotoPicker user={user} onDone={refresh} />
-              <div className="grow"><b>{user.name}</b><div className="muted" style={{ fontSize: '.85rem' }}>{"Login:"} {user.login}{user.group ? ` · ${user.group.name}` : ''}</div></div>
-            </div>
-            <Field label={"Name"}><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required /></Field>
-            {student && (
-              <div className="form-grid">
-                <Field label={"Goal: Reading & Writing"} hint="200–800"><input type="number" min="200" max="800" step="10" value={f.target_english} onChange={(e) => setF({ ...f, target_english: e.target.value })} /></Field>
-                <Field label={"Goal: Math"} hint="200–800"><input type="number" min="200" max="800" step="10" value={f.target_math} onChange={(e) => setF({ ...f, target_math: e.target.value })} /></Field>
-                <Field label={"SAT date"}><SatDateSelect value={f.exam_date} onChange={(v) => setF({ ...f, exam_date: v })} /></Field>
-              </div>
-            )}
-            <div><button className="btn primary">{"Save"}</button></div>
-          </form>
-        </Card>
-        <Card>
-          <form className="stack" onSubmit={savePw}>
-            <h2>{user.has_password ? 'Change password' : 'Set a password'}</h2>
+      {student ? (
+        <div className="pf-grid">
+          <div className="pf-wallet"><StudentCard user={user} history /></div>
+          {profileCard}
+        </div>
+      ) : profileCard}
+      {pwOpen && (
+        <Modal title={user.has_password ? 'Change password' : 'Set a password'} onClose={() => setPwOpen(false)}>
+          <form className="stack" onSubmit={async (e) => { if (await savePw(e)) setPwOpen(false); }}>
             {!user.has_password && <p className="muted" style={{ fontSize: '.88rem' }}>You signed in with Google. Add a password to also sign in with your email ({user.email}).</p>}
-            {user.has_password && <Field label={"Current password"}><input type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} required /></Field>}
+            {user.has_password && <Field label={"Current password"}><input type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} required autoFocus /></Field>}
             <Field label={"New password"} hint={"At least 8 characters, not 12345678 or your name"}><input type="password" autoComplete="new-password" minLength={8} value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} required /></Field>
-            <div className="row wrap" style={{ gap: 8 }}><button className="btn ghost">{"Update password"}</button>
-              <button type="button" className="btn danger-ghost" onClick={logoutAll}>Sign out everywhere</button></div>
-            <small className="muted">Lost a phone or used a shared computer? “Sign out everywhere” ends every other session at once.</small>
+            <div><button className="btn primary">{"Update password"}</button></div>
           </form>
-        </Card>
-      </div>
+        </Modal>
+      )}
     </div>
   );
 }

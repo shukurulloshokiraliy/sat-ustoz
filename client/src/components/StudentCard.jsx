@@ -46,7 +46,7 @@ export default function StudentCard({ user, compact = false, history = false }) 
   const paid = !!acc.sub_active;
   const plan = paid ? (acc.tier?.name || 'Pro') : 'Free';
   const hero = heroOf(paid || acc.subscription_required === false);
-  const no = bal?.wallet_no || `SU ${String(user.id || 0).padStart(12, '0').replace(/(\d{4})(?=\d)/g, '$1 ')}`;
+  const no = bal?.wallet_no || '•••• •••• •••• ••••';
   const copy = async () => { try { await navigator.clipboard.writeText(no.replace(/\s/g, '')); toast('Wallet number copied'); } catch { toast(no); } };
   const thru = paid && user.sub_until ? new Date(user.sub_until).toLocaleDateString('en-GB', { month: '2-digit', year: '2-digit' }) : '—';
   const cheapest = plans?.tiers?.length ? Math.min(...plans.tiers.map((t) => t.price).filter(Boolean)) : null;
@@ -83,12 +83,12 @@ export default function StudentCard({ user, compact = false, history = false }) 
         <Link to="/subscribe" className="btn soft">Plans</Link>
         <Link to="/full-mocks" className="btn soft">Mocks</Link>
       </div>
-      {!compact && <p className="wcard-help muted">Top up any amount in our Telegram bot: send the receipt, the teacher confirms and the money appears here. Pay for plans{cheapest ? ` (from ${money(cheapest, cur)})` : ''} and extra full mocks{plans?.fm_extra_price ? ` (${money(plans.fm_extra_price, cur)})` : ''} straight from the balance.</p>}
+      {!compact && <p className="wcard-help muted">Top up in Telegram (send the receipt) · pay plans{cheapest ? ` from ${money(cheapest, cur)}` : ''} and extra mocks{plans?.fm_extra_price ? ` (${money(plans.fm_extra_price, cur)})` : ''} from the balance.</p>}
 
       {history && bal?.history?.length > 0 && (
         <div className="wcard-hist">
           <b>Last payments</b>
-          {bal.history.slice(0, 5).map((h, i) => (
+          {bal.history.slice(0, 3).map((h, i) => (
             <div key={i} className="wcard-row">
               <span className={`wcard-dot ${h.amount > 0 ? 'in' : 'out'}`} aria-hidden="true">{h.amount > 0 ? '+' : '−'}</span>
               <span className="grow"><span>{WHAT[h.reason] || h.reason}{h.note ? ` · ${h.note}` : ''}</span><small>{fmtDate(h.created_at)}</small></span>
