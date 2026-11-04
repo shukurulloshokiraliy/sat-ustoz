@@ -13,6 +13,7 @@ import { db, getSettings } from './db.js';
 import { tierOf, moveBalance } from './tiers.js';
 import { parseUpload } from './parse.js';
 import { ROUTE_CUT, satScore } from './scoring.js';
+import { MOCK_BLUEPRINT } from './qbank.js';
 
 export async function migrateFullMocks() {
   await db.exec(`
@@ -38,6 +39,7 @@ CREATE TABLE IF NOT EXISTS full_mock_attempts (
   score INTEGER, low INTEGER, high INTEGER, route TEXT, finished_at TIMESTAMPTZ
 );
 ALTER TABLE full_mock_attempts ADD COLUMN IF NOT EXISTS paid BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE full_mock_attempts ADD COLUMN IF NOT EXISTS gen TEXT;
 CREATE INDEX IF NOT EXISTS idx_fma_user ON full_mock_attempts(user_id, started_at DESC);
 ALTER TABLE full_mocks ENABLE ROW LEVEL SECURITY; ALTER TABLE full_mock_pdfs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE full_mock_questions ENABLE ROW LEVEL SECURITY; ALTER TABLE full_mock_attempts ENABLE ROW LEVEL SECURITY;
@@ -71,7 +73,23 @@ export async function fmQuota(user) {
     extra_price: Number(s.fm_extra_price) || 0, balance: Number(bal?.balance || 0) };
 }
 
-async function moduleSets(mock) {
+async function moduleSets(mock, a = null) {
+  if (mock.mode === 'qbank') { // generated from the Question Bank: the question ids live on the attempt
+    const gen = parseJSON(a?.gen, {});
+    const ids = Object.values(gen).flat();
+    if (!ids.length) return {};
+    const rows = await db.all('SELECT * FROM qbank_questions WHERE id = ANY(?::text[])', [ids]);
+    const by = new Map(rows.map((q) => [q.id, q]));
+    const out = {};
+    for (const [m, list] of Object.entries(gen)) {
+      out[m] = list.map((id) => by.get(id)).filter(Boolean).map((q) => {
+        const o = parseJSON(q.options, []);
+        return { id: q.id, module: m, passage: q.passage, table: parseJSON(q.data_table, null), prompt: q.prompt, skill: q.skill,
+          opt_a: o[0] ?? '', opt_b: o[1] ?? '', opt_c: o[2] ?? '', opt_d: o[3] ?? '', correct: L[q.answer], explanation: q.explanation, difficulty: q.difficulty };
+      });
+    }
+    return out;
+  }
   if (mock.mode === 'pdf') {
     const k = parseJSON(mock.keys, {});
     const out = {};
@@ -87,7 +105,7 @@ const summary = (sets) => Object.fromEntries(Object.entries(sets).map(([m, v]) =
 const ready = (sets) => !!sets['1']?.length && !!(sets['2']?.length || (sets['2h']?.length && sets['2e']?.length));
 
 const pubQ = (q, withKey) => ({
-  id: q.id, n: q.n, passage: q.passage, prompt: q.prompt, options: q.opt_a != null ? [q.opt_a, q.opt_b, q.opt_c, q.opt_d] : null, difficulty: q.difficulty || undefined,
+  id: q.id, n: q.n, passage: q.passage, table: q.table || undefined, skill: q.skill || undefined, prompt: q.prompt, options: q.opt_a != null ? [q.opt_a, q.opt_b, q.opt_c, q.opt_d] : null, difficulty: q.difficulty || undefined,
   ...(withKey ? { answer: L.indexOf(q.correct), explanation: q.explanation } : {}),
 });
 
@@ -125,6 +143,78 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     const mocks = await db.all('SELECT id, title, note, mode, minutes, created_at FROM full_mocks WHERE published ORDER BY position, id DESC');
     const tries = await db.all('SELECT id, mock_id, stage, score, low, high, started_at, finished_at FROM full_mock_attempts WHERE user_id = ? ORDER BY id DESC', [req.user.id]);
     res.json({ quota: await fmQuota(req.user), mocks: mocks.map((m) => ({ ...m, attempts: tries.filter((t) => t.mock_id === m.id) })) });
+  }));
+
+  // ---------- random full mock from the Question Bank (Quizzes page) ----------
+  const systemMock = async () => {
+    let m = await db.one("SELECT * FROM full_mocks WHERE mode = 'qbank' ORDER BY id LIMIT 1");
+    if (!m) {
+      await db.run("INSERT INTO full_mocks (title, note, mode, published, minutes, position) VALUES ('SAT full mock', 'Random full test from the Question Bank', 'qbank', false, 32, 9999)");
+      m = await db.one("SELECT * FROM full_mocks WHERE mode = 'qbank' ORDER BY id LIMIT 1");
+    }
+    return m;
+  };
+  /**
+   * 54 questions: Module 1 (27, mixed easy / medium / hard as on the test) and two prepared Module 2 versions
+   * (harder and easier, 27 each) — the student gets one of them after Module 1. Every module follows the SAT
+   * order of question types; unseen questions come first and no question repeats inside the test.
+   */
+  async function generate(userId) {
+    const MIX = { 1: ['easy', 'medium', 'hard'], '2h': ['medium', 'hard', 'hard'], '2e': ['easy', 'easy', 'medium'] };
+    const used = new Set();
+    const gen = {};
+    for (const m of ['1', '2h', '2e']) {
+      gen[m] = [];
+      for (const [skill, n] of MOCK_BLUEPRINT) {
+        const pool = await db.all(`SELECT q.id, q.difficulty, (a.question_id IS NOT NULL) AS seen FROM qbank_questions q
+          LEFT JOIN qbank_answers a ON a.question_id = q.id AND a.user_id = ? WHERE q.active AND q.skill_id = ? ORDER BY random()`, [userId, skill]);
+        const pick = [];
+        for (let i = 0; i < n; i++) {
+          const want = MIX[m][i % 3];
+          const order = [want, ...['easy', 'medium', 'hard'].filter((d) => d !== want)];
+          let q = null;
+          for (const d of order) { q = pool.find((x) => !used.has(x.id) && x.difficulty === d && !x.seen) || pool.find((x) => !used.has(x.id) && x.difficulty === d); if (q) break; }
+          if (!q) q = pool.find((x) => !used.has(x.id));
+          if (q) { used.add(q.id); pick.push(q); }
+        }
+        gen[m].push(...pick.sort((x, y) => ({ easy: 0, medium: 1, hard: 2 }[x.difficulty] - { easy: 0, medium: 1, hard: 2 }[y.difficulty])).map((x) => x.id));
+      }
+    }
+    return gen;
+  }
+  async function startAttempt(req, res, mock, gen = null) {
+    const q = await fmQuota(req.user);
+    let paid = false;
+    if (q.left <= 0) {
+      if (!req.body?.pay || !q.extra_price) return bad(res, `You have used ${q.limit} of ${q.limit} full mocks this week. Take one more for ${q.extra_price.toLocaleString('en-US').replace(/,/g, ' ')} from your wallet, or wait until Monday.`, 402, { code: 'full_mock_limit', quota: q });
+      paid = true;
+    }
+    const id = await db.tx(async (t) => {
+      const r = await t.run('INSERT INTO full_mock_attempts (mock_id, user_id, paid, gen) VALUES (?, ?, ?, ?) RETURNING id', [mock.id, req.user.id, paid, gen ? JSON.stringify(gen) : null]);
+      if (paid && (await moveBalance(t, req.user.id, -q.extra_price, 'full_mock', { note: mock.title, ref: `fm:${r.id}` })) == null) throw Object.assign(new Error('Not enough money in your wallet. Top it up first.'), { status: 402 });
+      return r.id;
+    }).catch((e) => { if (e.status === 402) return { err: e.message }; throw e; });
+    if (id?.err) return bad(res, id.err, 402, { code: 'balance_low', quota: q });
+    const a = await db.one('SELECT * FROM full_mock_attempts WHERE id = ?', [id]);
+    return res.json(await state(a, mock, await moduleSets(mock, a)));
+  }
+  app.get('/api/full-mocks/random', h(async (req, res) => {
+    const m = await systemMock();
+    const tries = await db.all('SELECT id, stage, score, low, high, m1_correct, m2_correct, m1_total, m2_total, route, finished_at FROM full_mock_attempts WHERE user_id = ? AND mock_id = ? ORDER BY id DESC LIMIT 20', [req.user.id, m.id]);
+    const done = tries.filter((t) => t.stage === 'done');
+    const right = done.reduce((s, t) => s + (t.m1_correct || 0) + (t.m2_correct || 0), 0);
+    const total = done.reduce((s, t) => s + (t.m1_total || 0) + (t.m2_total || 0), 0);
+    res.json({ quota: await fmQuota(req.user), open: tries.find((t) => t.stage !== 'done')?.id || null, taken: done.length,
+      last: done[0] || null, best: done.reduce((b, t) => Math.max(b, t.score || 0), 0) || null,
+      accuracy: total ? Math.round((right / total) * 100) : null, right, total, history: done.slice(0, 6) });
+  }));
+  app.post('/api/full-mocks/random/start', requireStudent, h(async (req, res) => {
+    const m = await systemMock();
+    const open = await db.one("SELECT * FROM full_mock_attempts WHERE user_id = ? AND mock_id = ? AND stage <> 'done' ORDER BY id DESC LIMIT 1", [req.user.id, m.id]);
+    if (open) return res.json(await advanceIfExpired(open, m, await moduleSets(m, open)));
+    const gen = await generate(req.user.id);
+    if ((gen['1']?.length || 0) < 20 || (gen['2h']?.length || 0) < 20 || (gen['2e']?.length || 0) < 20) return bad(res, 'The Question Bank does not have enough questions for a full mock yet');
+    return startAttempt(req, res, m, gen);
   }));
 
   app.post('/api/full-mocks/:id/start', requireStudent, h(async (req, res) => {
@@ -175,7 +265,7 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     const a = await db.one('SELECT * FROM full_mock_attempts WHERE id = ? AND user_id = ?', [Number(req.params.aid), req.user.id]);
     if (!a) return null;
     const mock = await db.one('SELECT * FROM full_mocks WHERE id = ?', [a.mock_id]);
-    return { a, mock, sets: await moduleSets(mock) };
+    return { a, mock, sets: await moduleSets(mock, a) };
   };
   const keep = (sets, a, body) => { // only answers for questions of the current module, 0–3
     const mod = a.stage === 'm1' ? '1' : a.m2;
@@ -220,7 +310,7 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
       keys: parseJSON(m.keys, {}), modules: summary(sets), ready: ready(sets), taken: Number(st.n), avg: st.avg == null ? null : Math.round(st.avg / 10) * 10, created_at: m.created_at };
   };
   app.get('/api/full-mocks/admin', requireMaster, h(async (req, res) => {
-    const list = await db.all('SELECT * FROM full_mocks ORDER BY position, id DESC');
+    const list = await db.all("SELECT * FROM full_mocks WHERE mode <> 'qbank' ORDER BY position, id DESC");
     const s = await getSettings();
     res.json({ mocks: await Promise.all(list.map(adminRow)), limits: { fm_free: s.fm_free, fm_month: s.fm_month, fm_quarter: s.fm_quarter } });
   }));

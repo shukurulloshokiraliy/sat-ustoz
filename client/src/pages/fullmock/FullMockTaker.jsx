@@ -102,7 +102,7 @@ function Module({ a, onNext }) {
   return (
     <>
       <BBShell title={`${a.mock.title} · ${a.stage === 'm1' ? 'Module 1' : 'Module 2'}`} directions={DIRECTIONS} seconds={left} onExit={() => setExit(true)} exitLabel="Exit"
-        highlight={!pdf && hl} onHighlight={!pdf && view === 'q' && q?.passage ? () => setHl((x) => !x) : null}
+        highlight={!pdf && hl} onHighlight={!pdf && view === 'q' && (q?.passage || q?.table) ? () => setHl((x) => !x) : null}
         footer={pdf ? (
           <footer className="bb-foot"><span className="muted">{qs.length - unanswered} of {qs.length} answered</span><button className="bb-btn" onClick={() => setConfirm(true)}>{nextLabel}</button></footer>
         ) : (
@@ -131,7 +131,7 @@ function Module({ a, onNext }) {
             )} />
         ) : view === 'q' ? (
           <BBSplit
-            left={q.passage ? <Highlightable key={q.id} on={hl}><Passage text={q.passage} /></Highlightable> : null}
+            left={(q.passage || q.table) ? <Highlightable key={q.id} on={hl}><Passage text={q.passage} table={q.table} /></Highlightable> : null}
             right={(
               <div key={q.id}>
                 <BBQuestionBar n={cur + 1} marked={marked[q.id]} onMark={() => setMarked((x) => ({ ...x, [q.id]: !x[q.id] }))} elim={el.elim} onElim={el.toggleElim} />

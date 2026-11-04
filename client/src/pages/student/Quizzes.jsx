@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import TakeQuizCard from '../mock/TakeQuiz.jsx';
+import FullMockCard from '../mock/FullMockCard.jsx';
 import { Link } from 'react-router-dom';
 import { api, fmtDate } from '../../api.js';
 import { useAuth } from '../../context.jsx';
@@ -23,8 +24,9 @@ export default function Quizzes() {
   const [tab, setTab] = useState('all');
   return (
     <div className="page">
-      <PageHeader title="Quizzes" sub="Practice sets, mocks and your readiness check." />
+      <PageHeader title="Quizzes" sub="Quick quizzes and full SAT mocks with an adaptive second module." />
       {user.role === 'student' && <TakeQuizCard />}
+      {user.role === 'student' && <FullMockCard />}
       {!user.access?.can_practice && <PaywallBanner />}
       <Gate state={st}>{(list) => {
         const shown = list.filter((q) => tab === 'all' || q.status === tab);

@@ -56,9 +56,9 @@ function Result({ a }) {
       <div className="stack">
         {list.map(({ q, i, ok, skipped }) => (
           <Card key={q.id} className={`rq ${skipped ? 'skip' : ok ? 'right' : 'wrong'}`}>
-            <div className="row wrap" style={{ gap: 8 }}><span className="q-num">{q.n || i + 1}</span>{skipped && <span className="chip warn">Not answered</span>}
+            <div className="row wrap" style={{ gap: 8 }}><span className="q-num">{q.n || i + 1}</span>{q.skill && <span className="chip domain">{q.skill}</span>}{q.difficulty && <span className={`chip lvl-${q.difficulty}`}>{q.difficulty}</span>}{skipped && <span className="chip warn">Not answered</span>}
               {!q.options && <span className="chip">Your answer: {skipped ? '—' : L[a.answers[q.id]]} · Correct: {L[q.answer]}</span>}</div>
-            {q.passage && <Passage text={q.passage} />}
+            {(q.passage || q.table) && <Passage text={q.passage} table={q.table} />}
             {q.prompt && <p style={{ fontWeight: 600 }}>{rich(q.prompt)}</p>}
             {q.options && (
               <ul className="qb-opts-review">

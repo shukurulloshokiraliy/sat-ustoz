@@ -1923,3 +1923,5 @@ em.hi, .sr-bars i.hi { background: #1E8E4E; } em.mid, .sr-bars i.mid { backgroun
 .mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: .04em; text-transform: none !important; }
 .warn-text { color: var(--warn); font-weight: 600; font-size: .88rem; }
 .bad-row td { color: var(--bad); }
+.fm-tq { background: linear-gradient(135deg, #1B2350 0%, #161B3D 60%); }
+.fm-left { display: block; margin-top: 10px; color: #C9CFE6; font-weight: 600; }

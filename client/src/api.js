@@ -21,7 +21,7 @@ async function request(method, url, body, isForm) {
   }
   const ct = res.headers.get('content-type') || '';
   const data = ct.includes('json') ? await res.json() : null;
-  if (!res.ok) throw Object.assign(new Error(data?.error ? data.error : "Something went wrong"), { status: res.status });
+  if (!res.ok) throw Object.assign(new Error(data?.error ? data.error : "Something went wrong"), { status: res.status, data });
   return data;
 }
 
