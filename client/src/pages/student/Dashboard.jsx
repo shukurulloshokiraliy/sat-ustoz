@@ -5,11 +5,11 @@ import { Extras } from './Subscribe.jsx';
 import { api, daysUntil, fmtDate } from '../../api.js';
 import { useAuth } from '../../context.jsx';
 import { satScoreFromCount } from '../../../../server/src/scoring.js';
-import { ActivityDots, Bars, Card, CountUp, Empty, Gate, LineChart, Progress, Ring, pctTone, useAsync } from '../../components/ui.jsx';
+import { Bars, Card, CountUp, Gate, LineChart, Ring, pctTone, useAsync } from '../../components/ui.jsx';
 import StudentCard from '../../components/StudentCard.jsx';
 import PathTrack from '../../components/PathTrack.jsx';
 import { PaywallBanner } from './Quizzes.jsx';
-import { IconArrow, IconBolt, IconCheck, IconClock, IconFlame, IconQuiz, IconTarget, IconTrophy, IconTask } from '../../components/icons.jsx';
+import { IconArrow, IconBolt, IconCheck, IconClock, IconQuiz, IconTrophy, IconTask } from '../../components/icons.jsx';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -29,75 +29,83 @@ export default function Dashboard() {
         const est = all.estimate ?? user.diagnostic_score;
         return (
           <>
-            <div className="hello has-card">
-              <div className="hello-text">
-                <h1>Hello, <span>{first}</span></h1>
-                <p className="muted">{all.streak ? `${all.streak}-day streak: keep it going!` : 'Practise anything today to start a streak.'}</p>
-              </div>
-              <div className="row wrap hello-meta">
-                <span className="streak"><IconFlame /> {all.streak} {all.streak === 1 ? 'day' : 'days'}</span>
-                <div className="xp">
-                  <div className="row between"><span>Level {all.level}</span><span className="muted">{all.xp} XP</span></div>
-                  <Progress value={all.levelProgress} />
+            <div className="dash">
+              <div className="dash-col dash-main">
+                <div className="hello dash-hello">
+                  <div>
+                    <h1>Hello, <span>{first}</span></h1>
+                    <p className="muted">{all.streak ? `${all.streak}-day streak: keep it going!` : 'Practise anything today to start a streak.'}</p>
+                  </div>
                 </div>
-              </div>
-              <StudentCard user={user} stats={{ ...all, estimate: est }} compact />
-            </div>
 
-            {goal && !goal.empty && <DailyGoal g={goal} />}
-            {!user.access?.can_practice && <PaywallBanner />}
-            {!pl.results.length && (
-              <Link to="/placement" className="pl-invite">
-                <span className="grow"><b>Find your level — optional</b><span className="muted"> · a short placement test shows your SAT estimate and what to study first (about 40 min).</span></span>
-                <span className="btn soft sm">Take it <IconArrow width={16} height={16} /></span>
-              </Link>
-            )}
-
-            <div className="grid g-main stagger">
-              <Card>
-                <div className="card-title"><h2>{"The 200 → 800 road"}</h2><Link to="/roadmap" className="btn soft sm">Roadmap <IconArrow width={16} height={16} /></Link></div>
-                <PathTrack value={est} target={user.target_english} />
-                {pl.results[0] && (
-                  <Link to={`/placement/result/${pl.results[0].id}`} className="pl-row" style={{ marginBottom: 12 }}>
-                    <span className="pl-lvl">{pl.results[0].cefr}</span>
-                    <span className="grow"><b>Placement: {pl.results[0].midpoint - 30}–{pl.results[0].midpoint + 30}</b> <span className="muted">· see your weak areas</span></span>
-                    <IconArrow width={16} height={16} />
+                {goal && !goal.empty && <div className="d-goal"><DailyGoal g={goal} /></div>}
+                {!user.access?.can_practice && <div className="d-pay"><PaywallBanner /></div>}
+                {!pl.results.length && (
+                  <Link to="/placement" className="pl-invite d-pl">
+                    <span className="grow"><b>Find your level — optional</b><span className="muted"> · a short placement test shows your SAT estimate and what to study first (about 40 min).</span></span>
+                    <span className="btn soft sm">Take it <IconArrow width={16} height={16} /></span>
                   </Link>
                 )}
-                <p className="muted" style={{ fontSize: '.85rem' }}>
-                  {all.estimate == null ? 'Your estimated score appears after your first test or quiz.' : `Your estimated Reading & Writing score is ${all.estimate} — ${Math.max(0, user.target_english - all.estimate)} points to your goal.`}
-                </p>
-              </Card>
 
-              <div className="stack">
-                {next ? (
-                  <Card className="next-card">
-                    <div className="stack sm" style={{ position: 'relative' }}>
-                      <span className="chip">{next.status === 'in_progress' ? "Continue" : next.status === 'new' ? "New quiz" : "Retake"}</span>
-                      <h2 style={{ fontSize: '1.3rem' }}>{next.title}</h2>
-                      <p className="muted">{next.questions} {"questions"}{next.duration_min ? ` · ${next.duration_min} min` : ''}</p>
-                      <Link to={`/quiz/${next.id}`} className="btn primary" style={{ marginTop: 8 }}><IconBolt /> {next.status === 'in_progress' ? "Resume" : "Start"}</Link>
+                <Card className="d-road">
+                  <div className="card-title"><h2>{"The 200 → 800 road"}</h2><Link to="/roadmap" className="btn soft sm">Roadmap <IconArrow width={16} height={16} /></Link></div>
+                  <PathTrack value={est} target={user.target_english} />
+                  <div className="d-kpis">
+                    <div><IconCheck /><b><CountUp value={all.accuracy} suffix="%" /></b><small>accuracy</small></div>
+                    <div><IconQuiz /><b><CountUp value={all.answered} /></b><small>questions</small></div>
+                    <div><IconClock /><b><CountUp value={all.minutes} /></b><small>minutes</small></div>
+                  </div>
+                  {pl.results[0] && (
+                    <Link to={`/placement/result/${pl.results[0].id}`} className="pl-row">
+                      <span className="pl-lvl">{pl.results[0].cefr}</span>
+                      <span className="grow"><b>Placement: {pl.results[0].midpoint - 30}–{pl.results[0].midpoint + 30}</b> <span className="muted">· see your weak areas</span></span>
+                      <IconArrow width={16} height={16} />
+                    </Link>
+                  )}
+                </Card>
+
+                <Card className="d-trend">
+                  <div className="card-title"><h2>{"Score trend"}</h2><Link to="/analytics" className="btn ghost sm">{"Details"}</Link></div>
+                  <LineChart points={points} target={user.target_english} height={180} />
+                </Card>
+
+                <Card className="d-recent">
+                  <div className="card-title"><h2>{"Recent results"}</h2>{all.recent.length > 4 && <Link to="/analytics" className="btn ghost sm">All</Link>}</div>
+                  {all.recent.length === 0 ? <p className="muted">No results yet: take a practice test or Take a quiz.</p> : (
+                    <div className="d-recent-list">
+                      {all.recent.slice(0, 4).map((h) => (
+                        <Link key={h.key} to={h.to} className="d-rr">
+                          <Ring value={h.pct} size={40} stroke={5} label={`${h.pct}%`} color={`var(--${pctTone(h.pct)})`} />
+                          <span className="grow"><b>{h.title}</b><small>{fmtDate(h.date)}</small></span>
+                          <span className={`chip ${pctTone(h.pct)}`}>{h.score}/{h.total}</span>
+                        </Link>
+                      ))}
                     </div>
-                  </Card>
-                ) : (
-                  <Card className="next-card">
-                    <div className="stack sm" style={{ position: 'relative' }}>
-                      <span className="chip">Take a quiz</span>
-                      <h2 style={{ fontSize: '1.3rem' }}>A new SAT module</h2>
-                      <p className="muted">27 random questions in real test order · 32 min</p>
-                      <Link to="/mock" className="btn primary" style={{ marginTop: 8 }}><IconBolt /> Start</Link>
-                    </div>
-                  </Card>
-                )}
-                {!needExam ? <ExamCountdown date={user.exam_date} onChange={() => setPickExam(true)} /> : (
-                  <Card className="row between"><b>When is your SAT?</b><button className="btn primary" onClick={() => setPickExam(true)}>Choose date</button></Card>
-                )}
+                  )}
+                </Card>
+              </div>
+
+              <div className="dash-col dash-side">
+                <div className="d-card"><StudentCard user={user} stats={{ ...all, estimate: est }} compact hideDays={!needExam} /></div>
+                <Card className="next-card d-next">
+                  <div className="stack sm" style={{ position: 'relative' }}>
+                    <span className="chip">{next ? (next.status === 'in_progress' ? "Continue" : next.status === 'new' ? "New quiz" : "Retake") : 'Take a quiz'}</span>
+                    <h2 style={{ fontSize: '1.2rem' }}>{next ? next.title : 'A new SAT module'}</h2>
+                    <p className="muted">{next ? `${next.questions} questions${next.duration_min ? ` · ${next.duration_min} min` : ''}` : '27 random questions in real test order · 32 min'}</p>
+                    <Link to={next ? `/quiz/${next.id}` : '/mock'} className="btn primary" style={{ marginTop: 6 }}><IconBolt /> {next?.status === 'in_progress' ? "Resume" : "Start"}</Link>
+                  </div>
+                </Card>
+                <div className="d-exam">
+                  {!needExam ? <ExamCountdown date={user.exam_date} onChange={() => setPickExam(true)} /> : (
+                    <Card className="row between"><b>When is your SAT?</b><button className="btn primary" onClick={() => setPickExam(true)}>Choose date</button></Card>
+                  )}
+                </div>
                 {asg && (() => {
                   const todo = asg.items.filter((x) => ['new', 'in_progress', 'retake'].includes(x.status));
                   if (!todo.length) return null;
                   const n = todo.sort((x, y) => (x.due_at ? new Date(x.due_at) : 9e15) - (y.due_at ? new Date(y.due_at) : 9e15))[0];
                   return (
-                    <Link to="/assignments" className="card lb-mini as-mini">
+                    <Link to="/assignments" className="card lb-mini as-mini d-asg">
                       <span className="lb-mini-ic"><IconTask width={22} height={22} weight="duotone" /></span>
                       <span><span><b>{todo.length}</b> {todo.length === 1 ? 'assignment' : 'assignments'} to do</span><small>Next: {n.title}{n.due_at ? ` · due ${fmtDate(n.due_at, { day: 'numeric', month: 'short' })}` : ''}</small></span>
                       <IconArrow width={16} height={16} />
@@ -105,53 +113,18 @@ export default function Dashboard() {
                   );
                 })()}
                 {lb?.me && (
-                  <Link to="/leaderboard" className="card lb-mini">
+                  <Link to="/leaderboard" className="card lb-mini d-lb">
                     <span className="lb-mini-ic"><IconTrophy width={22} height={22} weight="duotone" /></span>
                     <span><span><b>#{lb.me.rank}</b> this week</span><small>{lb.me.points} points · {lb.total} {lb.total === 1 ? 'student' : 'students'} on the board</small></span>
                     <IconArrow width={16} height={16} />
                   </Link>
                 )}
+                <Card className="d-weak">
+                  <div className="card-title"><h2>{"Weak topics"}</h2></div>
+                  {all.weak.length ? <Bars rows={all.weak.slice(0, 4)} /> : <p className="muted">No weak topics yet: answer a few more questions.</p>}
+                </Card>
+                <div className="d-extra"><Extras access={user.access} stacked /></div>
               </div>
-            </div>
-
-            <div className="grid g4 keep2 stagger">
-              <Card className="stat"><div className="label"><IconTarget /> {"Estimated score"}</div><div className="value">{est ? <CountUp value={est} /> : '—'}<small> R&W</small></div></Card>
-              <Card className="stat"><div className="label"><IconCheck /> {"Accuracy"}</div><div className="value"><CountUp value={all.accuracy} suffix="%" /></div></Card>
-              <Card className="stat"><div className="label"><IconQuiz /> {"Questions solved"}</div><div className="value"><CountUp value={all.answered} /></div></Card>
-              <Card className="stat"><div className="label"><IconClock /> {"Time"}</div><div className="value"><CountUp value={all.minutes} /><small> {"min"}</small></div></Card>
-            </div>
-
-            <Extras access={user.access} />
-
-            <div className="grid g-main">
-              <Card>
-                <div className="card-title"><h2>{"Score trend"}</h2><Link to="/analytics" className="btn ghost sm">{"Details"}</Link></div>
-                <LineChart points={points} target={user.target_english} height={200} />
-              </Card>
-              <Card>
-                <div className="card-title"><h2>{"Weak topics"}</h2></div>
-                {all.weak.length ? <Bars rows={all.weak} /> : <p className="muted">No weak topics yet: answer a few more questions.</p>}
-              </Card>
-            </div>
-
-            <div className="grid g2">
-              <Card>
-                <div className="card-title"><h2>{"Activity"}</h2><span className="chip">{all.activeDays.length} active days</span></div>
-                <ActivityDots days={all.activeDays} />
-              </Card>
-              <Card>
-                <div className="card-title"><h2>{"Recent results"}</h2></div>
-                {all.recent.length === 0 ? <p className="muted">No results yet: take a practice test or Take a quiz.</p> : (
-                  <div className="stack sm">
-                    {all.recent.slice(0, 5).map((h) => (
-                      <Link key={h.key} to={h.to} className="row between" style={{ color: 'inherit', textDecoration: 'none' }}>
-                        <div className="row rr-item"><Ring value={h.pct} size={44} stroke={5} label={`${h.pct}%`} color={`var(--${pctTone(h.pct)})`} /><div><b>{h.title}</b><div className="muted" style={{ fontSize: '.78rem' }}>{fmtDate(h.date)}</div></div></div>
-                        <span className={`chip ${pctTone(h.pct)}`}>{h.score}/{h.total}</span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </Card>
             </div>
           </>
         );

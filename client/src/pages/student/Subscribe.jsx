@@ -161,7 +161,7 @@ function BuyModal({ tier, balance, currency, onClose, onDone }) {
 }
 
 /** Plan extras: consultation booking (plans 2–4) and live lessons (plan 4). */
-export function Extras({ access }) {
+export function Extras({ access, stacked = false }) {
   const toast = useToast();
   const consult = useAsync(() => (access?.tier?.consult_days ? api.get('/consultations') : Promise.resolve(null)), [access?.tier?.consult_days]);
   const live = useAsync(() => (access?.live ? api.get('/live') : Promise.resolve(null)), [access?.live]);
@@ -175,7 +175,7 @@ export function Extras({ access }) {
   const c = consult.data;
   if (!c && !live.data) return null;
   return (
-    <div className="grid g2">
+    <div className={stacked ? 'stack' : 'grid g2'}>
       {c && (
         <Card className="stack">
           <h3 className="sr-h">Consultation with the teacher</h3>

@@ -13,7 +13,7 @@ const heroOf = (vip) => {
   return null;
 };
 
-export default function StudentCard({ user, stats, compact = false, edit = false }) {
+export default function StudentCard({ user, stats, compact = false, edit = false, hideDays = false }) {
   const acc = user.access || {};
   const paid = !!acc.sub_active;
   const plan = paid ? (acc.tier?.name || 'Pro') : 'Free';
@@ -52,7 +52,9 @@ export default function StudentCard({ user, stats, compact = false, edit = false
       <div className="scard-stats">
         <div><b>{stats ? stats.level : '—'}</b><small>Level</small></div>
         <div><b>{stats ? stats.streak : '—'}</b><small>{stats?.streak === 1 ? 'Day streak' : 'Days streak'}</small></div>
-        <div><b>{left != null && left >= 0 ? left : '—'}</b><small>{user.exam_date ? `Days to ${fmtDate(user.exam_date)}` : 'Days to SAT'}</small></div>
+        {hideDays
+          ? <div><b>{stats ? stats.xp : '—'}</b><small>XP</small></div>
+          : <div><b>{left != null && left >= 0 ? left : '—'}</b><small>{user.exam_date ? `Days to ${fmtDate(user.exam_date)}` : 'Days to SAT'}</small></div>}
       </div>
 
       {(edit || !hero) && (
