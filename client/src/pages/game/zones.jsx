@@ -8,6 +8,21 @@ export const ZONES = [
   { id: 'ocean', name: 'Deep Dive', text: 'Swim through the reef to the sunken treasure.' },
   { id: 'jungle', name: 'Jungle Run', text: 'Swing through the jungle to the golden temple.' },
 ];
+/** Backgrounds for your game screen: Graphite is free, the rest come with a subscription. */
+export const ARENA_THEMES = [
+  { id: 'graphite', name: 'Graphite', free: true },
+  { id: 'aurora', name: 'Aurora' },
+  { id: 'sunset', name: 'Sunset' },
+  { id: 'forest', name: 'Forest' },
+  { id: 'night', name: 'Night sky' },
+  { id: 'sakura', name: 'Sakura' },
+];
+export const THEME_KEY = 'arena-bg';
+export const arenaTheme = (user) => {
+  let t = 'graphite'; try { t = localStorage.getItem(THEME_KEY) || 'graphite'; } catch { /* ignore */ }
+  const th = ARENA_THEMES.find((x) => x.id === t);
+  return th && (th.free || isVip(user)) ? th.id : 'graphite';
+};
 export const ZONE = Object.fromEntries(ZONES.map((z) => [z.id, z]));
 
 export const BOT_LEVELS = [

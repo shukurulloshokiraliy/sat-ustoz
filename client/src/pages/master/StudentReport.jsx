@@ -73,19 +73,25 @@ function TimeBlock({ r }) {
           <div className="sr-stack" role="img" aria-label="Minutes per day, last 14 days">
             {days.map((d, i) => (
               <div key={d} className="sr-col" title={`${d}: ${fmtMin(totals[i])}`}>
-                <div className="sr-col-bar" style={{ height: `${(totals[i] / max) * 100}%` }}>
-                  {Object.entries(per[d]).sort((a, b) => b[1] - a[1]).map(([sec, v]) => <i key={sec} style={{ flexGrow: v, background: SECTIONS[sec]?.[1] || '#ccc' }} />)}
+                <div className={`sr-col-bar plain ${i === days.length - 1 ? 'today' : ''}`} style={{ height: `${Math.max(totals[i] ? 4 : 0, (totals[i] / max) * 100)}%` }}>
+                  {totals[i] >= 60 && <span className="sr-col-v">{mins(totals[i])}</span>}
                 </div>
                 <small>{new Date(d).getDate()}</small>
               </div>
             ))}
           </div>
-          <div className="sr-split">
-            {Object.entries(month).sort((a, b) => b[1] - a[1]).map(([sec, v]) => (
-              <div key={sec}><span><i style={{ background: SECTIONS[sec]?.[1] }} />{SECTIONS[sec]?.[0] || sec}</span><b>{fmtMin(v)}</b><em><u style={{ width: `${(v / mTotal) * 100}%`, background: SECTIONS[sec]?.[1] }} /></em></div>
-            ))}
+          <h4 className="sr-sub">Where the time went (28 days)</h4>
+          <div className="sr-split simple">
+            {(() => {
+              const list = Object.entries(month).filter(([k]) => !['other', 'home'].includes(k)).sort((a, b) => b[1] - a[1]);
+              const top = list.slice(0, 4);
+              const rest = mTotal - top.reduce((x, [, v]) => x + v, 0);
+              return [...top, ...(rest > 30 ? [['_rest', rest]] : [])].map(([sec, v]) => (
+                <div key={sec}><span>{sec === '_rest' ? 'Everything else' : SECTIONS[sec]?.[0] || sec}</span><b>{fmtMin(v)}</b><em><u style={{ width: `${(v / mTotal) * 100}%` }} /></em></div>
+              ));
+            })()}
           </div>
-          <small className="muted">Bars: last 14 days. Breakdown: last 28 days. Only active time counts (page open and in use).</small>
+          <small className="muted">Minutes per day for the last 2 weeks. Only active time counts.</small>
         </>
       )}
     </Card>
@@ -112,24 +118,24 @@ export default function StudentReport({ r, self = false }) {
     <div className="stack">
       <Card className="sr-insights">
         <h3 className="sr-h">{self ? 'What your results say' : 'Analysis'}</h3>
-        <ul>{insights.map(([t, text], i) => <li key={i} className={t}>{text}</li>)}</ul>
+        <ul>{(self ? insights.slice(0, 3) : insights).map(([t, text], i) => <li key={i} className={t}>{text}</li>)}</ul>
       </Card>
       <TimeBlock r={r} />
-      <div className="sr-kpis">
+      <div className={`sr-kpis ${self ? 'four' : ''}`}>
         <Kpi label="Question Bank accuracy" value={qbP == null ? '—' : `${qbP}%`} sub={`${r.qbank.correct}/${r.qbank.answered} answers`} t={tone(qbP)} />
         <Kpi label="Take a quiz average" value={mockAvg == null ? '—' : `${mockAvg}%`} sub={`${r.mocks.length} quizzes`} t={tone(mockAvg)} />
-        <Kpi label="Lessons done" value={lessonP == null ? '—' : `${lessonP}%`} sub={`${r.lessons.done}/${r.lessons.total} steps`} t={tone(lessonP)} />
+        {!self && <Kpi label="Lessons done" value={lessonP == null ? '—' : `${lessonP}%`} sub={`${r.lessons.done}/${r.lessons.total} steps`} t={tone(lessonP)} />}
         <Kpi label="Words learned" value={r.vocab.learned} sub={`${r.vocab.learning} learning · ${r.vocab.due} due`} />
-        <Kpi label="Word Arena" value={r.arena.games} sub={r.arena.games ? `games · best ${r.arena.best} pts` : 'games'} />
+        {!self && <Kpi label="Word Arena" value={r.arena.games} sub={r.arena.games ? `games · best ${r.arena.best} pts` : 'games'} />}
         <Kpi label="Active days (28)" value={activeDays} sub={`last: ${when([r.qbank.last, r.vocab.last, r.arena.last, r.lessons.last].filter(Boolean).sort().pop())}`} t={activeDays >= 12 ? 'hi' : activeDays >= 5 ? 'mid' : 'lo'} />
       </div>
 
-      <Card>
+      {!self && <Card>
         <h3 className="sr-h">Activity · last 4 weeks</h3>
         <div className="sr-heat" aria-label={`${activeDays} active days out of 28`}>
           {cells.map((c) => <i key={c.key} title={`${c.key}: ${c.n} actions`} className={c.n === 0 ? '' : c.n < 5 ? 'l1' : c.n < 15 ? 'l2' : 'l3'} />)}
         </div>
-      </Card>
+      </Card>}
 
       <div className="grid g2">
         <Card>
@@ -148,7 +154,7 @@ export default function StudentReport({ r, self = false }) {
           <h3 className="sr-h">Take a quiz (random modules)</h3>
           {!r.mocks.length ? <p className="muted">No random quizzes yet.</p> : (
             <>
-              <div className="sr-bars">{[...r.mocks].reverse().map((m) => <i key={m.id} title={`${when(m.finished_at)}: ${m.score}/${m.total}`} className={tone(pct(m.score, m.total))} style={{ height: `${Math.max(6, pct(m.score, m.total))}%` }} />)}</div>
+              {!self && <div className="sr-bars">{[...r.mocks].reverse().map((m) => <i key={m.id} title={`${when(m.finished_at)}: ${m.score}/${m.total}`} className={tone(pct(m.score, m.total))} style={{ height: `${Math.max(6, pct(m.score, m.total))}%` }} />)}</div>}
               <List rows={r.mocks.slice(0, 6).map((m) => [when(m.finished_at), 'Random module', `${m.score}/${m.total}`, pct(m.score, m.total)])} />
             </>
           )}
@@ -175,7 +181,7 @@ export default function StudentReport({ r, self = false }) {
           <h3 className="sr-h">Practice tests (27 questions)</h3>
           {!r.practice?.length ? <p className="muted">No practice tests yet.</p> : <List rows={r.practice.slice(0, 8).map((p) => [when(p.finished_at), 'Reading & Writing practice test', `${p.score}/${p.total}`, pct(p.score, p.total)])} />}
         </Card>
-        <Card>
+        {!self && <Card>
           <h3 className="sr-h">Flashcard reviews</h3>
           {!r.reviews?.length ? <p className="muted">No flashcards reviewed in the last 4 weeks.</p> : (
             <>
@@ -183,7 +189,7 @@ export default function StudentReport({ r, self = false }) {
               <p className="muted" style={{ margin: 0 }}>{r.reviews.reduce((s2, d) => s2 + d.n, 0)} cards on {r.reviews.length} days · {r.vocab.learned} words learned, {r.vocab.due} due now</p>
             </>
           )}
-        </Card>
+        </Card>}
       </div>
 
       <div className="grid g2">

@@ -143,7 +143,7 @@ export default function Dashboard() {
                   <div className="stack sm">
                     {all.recent.slice(0, 5).map((h) => (
                       <Link key={h.key} to={h.to} className="row between" style={{ color: 'inherit', textDecoration: 'none' }}>
-                        <div className="row"><Ring value={h.pct} size={46} stroke={6} label={`${h.pct}`} color={`var(--${pctTone(h.pct)})`} /><div><b>{h.title}</b><div className="muted" style={{ fontSize: '.78rem' }}>{fmtDate(h.date)}</div></div></div>
+                        <div className="row rr-item"><Ring value={h.pct} size={44} stroke={5} label={`${h.pct}%`} color={`var(--${pctTone(h.pct)})`} /><div><b>{h.title}</b><div className="muted" style={{ fontSize: '.78rem' }}>{fmtDate(h.date)}</div></div></div>
                         <span className={`chip ${pctTone(h.pct)}`}>{h.score}/{h.total}</span>
                       </Link>
                     ))}

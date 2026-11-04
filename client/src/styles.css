@@ -2763,3 +2763,72 @@ button.ar-fighter:hover em { color: var(--sun); }
 .arena-opt.dim { opacity: .4; }
 @keyframes ar-right { 40% { transform: scale(1.05); } }
 .arena-duelbar { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.08); }
+
+/* ---------- Results: simple and readable ---------- */
+.sr-kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 760px) { .sr-kpis.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.sr-kpi, .sr-kpi.hi, .sr-kpi.mid, .sr-kpi.lo { border-top: 1px solid var(--line); }
+.sr-kpi b { font: 700 1.35rem/1.15 var(--display); }
+.sr-kpi.hi b { color: var(--good); } .sr-kpi.mid b { color: var(--warn); } .sr-kpi.lo b { color: var(--bad); }
+.sr-col-bar.plain { display: block; position: relative; overflow: visible; background: color-mix(in srgb, var(--primary) 55%, transparent); border-radius: 6px 6px 2px 2px; }
+.sr-col-bar.plain.today { background: var(--primary); }
+.sr-col-v { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 3px; font-size: .68rem; font-weight: 700; color: var(--muted); }
+.sr-sub { font: 700 .9rem var(--font); margin: 4px 0 10px; }
+.sr-split.simple u { background: var(--primary) !important; }
+.sr-insights li { font-size: .95rem; }
+/* recent results on the dashboard */
+.rr-item .ring strong { font: 700 .72rem var(--font); }
+.rr-item b { font-size: .95rem; }
+
+/* ---------- Dark mode, softer: graphite grey instead of near black ---------- */
+:root[data-theme='dark'] {
+  --bg: #17181C; --surface: #202227; --surface-2: #292B31; --line: #33353D;
+  --ink: #E8E9EC; --muted: #A3A6B1; --track: #2E3037;
+}
+:root[data-theme='dark'] .sidebar { background: rgba(26, 27, 31, .94); }
+:root[data-theme='dark'] .topbar, :root[data-theme='dark'] .tabbar { background: rgba(23, 24, 28, .9); }
+:root[data-theme='dark'] input, :root[data-theme='dark'] select, :root[data-theme='dark'] textarea { background: #1B1C20; border-color: #393B44; }
+/* icons in dark mode: quiet grey tiles, the brand colour only on the active page */
+:root[data-theme='dark'] .nav-ic { background: rgba(255, 255, 255, .06); color: #B9BCC6; }
+:root[data-theme='dark'] .nav a:hover .nav-ic { color: color-mix(in srgb, var(--c) 55%, #fff); }
+:root[data-theme='dark'] .nav a.active .nav-ic { background: color-mix(in srgb, var(--c) 85%, #000); color: #fff; box-shadow: none; }
+:root[data-theme='dark'] .tabbar a.active { color: #fff; }
+:root[data-theme='dark'] .card-title svg, :root[data-theme='dark'] .stat .label svg { color: #B9BCC6; }
+.nav a:hover .nav-ic { transform: none; }
+
+/* ---------- Word Arena: fewer, quieter animations ---------- */
+.ar-lights { display: none; }
+.ar-fighter .char, .ar-q, .ar-fighter.them .char { animation: none; }
+.ar-fighter.them .char { transform: scaleX(-1); }
+button.ar-fighter:hover .char { transform: translateY(-6px); transition: transform .2s; }
+.ar-ring { animation: none; opacity: .85; }
+.ar-vs-badge { animation: none; }
+.ar-play { animation: none; }
+.ar-world-runner, .w-space .ar-world-runner, .w-ocean .ar-world-runner { animation: none; left: 12%; }
+.ar-world-runner .char { animation: none; }
+.ar-world:hover .ar-world-runner { animation: ar-run-across 3.5s linear infinite; }
+.ar-world:hover .ar-world-runner .char { animation: zt-run .35s ease-in-out infinite alternate; }
+.ar-world-scene i, .w-race .ar-world-scene::after, .w-ocean .ar-world-scene::before { animation-play-state: paused; }
+.ar-world:hover .ar-world-scene i, .ar-world:hover.w-race .ar-world-scene::after, .ar-world:hover.w-ocean .ar-world-scene::before { animation-play-state: running; }
+.w-classic .ar-world-runner { left: 50%; transform: translateX(-50%); }
+.zt-race { animation-duration: 3s; }
+/* look: hero + background */
+.ar-look { display: grid; grid-template-columns: auto 1fr; gap: 14px 26px; align-items: center; margin-top: 18px; }
+.ar-look-hero { display: flex; align-items: center; gap: 12px; }
+.ar-look-hero b { display: block; } .ar-look-hero small { color: var(--muted); }
+.ar-look-bg { display: grid; gap: 8px; }
+.ar-bgs { display: flex; flex-wrap: wrap; gap: 8px; }
+.ar-bg { position: relative; width: 104px; height: 58px; border-radius: 12px; border: 2px solid transparent; cursor: pointer; display: flex; align-items: flex-end; padding: 6px 8px; color: #fff; font: 700 .72rem var(--font); text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.ar-bg.on { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.ar-bg .vip, .ar-hero .vip { position: absolute; top: 4px; right: 4px; }
+.ar-look-note { grid-column: 1 / -1; margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--warn-soft); font-size: .88rem; }
+@media (max-width: 700px) { .ar-look { grid-template-columns: 1fr; } }
+.ar-hero { position: relative; } .ar-hero.locked, .arena-pick button.locked { opacity: .55; } .ar-hero.locked .char { filter: grayscale(.6); }
+/* game backgrounds (Graphite free, the rest VIP) */
+.bg-graphite { background: radial-gradient(120% 70% at 50% -10%, rgba(91,124,255,.16), transparent 60%), #101216; }
+.bg-aurora { background: radial-gradient(90% 60% at 20% 0%, rgba(60,203,154,.32), transparent 60%), radial-gradient(80% 60% at 90% 10%, rgba(142,92,247,.32), transparent 60%), #0E1118; }
+.bg-sunset { background: radial-gradient(100% 70% at 50% 0%, rgba(242,139,78,.38), transparent 60%), radial-gradient(70% 60% at 100% 100%, rgba(224,86,155,.25), transparent 60%), #17121A; }
+.bg-forest { background: radial-gradient(100% 70% at 30% 0%, rgba(102,187,106,.3), transparent 60%), #0E1510; }
+.bg-night { background: radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent), radial-gradient(1px 1px at 35% 42%, #fff 50%, transparent), radial-gradient(1.5px 1.5px at 62% 12%, #fff 50%, transparent), radial-gradient(1px 1px at 82% 34%, #fff 50%, transparent), radial-gradient(1px 1px at 90% 70%, #fff 50%, transparent), radial-gradient(100% 70% at 50% 0%, rgba(42,85,229,.3), transparent 60%), #0A0D1C; }
+.bg-sakura { background: radial-gradient(100% 70% at 50% 0%, rgba(243,184,207,.32), transparent 60%), radial-gradient(60% 50% at 0% 100%, rgba(255,203,61,.12), transparent 60%), #17131A; }
+.arena.z-classic.bg-graphite, .arena.z-classic.bg-aurora, .arena.z-classic.bg-sunset, .arena.z-classic.bg-forest, .arena.z-classic.bg-night, .arena.z-classic.bg-sakura { background-attachment: fixed; }

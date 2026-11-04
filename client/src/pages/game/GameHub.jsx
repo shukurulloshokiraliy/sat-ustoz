@@ -4,8 +4,8 @@ import { api } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Gate, Modal, useAsync } from '../../components/ui.jsx';
 import { IconArrow } from '../../components/icons.jsx';
-import Character, { CHARACTER_KEYS, CHARACTERS, CHARACTER_SETS } from '../../components/Character.jsx';
-import { BOT_LEVELS, ZONES, isVip } from './zones.jsx';
+import Character, { CHARACTER_KEYS, CHARACTERS, CHARACTER_SETS, isVipCharacter } from '../../components/Character.jsx';
+import { ARENA_THEMES, BOT_LEVELS, THEME_KEY, ZONES, arenaTheme, isVip } from './zones.jsx';
 
 export const hostKey = (code) => `arena-host-${code}`;
 export const playerKey = (code) => `arena-${code}`;
@@ -86,11 +86,21 @@ function Hub({ d }) {
     } catch (e) { toast(e.message, 'bad'); setBusy(false); }
   };
 
-  const [hero, setHero] = useState(() => (CHARACTER_KEYS.includes(store.get(HERO_KEY)) ? store.get(HERO_KEY) : 'owl'));
+  const savedHero = store.get(HERO_KEY);
+  const [hero, setHero] = useState(() => (CHARACTER_KEYS.includes(savedHero) && (vip || !isVipCharacter(savedHero)) ? savedHero : 'owl'));
   const [pickHero, setPickHero] = useState(false);
+  const [playAfterPick, setPlayAfterPick] = useState(false);
+  const [bg, setBg] = useState(() => arenaTheme(user));
+  const pickBg = (t) => { if (!t.free && !vip) { nav('/subscribe'); return; } setBg(t.id); store.set(THEME_KEY, t.id); };
   const [hosting, setHosting] = useState(false);
   const [step, setStep] = useState(1);
-  const choose = (k) => { setHero(k); store.set(HERO_KEY, k); setPickHero(false); };
+  const choose = (k) => {
+    if (isVipCharacter(k) && !vip) { nav('/subscribe'); return; }
+    setHero(k); store.set(HERO_KEY, k); setPickHero(false);
+    if (playAfterPick) { setPlayAfterPick(false); setTimeout(() => quickDuel(), 0); }
+  };
+  // the first time: the student picks a hero before the first game (no random characters)
+  const play = () => { if (!CHARACTER_KEYS.includes(store.get(HERO_KEY))) { setPlayAfterPick(true); setPickHero(true); return; } quickDuel(); };
   const rival = opp === 'bot' ? 'robot' : null;
 
   return (
@@ -119,8 +129,28 @@ function Hub({ d }) {
         <div className="ar-controls">
           <Chips dark label="Opponent" value={opp} onChange={setOpp} options={[{ value: 'player', label: 'Real player' }, { value: 'bot', label: 'Bot' }]} />
           <Chips dark label="Bot level" value={duelLevel} onChange={pickDuelLevel} options={levelOpts} />
-          <button className="btn sun xl ar-play" onClick={quickDuel} disabled={quick}>{quick ? 'Finding a match…' : 'Play now'} <IconArrow /></button>
+          <button className="btn sun xl ar-play" onClick={play} disabled={quick}>{quick ? 'Finding a match…' : 'Play now'} <IconArrow /></button>
         </div>
+      </section>
+
+      {/* your look: hero and game background (premium looks come with a subscription) */}
+      <section className="ar-look card">
+        <div className="ar-look-hero">
+          <Character kind={hero} size={56} />
+          <div><b>Your hero</b><small>{CHARACTERS[hero]?.name}</small></div>
+          <button className="btn soft sm" onClick={() => setPickHero(true)}>Change</button>
+        </div>
+        <div className="ar-look-bg">
+          <b>Game background</b>
+          <div className="ar-bgs">
+            {ARENA_THEMES.map((t) => (
+              <button key={t.id} type="button" className={`ar-bg bg-${t.id} ${bg === t.id ? 'on' : ''}`} onClick={() => pickBg(t)} aria-pressed={bg === t.id} title={t.name}>
+                <span>{t.name}</span>{!t.free && !vip && <em className="vip">VIP</em>}
+              </button>
+            ))}
+          </div>
+        </div>
+        {!vip && <p className="ar-look-note">Plus, Pro, Pro Max and Ultra unlock 7 epic and legendary heroes, all backgrounds, every world and stronger bots. <a href="/subscribe">See plans</a></p>}
       </section>
 
       {/* two more ways to play */}
@@ -193,13 +223,14 @@ function Hub({ d }) {
       )}
 
       {pickHero && (
-        <Modal title="Choose your hero" onClose={() => setPickHero(false)} wide>
+        <Modal title={playAfterPick ? 'Choose your hero to start' : 'Choose your hero'} onClose={() => { setPickHero(false); setPlayAfterPick(false); }} wide>
           {CHARACTER_SETS.map((set) => (
             <div key={set} className="ar-heroes-set">
               <small className="muted">{set}</small>
               <div className="ar-heroes">
                 {CHARACTER_KEYS.filter((k) => CHARACTERS[k].set === set).map((k) => (
-                  <button key={k} type="button" className={`ar-hero r-${CHARACTERS[k].rarity} ${hero === k ? 'on' : ''}`} onClick={() => choose(k)} style={{ '--c': CHARACTERS[k].body }}>
+                  <button key={k} type="button" className={`ar-hero r-${CHARACTERS[k].rarity} ${hero === k ? 'on' : ''} ${isVipCharacter(k) && !vip ? 'locked' : ''}`} onClick={() => choose(k)} style={{ '--c': CHARACTERS[k].body }}>
+                    {isVipCharacter(k) && <em className="vip">{vip ? CHARACTERS[k].rarity : 'VIP'}</em>}
                     <Character kind={k} size={64} /><span>{CHARACTERS[k].name}</span>
                   </button>
                 ))}

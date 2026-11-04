@@ -3,9 +3,9 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth } from '../../context.jsx';
 import { Confetti, Spinner } from '../../components/ui.jsx';
-import Character, { CHARACTERS, CHARACTER_KEYS, CHARACTER_SETS } from '../../components/Character.jsx';
+import Character, { CHARACTERS, CHARACTER_KEYS, CHARACTER_SETS, isVipCharacter } from '../../components/Character.jsx';
 import { Chips, DUEL_KEY, hostKey, playerKey, store, HERO_KEY } from './GameHub.jsx';
-import { BOT_LEVELS, ZONE, ZoneTrack, isVip } from './zones.jsx';
+import { BOT_LEVELS, ZONE, ZoneTrack, arenaTheme, isVip } from './zones.jsx';
 import { musicOn, sfxOn, setPref, startMusic, stopMusic, sfxRight, sfxWrong, sfxTick, sfxWin, sfxStart } from '../../components/gameAudio.js';
 
 const L = ['A', 'B', 'C', 'D'];
@@ -62,8 +62,9 @@ function SoundButtons() {
 }
 
 function Shell({ children, zone = 'classic' }) {
+  const { user } = useAuth();
   return (
-    <div className={`arena z-${zone}`}>
+    <div className={`arena z-${zone} bg-${arenaTheme(user)}`}>
       <header className="arena-top"><Link to="/game" className="arena-brand"><Character kind="owl" size={34} /> <b>Word Arena</b></Link><SoundButtons /></header>
       <main className="arena-main">{children}</main>
     </div>
@@ -73,7 +74,8 @@ function Shell({ children, zone = 'classic' }) {
 function Join({ code, room, onJoined }) {
   const { user } = useAuth() || {};
   const [name, setName] = useState(user?.name?.split(' ')[0] || '');
-  const [avatar, setAvatar] = useState(() => (CHARACTER_KEYS.includes(store.get(HERO_KEY)) ? store.get(HERO_KEY) : CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)]));
+  const vipJoin = isVip(user);
+  const [avatar, setAvatar] = useState(() => { const h = store.get(HERO_KEY); return CHARACTER_KEYS.includes(h) && (vipJoin || !isVipCharacter(h)) ? h : 'owl'; });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [set, setSet] = useState('All');
@@ -95,12 +97,12 @@ function Join({ code, room, onJoined }) {
       </div>
       <div className="arena-pick" role="radiogroup" aria-label="Choose your character">
         {CHARACTER_KEYS.filter((k) => set === 'All' || CHARACTERS[k].set === set).map((k) => (
-          <button type="button" key={k} role="radio" aria-checked={avatar === k} title={CHARACTERS[k].name} className={`r-${CHARACTERS[k].rarity} ${avatar === k ? 'on' : ''}`} onClick={() => { setAvatar(k); store.set(HERO_KEY, k); }}>
+          <button type="button" key={k} role="radio" aria-checked={avatar === k} title={CHARACTERS[k].name} className={`r-${CHARACTERS[k].rarity} ${avatar === k ? 'on' : ''} ${isVipCharacter(k) && !vipJoin ? 'locked' : ''}`} onClick={() => { if (isVipCharacter(k) && !vipJoin) return; setAvatar(k); store.set(HERO_KEY, k); }}>
             <Character kind={k} size={52} />
           </button>
         ))}
       </div>
-      <button type="button" className="arena-random" onClick={() => setAvatar(CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)])}>Surprise me</button>
+      <button type="button" className="arena-random" onClick={() => { const pool = CHARACTER_KEYS.filter((k) => vipJoin || !isVipCharacter(k)); setAvatar(pool[Math.floor(Math.random() * pool.length)]); }}>Surprise me</button>
       {error && <p className="arena-err">{error}</p>}
       <button className="btn sun lg block" disabled={busy || name.trim().length < 2}>{busy ? 'Joining…' : 'Enter the arena'}</button>
     </form>

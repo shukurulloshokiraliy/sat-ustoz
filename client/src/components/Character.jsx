@@ -31,6 +31,8 @@ export const CHARACTERS = {
 };
 export const CHARACTER_SETS = ['Classic', 'Wild', 'Ocean', 'Magic'];
 export const CHARACTER_KEYS = Object.keys(CHARACTERS);
+/** Epic and legendary characters come with a subscription (the server checks it too). */
+export const isVipCharacter = (k) => ['epic', 'legendary'].includes(CHARACTERS[k]?.rarity);
 
 export default function Character({ kind = 'owl', size = 64, mood = 'happy', className = '', title }) {
   const k = CHARACTERS[kind] ? kind : 'owl';

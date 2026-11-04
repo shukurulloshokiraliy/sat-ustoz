@@ -11,6 +11,8 @@ import { getSecret } from './auth.js';
 import { gameWords } from './vocab.js';
 
 const MODES = ['classic', 'team', 'duel'];
+// epic and legendary characters come with a subscription (bots may still use them)
+export const VIP_CHARACTERS = new Set(['lion', 'tiger', 'shark', 'axolotl', 'robot', 'dragon', 'unicorn']);
 export const CHARACTERS = ['owl', 'fox', 'cat', 'bear', 'bunny', 'frog', 'penguin', 'chick', 'panda', 'koala', 'lion', 'tiger', 'redpanda', 'raccoon', 'hedgehog', 'monkey', 'octo', 'shark', 'whale', 'axolotl', 'robot', 'ghost', 'dragon', 'unicorn'];
 const TEAMS = ['Blue', 'Sun'];
 
@@ -154,7 +156,8 @@ export function registerGame(app, { h, bad, accessFor }) {
     const me = tokenUser(req);
     if (!me) return bad(res, 'Please sign in to play a duel', 401);
     const name = cleanName(req.body?.name) || 'Player';
-    const avatar = CHARACTERS.includes(req.body?.avatar) ? req.body.avatar : CHARACTERS[crypto.randomInt(CHARACTERS.length)];
+    let avatar = CHARACTERS.includes(req.body?.avatar) ? req.body.avatar : 'owl';
+    if (VIP_CHARACTERS.has(avatar) && !(await isVip(me.id))) avatar = 'owl';
     const zone = ZONES.includes(req.body?.zone) ? req.body.zone : 'classic';
     if (zone !== 'classic' && !(await isVip(me.id))) return vipError(res);
     const vsBot = req.body?.opponent === 'bot';
@@ -241,7 +244,7 @@ export function registerGame(app, { h, bad, accessFor }) {
     if (room.status === 'finished') return bad(res, 'This game has already finished', 409);
     const name = cleanName(req.body?.name);
     if (name.length < 2) return bad(res, 'Choose a nickname (2+ letters)');
-    const avatar = CHARACTERS.includes(req.body?.avatar) ? req.body.avatar : CHARACTERS[0];
+    let avatar = CHARACTERS.includes(req.body?.avatar) ? req.body.avatar : CHARACTERS[0];
     const players = await db.all('SELECT name, team FROM game_players WHERE code = ?', [room.code]);
     if (room.mode === 'duel' && players.length >= 2) return bad(res, 'This duel already has two players', 409);
     if (players.length >= 60) return bad(res, 'The room is full', 409);
@@ -250,6 +253,7 @@ export function registerGame(app, { h, bad, accessFor }) {
     if (room.mode === 'team') { const a = players.filter((p) => p.team === TEAMS[0]).length; const b = players.filter((p) => p.team === TEAMS[1]).length; team = a <= b ? TEAMS[0] : TEAMS[1]; }
     const token = crypto.randomBytes(18).toString('hex');
     const me = tokenUser(req);
+    if (VIP_CHARACTERS.has(avatar) && !(me && (await isVip(me.id)))) avatar = 'owl';
     await db.run('INSERT INTO game_players (code, token, user_id, name, avatar, team) VALUES (?,?,?,?,?,?)', [room.code, token, me?.id || null, name, avatar, team]);
     res.json({ token, team });
   }));
