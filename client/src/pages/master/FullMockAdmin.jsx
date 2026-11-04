@@ -135,6 +135,8 @@ function MockCard({ m, onChange }) {
         </div>
       </div>
 
+      <ConversionEditor m={m} busy={busy} run={run} />
+
       {res && (
         <Modal title={`${m.title} · results`} onClose={() => setRes(null)} wide>
           {!res.length ? <p className="muted">Nobody has taken this mock yet.</p> : (
@@ -149,5 +151,32 @@ function MockCard({ m, onChange }) {
       )}
       {del && <Confirm title="Delete this mock?" text="The mock, its questions and all student results will be deleted." onClose={() => setDel(false)} onConfirm={() => run(() => api.del(`/full-mocks/admin/${m.id}`), 'Deleted')} />}
     </Card>
+  );
+}
+
+const toText = (t) => Object.entries(t || {}).sort((a, b) => Number(a[0]) - Number(b[0])).map(([r, v]) => `${r} ${v}`).join('\n');
+/** The mock's own raw → 200–800 conversion table (per Module 2 route). Without it the score comes from the built-in model. */
+function ConversionEditor({ m, busy, run }) {
+  const [open, setOpen] = useState(false);
+  const c = m.conversion || {};
+  const adaptive = m.modules?.['2h'] || m.modules?.['2e'];
+  const routes = adaptive ? [['hard', 'Harder Module 2'], ['easy', 'Easier Module 2']] : [['single', 'Module 2']];
+  const [t, setT] = useState(() => Object.fromEntries(routes.map(([k]) => [k, toText(c[k])])));
+  const has = routes.some(([k]) => c[k] && Object.keys(c[k]).length);
+  return (
+    <div className="fm-conv">
+      <button className="link-btn" onClick={() => setOpen((x) => !x)}>{has ? 'Score conversion table: set' : 'Add a score conversion table'}</button>
+      {open && (
+        <>
+          <small className="muted">One line per raw score: correct answers in Module 1 + Module 2, then the 200–800 score, e.g. <code>38 690</code>. A missing raw score uses the nearest lower line. Leave empty to use the built-in estimate.</small>
+          <div className="fm-conv-grid">
+            {routes.map(([k, label]) => (
+              <Field key={k} label={label}><textarea rows={8} value={t[k] || ''} placeholder={'0 200\n10 330\n20 450\n30 560\n40 680\n54 800'} onChange={(e) => setT({ ...t, [k]: e.target.value })} /></Field>
+            ))}
+          </div>
+          <button className="btn primary sm" disabled={busy} onClick={() => run(() => api.put(`/full-mocks/admin/${m.id}`, { conversion: t }), 'Conversion table saved')}>Save table</button>
+        </>
+      )}
+    </div>
   );
 }

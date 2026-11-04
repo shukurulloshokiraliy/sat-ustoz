@@ -50,6 +50,8 @@ function Result({ a }) {
         <div className="mr-group"><span>Module 2{r.route ? ` · ${r.route === 'hard' ? 'harder' : 'easier'}` : ''}</span><b>{r.m2}/{r.m2_total}</b><i><em style={{ width: `${(r.m2 / (r.m2_total || 1)) * 100}%` }} className={r.m2 / (r.m2_total || 1) >= 0.67 ? 'hi' : 'mid'} /></i></div>
       </div>
 
+      {a.report && <ScoreReport rep={a.report} />}
+
       <div className="row wrap" style={{ gap: 10 }}>
         <Segmented value={mod} onChange={setMod} options={a.review.map((s, i) => ({ value: i, label: i === 0 ? 'Module 1' : 'Module 2' }))} />
         <Segmented value={tab} onChange={setTab} options={[{ value: 'wrong', label: 'Missed' }, { value: 'right', label: 'Correct' }, { value: 'all', label: 'All' }]} />
@@ -57,7 +59,7 @@ function Result({ a }) {
       <div className="stack">
         {list.map(({ q, i, ok, skipped }) => (
           <Card key={q.id} className={`rq ${skipped ? 'skip' : ok ? 'right' : 'wrong'}`}>
-            <div className="row wrap" style={{ gap: 8 }}><span className="q-num">{q.n || i + 1}</span>{q.skill && <span className="chip domain">{q.skill}</span>}{q.difficulty && <span className={`chip lvl-${q.difficulty}`}>{q.difficulty}</span>}{skipped && <span className="chip warn">Not answered</span>}
+            <div className="row wrap" style={{ gap: 8 }}><span className="q-num">{q.n || i + 1}</span>{q.skill && <span className="chip domain">{q.skill}</span>}{q.difficulty && <span className={`chip lvl-${q.difficulty}`}>{q.difficulty}</span>}{skipped && <span className="chip warn">Not answered</span>}{q.seconds != null && <span className="q-time">{fmtSec(q.seconds)}</span>}
               {!q.options && <span className="chip">Your answer: {skipped ? '—' : L[a.answers[q.id]]} · Correct: {L[q.answer]}</span>}</div>
             {(q.passage || q.table) && <Passage text={q.passage} table={q.table} />}
             {q.prompt && <p style={{ fontWeight: 600 }}>{rich(q.prompt)}</p>}
@@ -72,6 +74,57 @@ function Result({ a }) {
         ))}
         {!list.length && <Card><p className="muted center">Nothing here.</p></Card>}
       </div>
+    </>
+  );
+}
+
+const fmtSec = (s) => { const n = Math.round(Number(s) || 0); return n >= 60 ? `${Math.floor(n / 60)}m ${String(n % 60).padStart(2, '0')}s` : `${n}s`; };
+const tone = (p) => (p >= 80 ? 'var(--good)' : p >= 55 ? 'var(--warn)' : 'var(--bad)');
+
+/** Score report: the four SAT domains, time per question, and what to revisit for the two weakest domains. */
+function ScoreReport({ rep }) {
+  return (
+    <>
+      <div className="sr-grid">
+        <Card className="sr-dom">
+          <h2 style={{ fontSize: '1.05rem' }}>By domain</h2>
+          {rep.domains.map((d) => (
+            <div key={d.domain} className="sr-row">
+              <div className="row"><span>{d.domain}</span><b>{d.correct}/{d.total}</b></div>
+              <div className="sr-bar" role="img" aria-label={`${d.domain}: ${d.pct}% correct`}><i style={{ width: `${d.pct}%`, background: tone(d.pct) }} /></div>
+            </div>
+          ))}
+          {!rep.domains.length && <p className="muted">This mock has no domain labels on its questions.</p>}
+        </Card>
+        {rep.time && (
+          <Card>
+            <h2 style={{ fontSize: '1.05rem', marginBottom: 12 }}>Time</h2>
+            <div className="sr-time">
+              <div><b>{fmtSec(rep.time.avg)}</b><span>per question (test pace ≈ 71s)</span></div>
+              <div><b>{fmtSec(rep.time.total)}</b><span>in total</span></div>
+            </div>
+            {rep.time.slowest.length > 0 && (
+              <p className="muted" style={{ marginTop: 12, fontSize: '.9rem' }}>Slowest: {rep.time.slowest.map((x) => `Q${x.n} ${fmtSec(x.seconds)}${x.ok ? '' : ' (missed)'}`).join(' · ')}</p>
+            )}
+          </Card>
+        )}
+      </div>
+      {rep.weak.length > 0 && (
+        <Card style={{ marginBottom: 18 }}>
+          <h2 style={{ fontSize: '1.05rem', marginBottom: 12 }}>What to revisit</h2>
+          <div className="sr-weak">
+            {rep.weak.map((d) => (
+              <div key={d.domain} className="sr-weak-item">
+                <div className="row between"><b>{d.domain}</b><span>{d.pct}% correct</span></div>
+                <div className="row">
+                  {d.lessons.map((l) => <Link key={l.step_id} className="btn soft sm" to={l.lesson_id ? `/lesson/${l.lesson_id}` : '/roadmap'}>{l.title}</Link>)}
+                  {d.skills.map((s) => <Link key={s.id} className="btn ghost sm" to={`/question-bank/practice?skill=${s.id}&limit=10`}>Practise {s.name}</Link>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </>
   );
 }

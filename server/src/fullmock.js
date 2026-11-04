@@ -13,7 +13,7 @@ import { db, getSettings } from './db.js';
 import { tierOf, moveBalance } from './tiers.js';
 import { parseUpload } from './parse.js';
 import { ROUTE_CUT, satScore } from './scoring.js';
-import { MOCK_BLUEPRINT } from './qbank.js';
+import { MOCK_BLUEPRINT, DOMAINS } from './qbank.js';
 
 export async function migrateFullMocks() {
   await db.exec(`
@@ -40,6 +40,8 @@ CREATE TABLE IF NOT EXISTS full_mock_attempts (
 );
 ALTER TABLE full_mock_attempts ADD COLUMN IF NOT EXISTS paid BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE full_mock_attempts ADD COLUMN IF NOT EXISTS gen TEXT;
+ALTER TABLE full_mock_attempts ADD COLUMN IF NOT EXISTS times TEXT NOT NULL DEFAULT '{}';
+ALTER TABLE full_mocks ADD COLUMN IF NOT EXISTS conversion TEXT NOT NULL DEFAULT '{}';
 CREATE INDEX IF NOT EXISTS idx_fma_user ON full_mock_attempts(user_id, started_at DESC);
 ALTER TABLE full_mocks ENABLE ROW LEVEL SECURITY; ALTER TABLE full_mock_pdfs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE full_mock_questions ENABLE ROW LEVEL SECURITY; ALTER TABLE full_mock_attempts ENABLE ROW LEVEL SECURITY;
@@ -60,6 +62,64 @@ const normModule = (v, fallback) => {
   return fallback;
 };
 const cleanKey = (s) => String(s || '').toUpperCase().replace(/[^ABCD]/g, '');
+
+// ---------- score report (prompt 11) ----------
+const SKILL_DOMAIN = new Map(DOMAINS.flatMap((d) => d.skills.flatMap(([id, name]) => [[id, d.domain], [name.toLowerCase(), d.domain]])));
+/** SAT domain of a question from its skill / topic name. */
+export function domainOf(skill = '') {
+  const t = String(skill || '').toLowerCase().trim();
+  if (SKILL_DOMAIN.has(t)) return SKILL_DOMAIN.get(t);
+  if (/(boundar|punctuat|form|structure, and sense|structure and sense|grammar|agreement|tense|pronoun|modifier|convention|clause|apostroph|possessive|parallel)/.test(t)) return 'Standard English Conventions';
+  if (/(transition|rhetorical|synthesis|student notes)/.test(t)) return 'Expression of Ideas';
+  if (/(words in context|vocab|text structure|purpose|cross[- ]text|craft)/.test(t)) return 'Craft and Structure';
+  if (/(main idea|central|detail|evidence|inference|quantitative|information|graph|table)/.test(t)) return 'Information and Ideas';
+  return null;
+}
+/**
+ * The mock's own conversion table: { hard: { raw: scaled }, easy: {...}, single: {...} } where raw = Module 1 + Module 2 correct.
+ * Teachers type it as lines "raw score" (e.g. "38 690"). A raw count missing from the table takes the nearest lower row.
+ */
+export function parseConversion(text) {
+  const out = {};
+  for (const line of String(text || '').split(/\r?\n/)) {
+    const m = line.match(/^\s*(\d{1,2})\s*[,;:=\t -]+\s*(\d{3})\s*$/);
+    if (m && Number(m[2]) >= 200 && Number(m[2]) <= 800) out[Number(m[1])] = Math.round(Number(m[2]) / 10) * 10;
+  }
+  return out;
+}
+function convert(table, raw) {
+  const rows = Object.entries(table || {}).map(([k, v]) => [Number(k), Number(v)]).sort((a, b) => a[0] - b[0]);
+  if (!rows.length) return null;
+  let hit = rows[0];
+  for (const r of rows) if (r[0] <= raw) hit = r;
+  return hit[1];
+}
+
+/** Per-domain results, time per question and the lessons to revisit for the two weakest domains. */
+async function scoreReport(review, answers, times) {
+  const qs = review.flatMap((m) => m.questions);
+  const dom = new Map(DOMAINS.map((d) => [d.domain, { domain: d.domain, correct: 0, total: 0, seconds: 0 }]));
+  for (const q of qs) {
+    const d = dom.get(q.domain); if (!d) continue;
+    d.total += 1; d.correct += answers[q.id] === q.answer ? 1 : 0; d.seconds += Number(times[q.id] || 0);
+  }
+  const domains = [...dom.values()].filter((d) => d.total).map((d) => ({ ...d, pct: Math.round((d.correct / d.total) * 100) }));
+  const timed = qs.filter((q) => q.seconds != null);
+  const total = timed.reduce((t, q) => t + Number(q.seconds || 0), 0);
+  const weakest = [...domains].filter((d) => d.pct < 100).sort((a, b) => a.pct - b.pct || b.total - a.total).slice(0, 2);
+  const steps = weakest.length ? await db.all("SELECT s.id, s.title, s.subtitle, s.position, (SELECT MIN(i.id) FROM roadmap_items i WHERE i.step_id = s.id AND i.kind = 'lesson') AS first_lesson FROM roadmap_steps s WHERE s.deleted_at IS NULL ORDER BY s.position") : [];
+  const weak = weakest.map((d) => ({
+    ...d,
+    skills: (DOMAINS.find((x) => x.domain === d.domain)?.skills || []).map(([id, name]) => ({ id, name })),
+    lessons: steps.filter((st) => st.subtitle === d.domain || domainOf(`${st.title} ${st.subtitle}`) === d.domain).slice(0, 4)
+      .map((st) => ({ step_id: st.id, title: st.title, lesson_id: st.first_lesson || null })),
+  }));
+  return {
+    domains, weak,
+    time: timed.length ? { total, avg: Math.round(total / timed.length), questions: timed.length,
+      slowest: [...timed].sort((a, b) => b.seconds - a.seconds).slice(0, 3).map((q) => ({ id: q.id, n: qs.indexOf(q) + 1, seconds: q.seconds, ok: answers[q.id] === q.answer })) } : null,
+  };
+}
 
 /** How many full mocks this student may start per week, and how many are used. */
 export async function fmQuota(user) {
@@ -133,7 +193,10 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     };
     if (done) {
       out.result = { score: a.score, low: a.low, high: a.high, route: a.route, m1: a.m1_correct, m2: a.m2_correct, m1_total: a.m1_total, m2_total: a.m2_total };
-      out.review = [['1', sets['1'] || []], [a.m2, sets[a.m2] || []]].map(([m, qs]) => ({ module: m, label: MODULES[m], questions: qs.map((q) => pubQ(q, true)) }));
+      const times = parseJSON(a.times, {});
+      out.review = [['1', sets['1'] || []], [a.m2, sets[a.m2] || []]].map(([m, qs]) => ({ module: m, label: MODULES[m],
+        questions: qs.map((q) => ({ ...pubQ(q, true), domain: domainOf(q.skill || q.topic) || undefined, seconds: times[q.id] ?? null })) }));
+      out.report = await scoreReport(out.review, answers, times);
     }
     return out;
   };
@@ -256,6 +319,10 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
         [m2, adaptive ? (m2 === '2h' ? 'hard' : 'easy') : null, JSON.stringify(answers), right, a.id]);
     } else if (a.stage === 'm2') {
       const g = grade(sets, a, answers);
+      const table = parseJSON(mock.conversion, {})[a.route || 'single'];
+      const scaled = convert(table, g.m1 + g.m2);
+      if (scaled != null && g.sat) g.sat = { score: scaled, low: Math.max(200, scaled - 20), high: Math.min(800, scaled + 20) };
+      else if (scaled != null) g.sat = { score: scaled, low: scaled, high: scaled };
       await db.run("UPDATE full_mock_attempts SET stage = 'done', answers = ?, m1_correct = ?, m2_correct = ?, m1_total = ?, m2_total = ?, score = ?, low = ?, high = ?, finished_at = now() WHERE id = ?",
         [JSON.stringify(answers), g.m1, g.m2, g.m1_total, g.m2_total, g.sat?.score ?? 200, g.sat?.low ?? 200, g.sat?.high ?? 200, a.id]);
     }
@@ -274,6 +341,15 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     for (const [k, v] of Object.entries(body?.answers || {})) if (ids.has(String(k))) { if (Number.isInteger(v) && v >= 0 && v <= 3) answers[k] = v; else delete answers[k]; }
     return answers;
   };
+  // seconds spent on each question (the client sends running totals); kept separately from the answers
+  const keepTimes = async (sets, a, body) => {
+    if (!body?.times || typeof body.times !== 'object') return;
+    const mod = a.stage === 'm1' ? '1' : a.m2;
+    const ids = new Set((sets[mod] || []).map((q) => String(q.id)));
+    const times = parseJSON(a.times, {});
+    for (const [k, v] of Object.entries(body.times)) if (ids.has(String(k))) times[k] = Math.max(times[k] || 0, Math.min(3600, Math.round(Number(v) || 0)));
+    await db.run('UPDATE full_mock_attempts SET times = ? WHERE id = ?', [JSON.stringify(times), a.id]);
+  };
 
   app.get('/api/full-mocks/attempt/:aid', h(async (req, res) => {
     const x = await mine(req); if (!x) return bad(res, 'Not found', 404);
@@ -283,12 +359,14 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     const x = await mine(req); if (!x) return bad(res, 'Not found', 404);
     if (x.a.stage === 'done') return res.json({ ok: true });
     await db.run('UPDATE full_mock_attempts SET answers = ? WHERE id = ?', [JSON.stringify(keep(x.sets, x.a, req.body)), x.a.id]);
+    await keepTimes(x.sets, x.a, req.body);
     res.json({ ok: true });
   }));
   // finish the current module (Module 1 → Module 2, Module 2 → result)
   app.post('/api/full-mocks/attempt/:aid/next', h(async (req, res) => {
     const x = await mine(req); if (!x) return bad(res, 'Not found', 404);
     if (x.a.stage === 'done') return res.json(await state(x.a, x.mock, x.sets));
+    await keepTimes(x.sets, x.a, req.body);
     const a = await advance(x.a, x.mock, x.sets, keep(x.sets, x.a, req.body));
     res.json(await state(a, x.mock, x.sets));
   }));
@@ -307,7 +385,7 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     const sets = await moduleSets(m);
     const st = await db.one('SELECT COUNT(*) AS n, AVG(score) AS avg FROM full_mock_attempts WHERE mock_id = ? AND stage = ?', [m.id, 'done']);
     return { id: m.id, title: m.title, note: m.note, mode: m.mode, published: m.published, minutes: m.minutes, pdf_name: m.pdf_name, pdf_size: m.pdf_size,
-      keys: parseJSON(m.keys, {}), modules: summary(sets), ready: ready(sets), taken: Number(st.n), avg: st.avg == null ? null : Math.round(st.avg / 10) * 10, created_at: m.created_at };
+      keys: parseJSON(m.keys, {}), conversion: parseJSON(m.conversion, {}), modules: summary(sets), ready: ready(sets), taken: Number(st.n), avg: st.avg == null ? null : Math.round(st.avg / 10) * 10, created_at: m.created_at };
   };
   app.get('/api/full-mocks/admin', requireMaster, h(async (req, res) => {
     const list = await db.all("SELECT * FROM full_mocks WHERE mode <> 'qbank' ORDER BY position, id DESC");
@@ -328,6 +406,11 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     const keys = b.keys ? Object.fromEntries(Object.entries(b.keys).filter(([k]) => k in MODULES).map(([k, v]) => [k, cleanKey(v)])) : parseJSON(m.keys, {});
     const published = b.published ?? m.published;
     if (published && !ready(await moduleSets({ ...m, keys: JSON.stringify(keys) }))) return bad(res, 'Add Module 1 and Module 2 (or both harder and easier Module 2) before publishing');
+    if (b.conversion && typeof b.conversion === 'object') {
+      const conv = {};
+      for (const k of ['hard', 'easy', 'single']) if (b.conversion[k] != null) { const t = typeof b.conversion[k] === 'string' ? parseConversion(b.conversion[k]) : b.conversion[k]; if (Object.keys(t).length) conv[k] = t; }
+      await db.run('UPDATE full_mocks SET conversion = ? WHERE id = ?', [JSON.stringify(conv), m.id]);
+    }
     await db.run('UPDATE full_mocks SET title = ?, note = ?, minutes = ?, keys = ?, published = ? WHERE id = ?', [
       String(b.title ?? m.title).trim().slice(0, 120) || m.title, String(b.note ?? m.note).slice(0, 500),
       Math.max(5, Math.min(120, Number(b.minutes ?? m.minutes) || 32)), JSON.stringify(keys), !!published, m.id]);

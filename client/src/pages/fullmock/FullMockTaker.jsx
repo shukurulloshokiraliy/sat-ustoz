@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api, getToken } from '../../api.js';
 import { useToast } from '../../context.jsx';
 import { Confirm, ErrorBox, Spinner } from '../../components/ui.jsx';
-import { BBFooter, BBNavigator, BBOptions, BBQuestionBar, BBReview, BBShell, BBSplit, Highlightable, useElimination } from '../../components/Bluebook.jsx';
+import { BBFooter, BBNavigator, BBOptions, BBQuestionBar, BBReview, BBShell, BBSplit, Highlightable, useElimination, useQuestionTimer } from '../../components/Bluebook.jsx';
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
 
@@ -53,12 +53,16 @@ function Module({ a, onNext }) {
   const title = `Reading and Writing · ${a.stage === 'm1' ? 'Module 1' : 'Module 2'}`;
 
   useEffect(() => { try { localStorage.setItem(key, JSON.stringify(ans)); } catch { /* private mode */ } }, [ans, key]);
-  useEffect(() => { const t = setTimeout(() => api.put(`/full-mocks/attempt/${a.id}`, { answers: ans }).catch(() => {}), 1500); return () => clearTimeout(t); }, [ans, a.id]);
+  // seconds on each question (only while the question is on screen and the tab is visible) → the score report
+  const times = useQuestionTimer(!intro && view === 'q' ? q?.id : null);
+  useEffect(() => { const t = setTimeout(() => api.put(`/full-mocks/attempt/${a.id}`, { answers: ans, times: times.current }).catch(() => {}), 1500); return () => clearTimeout(t); }, [ans, a.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const t = setInterval(() => !document.hidden && api.put(`/full-mocks/attempt/${a.id}`, { answers: ansRef.current, times: times.current }).catch(() => {}), 30000); return () => clearInterval(t); }, [a.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ansRef = useRef(ans); ansRef.current = ans;
   const finish = useCallback(async () => {
     if (sent.current) return;
     sent.current = true;
     try {
-      const d = await api.post(`/full-mocks/attempt/${a.id}/next`, { answers: ans });
+      const d = await api.post(`/full-mocks/attempt/${a.id}/next`, { answers: ans, times: times.current });
       try { localStorage.removeItem(key); } catch { /* ignore */ }
       onNext(d);
     } catch (e) { sent.current = false; toast(e.message, 'bad'); }

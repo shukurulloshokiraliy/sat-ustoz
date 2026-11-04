@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useAuth, useTheme } from '../context.jsx';
 import { Modal } from './ui.jsx';
 import { IconBookmark, IconBookmarkFill, IconChevron, IconCheck, IconEye, IconEyeOff, IconFlag, IconMoon, IconSun, IconX } from './icons.jsx';
@@ -18,6 +18,19 @@ export function BBShell({ title, directions, seconds, countdown = true, tools, o
   const { theme, toggle } = useTheme();
   const [hide, setHide] = useState(false);
   const [dir, setDir] = useState(false);
+  // test day: a "5 minutes left" message (once), and a hidden clock comes back
+  const [warn, setWarn] = useState(false);
+  const peak = useRef(0);
+  useEffect(() => {
+    if (!countdown || seconds == null) return undefined;
+    peak.current = Math.max(peak.current, seconds);
+    if (peak.current > 300 && seconds <= 300 && seconds > 0 && peak.current !== -1) {
+      peak.current = -1; setWarn(true); setHide(false);
+      const t = setTimeout(() => setWarn(false), 9000);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [seconds, countdown]);
   return (
     <div className="bb">
       <header className="bb-head">
@@ -45,6 +58,7 @@ export function BBShell({ title, directions, seconds, countdown = true, tools, o
         </div>
       </header>
       <div className="bb-rule" aria-hidden="true" />
+      {warn && <div className="bb-warn" role="alert"><b>5 minutes remaining</b><span>Answer every question: there is no penalty for guessing.</span><button onClick={() => setWarn(false)} aria-label="Close"><IconX width={16} height={16} /></button></div>}
       <main className="bb-main">{children}</main>
       {footer}
       {dir && (
@@ -91,21 +105,40 @@ export function BBSplit({ left, right }) {
 }
 
 /**
- * Highlights in the passage: in highlight mode, selecting text wraps it in a yellow mark;
- * clicking a mark removes it. Highlights last while the question is on screen (mount it with key={question id}).
+ * Highlights and notes in the passage (Bluebook "Highlights & Notes").
+ * In highlight mode, selecting text wraps it in a yellow mark; tapping a mark opens a small box to add a note
+ * or remove the highlight. Marks and notes stay with the passage for the whole test, also when the student moves
+ * to another question and comes back (kept per passage text in memory).
  */
+const HL_STORE = new Map();
+const hashText = (t) => { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return `${t.length}:${h}`; };
 export function Highlightable({ on, children }) {
   const ref = useRef(null);
-  const keep = () => {};
+  const wrap = useRef(null);
+  const id = useRef('');
+  const [pop, setPop] = useState(null); // { mark, x, y, note }
+  useLayoutEffect(() => {
+    const el = ref.current; if (!el) return;
+    id.current = hashText(el.textContent || '');
+    const saved = HL_STORE.get(id.current);
+    if (saved) el.innerHTML = saved;
+  }, []);
+  const keep = () => { if (ref.current && id.current) HL_STORE.set(id.current, ref.current.innerHTML); };
+  const openPop = (m) => {
+    const box = wrap.current.getBoundingClientRect(); const r = m.getBoundingClientRect();
+    setPop({ mark: m, x: Math.max(8, Math.min(r.left - box.left, box.width - 268)), y: r.bottom - box.top + wrap.current.scrollTop + 6, note: m.dataset.note || '' });
+  };
   const onUp = () => {
     if (!on) return;
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || !ref.current?.contains(sel.anchorNode)) return;
     const range = sel.getRangeAt(0);
+    let first = null;
     try {
       const mark = document.createElement('mark');
       mark.className = 'bb-hl';
       range.surroundContents(mark);
+      first = mark;
     } catch {
       // selection crosses paragraphs: highlight each text node inside it
       const walker = document.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT);
@@ -117,19 +150,55 @@ export function Highlightable({ on, children }) {
         if (n === range.startContainer) r.setStart(n, range.startOffset);
         if (n === range.endContainer) r.setEnd(n, range.endOffset);
         const m = document.createElement('mark'); m.className = 'bb-hl';
-        try { r.surroundContents(m); } catch { /* skip odd nodes */ }
+        try { r.surroundContents(m); first ||= m; } catch { /* skip odd nodes */ }
       });
     }
     sel.removeAllRanges();
     keep();
+    if (first) openPop(first);
   };
   const onClick = (e) => {
     const m = e.target.closest('mark.bb-hl');
-    if (!m) return;
-    m.replaceWith(...m.childNodes);
-    keep();
+    if (m) openPop(m);
   };
-  return <div ref={ref} className={`bb-passage ${on ? 'hl-on' : ''}`} onMouseUp={onUp} onTouchEnd={onUp} onClick={onClick}>{children}</div>;
+  const save = () => {
+    const m = pop.mark; const note = pop.note.trim();
+    if (note) { m.dataset.note = note; m.title = note; m.classList.add('noted'); } else { delete m.dataset.note; m.removeAttribute('title'); m.classList.remove('noted'); }
+    keep(); setPop(null);
+  };
+  const remove = () => { const m = pop.mark; if (m.isConnected) m.replaceWith(...m.childNodes); keep(); setPop(null); };
+  return (
+    <div className="bb-hlwrap" ref={wrap}>
+      <div ref={ref} className={`bb-passage ${on ? 'hl-on' : ''}`} onMouseUp={onUp} onTouchEnd={onUp} onClick={onClick}>{children}</div>
+      {pop && (
+        <div className="bb-notepop" style={{ left: pop.x, top: pop.y }} role="dialog" aria-label="Note on the highlighted text">
+          <textarea rows={3} autoFocus value={pop.note} placeholder="Add a note (optional)" maxLength={500} onChange={(e) => setPop((p) => ({ ...p, note: e.target.value }))}
+            onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) save(); if (e.key === 'Escape') setPop(null); }} />
+          <div className="row between" style={{ gap: 6 }}>
+            <button type="button" className="bb-np-del" onClick={remove}>Remove highlight</button>
+            <button type="button" className="bb-np-save" onClick={save}>Save</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Time spent on each question while it is on screen and the tab is visible. Returns a ref { [qid]: seconds }. */
+export function useQuestionTimer(qid) {
+  const times = useRef({});
+  useEffect(() => {
+    if (qid == null) return undefined;
+    let last = Date.now();
+    const tick = () => {
+      const now = Date.now();
+      if (!document.hidden) times.current[qid] = Math.round(((times.current[qid] || 0) + (now - last) / 1000) * 10) / 10;
+      last = now;
+    };
+    const t = setInterval(tick, 1000);
+    return () => { tick(); clearInterval(t); };
+  }, [qid]);
+  return times;
 }
 
 /** The dark question bar: number · Mark for Review · answer-elimination switch. */
@@ -202,6 +271,7 @@ export function BBFooter({ cur, total, onOpenNav, children }) {
 export function BBNavigator({ title, items, cur, onGo, onClose, onReview }) {
   return (
     <Modal title={title} onClose={onClose}>
+      <p className="bb-navcount">{items.filter((x) => x.answered).length} answered · {items.filter((x) => !x.answered).length} blank{items.some((x) => x.marked) ? ` · ${items.filter((x) => x.marked).length} for review` : ''}</p>
       <div className="bb-legend">
         <span><i className="cur" /> Current</span>
         <span><i /> Unanswered</span>
