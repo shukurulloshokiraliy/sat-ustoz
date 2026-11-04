@@ -6,6 +6,7 @@ import { Confetti, Spinner } from '../../components/ui.jsx';
 import Character, { CHARACTERS, CHARACTER_KEYS, CHARACTER_SETS } from '../../components/Character.jsx';
 import { Chips, DUEL_KEY, hostKey, playerKey, store, HERO_KEY } from './GameHub.jsx';
 import { BOT_LEVELS, ZONE, ZoneTrack, isVip } from './zones.jsx';
+import { musicOn, sfxOn, setPref, startMusic, stopMusic, sfxRight, sfxWrong, sfxTick, sfxWin, sfxStart } from '../../components/gameAudio.js';
 
 const L = ['A', 'B', 'C', 'D'];
 const ASK = { meaning: 'What does it mean?', word: 'Which word fits this meaning?', blank: 'Fill the gap' };
@@ -45,10 +46,25 @@ export default function Play() {
   );
 }
 
+function SoundButtons() {
+  const [m, setM] = useState(musicOn());
+  const [f, setF] = useState(sfxOn());
+  return (
+    <div className="arena-sound">
+      <button type="button" className={m ? 'on' : ''} aria-pressed={m} onClick={() => { const v = !m; setPref('arena-music', v); setM(v); if (!v) stopMusic(); else window.dispatchEvent(new Event('arena-music')); }} title={m ? 'Music on' : 'Music off'}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />{!m && <path d="M3 3l18 18" />}</svg><span>Music</span>
+      </button>
+      <button type="button" className={f ? 'on' : ''} aria-pressed={f} onClick={() => { const v = !f; setPref('arena-sfx', v); setF(v); }} title={f ? 'Sounds on' : 'Sounds off'}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z" />{f ? <path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14" /> : <path d="m22 9-6 6M16 9l6 6" />}</svg><span>Sounds</span>
+      </button>
+    </div>
+  );
+}
+
 function Shell({ children, zone = 'classic' }) {
   return (
     <div className={`arena z-${zone}`}>
-      <header className="arena-top"><Link to="/game" className="arena-brand"><Character kind="owl" size={34} /> <b>Word Arena</b></Link></header>
+      <header className="arena-top"><Link to="/game" className="arena-brand"><Character kind="owl" size={34} /> <b>Word Arena</b></Link><SoundButtons /></header>
       <main className="arena-main">{children}</main>
     </div>
   );
@@ -202,12 +218,21 @@ function Questions({ room, token, reload }) {
   const busy = useRef(false);
   const q = room.questions[qi];
   useEffect(() => { if (!fb && room.me.answered > qi) setQi(room.me.answered); }, [room.me.answered]); // eslint-disable-line react-hooks/exhaustive-deps
+  // music while the questions are on screen (browsers allow sound only after a tap: the first tap starts it)
+  useEffect(() => {
+    sfxStart(); startMusic();
+    const kick = () => startMusic();
+    window.addEventListener('pointerdown', kick); window.addEventListener('arena-music', kick);
+    return () => { window.removeEventListener('pointerdown', kick); window.removeEventListener('arena-music', kick); stopMusic(); };
+  }, []);
+  useEffect(() => { if (room.seconds_left > 0 && room.seconds_left <= 10) sfxTick(); }, [room.seconds_left]);
   const answer = async (k) => {
     if (busy.current || fb) return;
     busy.current = true;
     try {
       const r = await api.post(`/game/${room.code}/answer`, { token, qi, choice: k });
       setFb({ pick: k, ...r });
+      (r.correct ? sfxRight : sfxWrong)();
       setMe((m) => ({ ...m, score: r.score, streak: r.streak, correct: (m.correct || 0) + (r.correct ? 1 : 0) }));
       setTimeout(() => { setFb(null); setQi((i) => i + 1); busy.current = false; if (r.done) reload(); }, r.correct ? 700 : 1400);
     } catch { busy.current = false; reload(); }
@@ -287,6 +312,7 @@ function Board({ room, isHost, hostToken, reload }) {
 }
 
 function Podium({ room }) {
+  useEffect(() => { stopMusic(); sfxWin(); }, []);
   const top = room.players.slice(0, 3);
   const order = [top[1], top[0], top[2]].filter(Boolean);
   const winTeam = room.mode === 'team' ? [...room.teams].sort((a, b) => b.score - a.score)[0] : null;

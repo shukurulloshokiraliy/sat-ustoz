@@ -2729,3 +2729,37 @@ button.ar-fighter:hover em { color: var(--sun); }
 @keyframes ar-twinkle { 50% { opacity: .2; transform: scale(.6); } }
 .zt-runner .char { animation: zt-run .32s ease-in-out infinite alternate; }
 .zt-runner::after { content: ''; position: absolute; bottom: -2px; left: 50%; width: 60%; height: 6px; transform: translateX(-50%); border-radius: 50%; background: rgba(0,0,0,.25); filter: blur(2px); }
+
+/* =====================================================================
+   Word Arena game screen v2: calm, easy on the eyes. Graphite stage, one card style for
+   every answer (colour only says right / wrong), a soft question card, sound controls.
+   ===================================================================== */
+.arena { background: radial-gradient(120% 70% at 50% -10%, rgba(91, 124, 255, .16), transparent 60%), radial-gradient(60% 50% at 100% 100%, rgba(255, 203, 61, .06), transparent 60%), #101216; }
+.arena::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .5;
+  background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px); background-size: 22px 22px; mask-image: linear-gradient(180deg, #000, transparent 75%); -webkit-mask-image: linear-gradient(180deg, #000, transparent 75%); }
+.arena > * { position: relative; z-index: 1; }
+.arena.z-race { background: radial-gradient(120% 70% at 50% -10%, rgba(63, 163, 77, .18), transparent 60%), #0F1412; }
+.arena.z-space { background: radial-gradient(120% 70% at 50% -10%, rgba(142, 92, 247, .18), transparent 60%), #0E0F18; }
+.arena.z-ocean { background: radial-gradient(120% 70% at 50% -10%, rgba(46, 155, 234, .18), transparent 60%), #0D1218; }
+.arena.z-jungle { background: radial-gradient(120% 70% at 50% -10%, rgba(102, 187, 106, .16), transparent 60%), #0F1410; }
+.arena-top { justify-content: space-between; }
+.arena-sound { display: flex; gap: 6px; }
+.arena-sound button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 99px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #9EA3B5; font: 700 .8rem var(--font); cursor: pointer; }
+.arena-sound button.on { color: #fff; border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.1); }
+@media (max-width: 480px) { .arena-sound span { display: none; } }
+.arena-hud > span { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1); }
+.arena-q { background: #F4F5F8; color: #161B3D; box-shadow: 0 1px 0 rgba(255,255,255,.4) inset, 0 18px 40px -18px rgba(0,0,0,.6); }
+.arena-q.ok { box-shadow: 0 0 0 3px #3CCB9A, 0 18px 40px -18px rgba(0,0,0,.6); } .arena-q.no { box-shadow: 0 0 0 3px #F28B6E, 0 18px 40px -18px rgba(0,0,0,.6); }
+:root[data-theme='dark'] .arena-q { background: #1B1D24; color: #ECEDF0; } :root[data-theme='dark'] .arena-q small { color: #9EA1AD; }
+.arena-opt, .arena-opt.c0, .arena-opt.c1, .arena-opt.c2, .arena-opt.c3 {
+  background: #1B1D24; color: #ECEDF0; border: 1px solid rgba(255,255,255,.1); box-shadow: 0 4px 0 rgba(0,0,0,.35); font-weight: 650; }
+.arena-opt span, .arena-opt.c1 span { background: rgba(255,255,255,.08); color: #C7CBDA; border: 1px solid rgba(255,255,255,.12); }
+.arena-opt:hover:not(:disabled) { border-color: rgba(127, 155, 255, .7); background: #20232C; transform: translateY(-2px); }
+.arena-opt:hover:not(:disabled) span { background: #2A55E5; color: #fff; border-color: transparent; }
+.arena-opt.right { background: #1E7A55; border-color: #3CCB9A; color: #fff; outline: 0; transform: scale(1.02); animation: ar-right .4s ease-out; }
+.arena-opt.right span { background: #3CCB9A; color: #0E2A1F; }
+.arena-opt.wrong { background: #6B2A22; border-color: #F28B6E; color: #fff; opacity: 1; animation: shake .35s; }
+.arena-opt.wrong span { background: #F28B6E; color: #3A120C; }
+.arena-opt.dim { opacity: .4; }
+@keyframes ar-right { 40% { transform: scale(1.05); } }
+.arena-duelbar { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.08); }
