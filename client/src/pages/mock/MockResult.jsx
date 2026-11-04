@@ -65,7 +65,7 @@ function Result({ m }) {
             </ul>
             {q.explanation && <p className="muted">{rich(q.explanation)}</p>}
             {q.tip && <div className="tip"><b>Ustoz tip:</b> {rich(q.tip)}</div>}
-            <div className="row wrap" style={{ gap: 8 }}><AskTeacher about={`Take a quiz #${m.id}, question ${i + 1} (${q.skill}): ${String(q.prompt).slice(0, 120)}`} /><ReportMistake about={`Question ${q.id} (${q.skill})`} /></div>
+            <div className="row wrap" style={{ gap: 8 }}><AskTeacher about={`Take a quiz #${m.id}, question ${i + 1} (${q.skill}): ${String(q.prompt).slice(0, 120)}`} /><ReportMistake qref={`qbank:${q.id}`} about={`Question ${q.id} (${q.skill})`} /></div>
           </Card>
         ))}
         {!list.length && <p className="muted">Nothing here.</p>}

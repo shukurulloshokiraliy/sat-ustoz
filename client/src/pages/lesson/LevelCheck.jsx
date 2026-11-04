@@ -6,6 +6,7 @@ import { Card, Confetti, Confirm, ErrorBox, Gate, Segmented, Spinner, useAsync }
 import { IconArrow, IconCheck, IconX, Logo } from '../../components/icons.jsx';
 import { BBExam } from '../../components/Bluebook.jsx';
 import { rich } from '../../components/Rich.jsx';
+import ReportMistake from '../../components/ReportMistake.jsx';
 
 const L = ['A', 'B', 'C', 'D', 'E'];
 
@@ -157,6 +158,7 @@ export function LevelCheckResult() {
                     })}
                   </div>
                   {q.explanation && <div className="explain"><b>Why?</b><p>{rich(q.explanation)}</p></div>}
+                  <ReportMistake qref={`lesson:${r.lesson.id}:${q.id}`} about={`Level check “${r.lesson.title}” (version ${r.version}), question ${r.review.indexOf(q) + 1}`} />
                 </Card>
               ))}
             </div>

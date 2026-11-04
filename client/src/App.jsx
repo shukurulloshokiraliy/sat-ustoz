@@ -5,6 +5,8 @@ import MockResult from './pages/mock/MockResult.jsx';
 import Leaderboard from './pages/student/Leaderboard.jsx';
 import Finance from './pages/master/Finance.jsx';
 import Progress from './pages/master/Progress.jsx';
+import Reports from './pages/master/Reports.jsx';
+import Mistakes, { MistakeReview } from './pages/student/Mistakes.jsx';
 import Assignments from './pages/student/Assignments.jsx';
 import FullMocks from './pages/fullmock/FullMocks.jsx';
 import FullMockTaker from './pages/fullmock/FullMockTaker.jsx';
@@ -83,6 +85,7 @@ export default function App() {
       {user.role === 'student' && <Route path="/placement/test" element={<PlacementTest />} />}
       {user.role === 'student' && <Route path="/lesson/:id/check" element={<LevelCheck />} />}
       {user.role === 'student' && <Route path="/question-bank/practice" element={<QbankPractice />} />}
+      {user.role === 'student' && <Route path="/mistakes/review" element={<MistakeReview />} />}
       {user.role === 'student' && <Route path="/mock" element={<MockTaker />} />}
       {user.role === 'student' && <Route path="/exam/:itemId" element={<MockTaker />} />}
       {user.role === 'student' && <Route path="/full-mock/:aid" element={<FullMockTaker />} />}
@@ -116,6 +119,7 @@ export default function App() {
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="finance" element={<Finance />} />
             <Route path="progress" element={<Progress />} />
+            <Route path="reports" element={<Reports />} />
             <Route path="assignments" element={<Assignments />} />
             <Route path="website" element={<Website />} />
             <Route path="support" element={<Support />} />
@@ -133,6 +137,7 @@ export default function App() {
             <Route path="consultations" element={<Consultations />} />
             <Route path="full-mock/result/:aid" element={<FullMockResult />} />
             <Route path="saved" element={<Saved />} />
+            <Route path="mistakes" element={<Mistakes />} />
             <Route path="portfolio" element={<Portfolio />} />
             <Route path="subscribe" element={<Subscribe />} />
             <Route path="welcome" element={<Welcome />} />

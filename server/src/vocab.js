@@ -44,6 +44,8 @@ ALTER TABLE vocab_sets ADD COLUMN IF NOT EXISTS src TEXT NOT NULL DEFAULT 'bundl
 ALTER TABLE vocab_units ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE vocab_units ADD COLUMN IF NOT EXISTS edited BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE vocab_units ADD COLUMN IF NOT EXISTS src TEXT NOT NULL DEFAULT 'bundled';
+-- course words (module vocabulary) review on a fixed ladder: 1, 3, 7, 14, 30 days
+ALTER TABLE vocab_progress ADD COLUMN IF NOT EXISTS ladder BOOLEAN NOT NULL DEFAULT false;
 `);
 }
 
@@ -82,7 +84,9 @@ export async function syncVocab() {
 const MIN = 60e3, DAY = 86400e3;
 const LEARN_STEPS = [1, 10]; // minutes
 /** Next state of a card for a rating 1 Again · 2 Hard · 3 Good · 4 Easy. */
+export const LADDER = [1, 3, 7, 14, 30];
 export function schedule(p, rating, now = Date.now()) {
+  if (p?.ladder) return ladder(p, rating, now);
   const c = { state: p?.state || 'new', ease: p?.ease ?? 2.5, interval_days: p?.interval_days ?? 0, step: p?.step ?? 0, reps: (p?.reps ?? 0) + 1, lapses: p?.lapses ?? 0 };
   let due;
   if (c.state === 'new' || c.state === 'learning') {
@@ -106,6 +110,46 @@ export function schedule(p, rating, now = Date.now()) {
   }
   return { ...c, due_at: new Date(due).toISOString() };
 }
+/** Course words: Again → 10 min, Hard → same gap again, Good → next rung, Easy → skip a rung (1, 3, 7, 14, 30 days). */
+function ladder(p, rating, now) {
+  const c = { state: p.state || 'learning', ease: p.ease ?? 2.5, interval_days: p.interval_days ?? 0, step: p.step ?? 0, reps: (p.reps ?? 0) + 1, lapses: p.lapses ?? 0, ladder: true };
+  let due;
+  if (rating === 1) { c.state = 'learning'; c.step = 0; c.lapses += 1; c.interval_days = 0; due = now + 10 * MIN; }
+  else {
+    if (rating === 3) c.step = Math.min(c.step + 1, LADDER.length - 1);
+    if (rating === 4) c.step = Math.min(c.step + 2, LADDER.length - 1);
+    c.interval_days = LADDER[c.step];
+    c.state = c.step >= 1 ? 'review' : 'learning';
+    due = now + c.interval_days * DAY;
+  }
+  return { ...c, due_at: new Date(due).toISOString() };
+}
+
+/**
+ * Module vocabulary → the "Course words" word book. Called when a student opens a vocabulary lesson:
+ * the words join their deck and the first review is due a day later.
+ */
+export async function addCourseWords(userId, item, words) {
+  const list = (words || []).filter((w) => w && w.word);
+  if (!list.length) return 0;
+  await db.run(`INSERT INTO vocab_decks (id, title, subtitle, free_sets, position, src) VALUES ('course', 'Course words', 'Words from the lessons you opened, reviewed after 1, 3, 7, 14 and 30 days', 999, -1, 'course')
+    ON CONFLICT (id) DO NOTHING`);
+  const step = await db.one('SELECT id, title, position FROM roadmap_steps WHERE id = ?', [item.step_id]);
+  const set = await db.one(`INSERT INTO vocab_sets (deck_id, n, title, src) VALUES ('course', ?, ?, 'course')
+    ON CONFLICT (deck_id, n) DO UPDATE SET title = CASE WHEN vocab_sets.edited THEN vocab_sets.title ELSE EXCLUDED.title END RETURNING id`, [item.step_id, step?.title || 'Course']);
+  const unit = await db.one(`INSERT INTO vocab_units (set_id, n, title, src) VALUES (?, ?, ?, 'course')
+    ON CONFLICT (set_id, n) DO UPDATE SET title = CASE WHEN vocab_units.edited THEN vocab_units.title ELSE EXCLUDED.title END RETURNING id`, [set.id, item.id, item.title || 'Vocabulary']);
+  const seen = new Set();
+  const rows = list.filter((w) => !seen.has(w.word.toLowerCase()) && seen.add(w.word.toLowerCase()));
+  await db.run(`INSERT INTO vocab_words (unit_id, word, definition, uz, ru, example, position, src) VALUES ${rows.map(() => "(?,?,?,?,?,?,?, 'bundled')").join(',')}
+    ON CONFLICT (unit_id, lower(word)) DO NOTHING`,
+  rows.flatMap((w, i) => [unit.id, w.word, [w.pos, w.definition].filter(Boolean).join(' ').trim(), w.uz || '', w.ru || '', w.example || '', i]));
+  const r = await db.run(`INSERT INTO vocab_progress (user_id, word_id, state, step, interval_days, due_at, reps, ladder, last_at)
+    SELECT ?, w.id, 'learning', 0, 1, now() + interval '1 day', 0, true, now() FROM vocab_words w WHERE w.unit_id = ? AND NOT w.hidden
+    ON CONFLICT (user_id, word_id) DO NOTHING`, [userId, unit.id]);
+  return r.rowCount;
+}
+
 /** Short labels for the four buttons ("<1m", "10m", "1d", "4d"). */
 const human = (ms) => (ms < 3600e3 ? `${Math.max(1, Math.round(ms / MIN))}m` : ms < DAY ? `${Math.round(ms / 3600e3)}h` : ms < 30 * DAY ? `${Math.round(ms / DAY)}d` : `${Math.round(ms / (30 * DAY))}mo`);
 const previews = (p, now = Date.now()) => [1, 2, 3, 4].map((r) => human(new Date(schedule(p, r, now).due_at).getTime() - now));
@@ -135,18 +179,19 @@ export function registerVocab(app, { h, bad, requireMaster, requireStudent, acce
     const pm = new Map(prog.map((r) => [r.unit_id, r])); const bm = new Map(best.map((r) => [r.unit_id, Number(r.best)]));
     const full = await canPractice(req.user);
     const totals = { words: 0, learned: 0, due: 0, seen: 0 };
+    const student = req.user.role !== 'master';
     const out = decks.map((d) => ({
       ...d,
       sets: sets.filter((s) => s.deck_id === d.id).map((s) => {
-        const us = units.filter((u) => u.set_id === s.id).map((u) => {
+        const us = units.filter((u) => u.set_id === s.id && !(student && d.id === 'course' && !pm.has(u.id))).map((u) => {
           const p = pm.get(u.id) || {};
           const r = { id: u.id, n: u.n, title: u.title, words: Number(u.words), seen: Number(p.seen || 0), learned: Number(p.learned || 0), due: Number(p.due || 0), best: bm.get(u.id) ?? null };
           totals.words += r.words; totals.learned += r.learned; totals.due += r.due; totals.seen += r.seen;
           return r;
         });
         return { id: s.id, n: s.n, title: s.title, video_url: s.video_url, open: full || s.n <= d.free_sets, units: us };
-      }),
-    }));
+      }).filter((s) => !(student && d.id === 'course' && !s.units.length)),
+    })).filter((d) => !(student && d.id === 'course' && !d.sets.length));
     res.json({ decks: out, totals, full });
   }));
 
@@ -166,10 +211,10 @@ export function registerVocab(app, { h, bad, requireMaster, requireStudent, acce
   // words due for review across every open set (the "Review" button)
   app.get('/api/vocab/due', h(async (req, res) => {
     const full = await canPractice(req.user);
-    const rows = await db.all(`SELECT w.*, p.state AS p_state, p.ease, p.interval_days, p.step, p.reps, p.lapses, p.due_at AS p_due, s.n AS set_n, d.free_sets
+    const rows = await db.all(`SELECT w.*, p.state AS p_state, p.ease, p.interval_days, p.step, p.reps, p.lapses, p.ladder, p.due_at AS p_due, s.n AS set_n, d.free_sets
       FROM vocab_progress p JOIN vocab_words w ON w.id = p.word_id JOIN vocab_units u ON u.id = w.unit_id JOIN vocab_sets s ON s.id = u.set_id JOIN vocab_decks d ON d.id = s.deck_id
       WHERE p.user_id = ? AND p.due_at <= now() + interval '20 minutes' AND NOT w.hidden AND NOT u.hidden AND NOT s.hidden AND NOT d.hidden ORDER BY p.due_at LIMIT 100`, [req.user.id]);
-    res.json({ words: rows.filter((r) => full || r.set_n <= r.free_sets).map((r) => pubWord(r, { state: r.p_state, ease: r.ease, interval_days: r.interval_days, step: r.step, reps: r.reps, lapses: r.lapses, due_at: r.p_due })) });
+    res.json({ words: rows.filter((r) => full || r.set_n <= r.free_sets).map((r) => pubWord(r, { state: r.p_state, ease: r.ease, interval_days: r.interval_days, step: r.step, reps: r.reps, lapses: r.lapses, ladder: r.ladder, due_at: r.p_due })) });
   }));
 
   // rate one card

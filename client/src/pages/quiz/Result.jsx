@@ -6,6 +6,7 @@ import { Bars, Card, Confetti, CountUp, Gate, PageHeader, Ring, Segmented, pctTo
 import { domainOf, estimateLabel, readiness } from '../../lib.js';
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
+import ReportMistake from '../../components/ReportMistake.jsx';
 import { IconBookmark, IconBookmarkFill, IconFlag } from '../../components/icons.jsx';
 
 export function QuestionReview({ item, showSave = true }) {
@@ -47,6 +48,7 @@ export function QuestionReview({ item, showSave = true }) {
       </div>
       <div className="explain"><b>Why?</b><p>{item.explanation || 'No explanation provided.'}</p></div>
       {item.tip && <div className="tip"><b>Ustoz tip:</b> {item.tip}</div>}
+      {item.n != null && <ReportMistake qref={`quiz:${item.id}`} about={`Quiz question ${item.n} (${item.topic}): ${String(item.prompt).slice(0, 100)}`} />}
     </div>
   );
 }

@@ -142,6 +142,7 @@ function Vocab({ l, reload }) {
         <p className="muted">{l.words.length} words · tap a card to see its meaning{l.tested_in ? ` · tested in the ${l.tested_in}` : ''}</p>
         <button className="btn ghost sm" onClick={() => setAll((x) => !x)}>{all ? 'Hide all meanings' : 'Show all meanings'}</button>
       </div>
+      {user.role === 'student' && <p className="course-words-note">These words are in your <Link to="/vocab">Course words</Link> deck. Reviews come back after 1, 3, 7, 14 and 30 days, and you can also play them in Word Arena.</p>}
       <div className="vocab-grid">
         {l.words.map((w, i) => {
           const shown = all || open.has(i);

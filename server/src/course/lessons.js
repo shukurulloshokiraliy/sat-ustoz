@@ -3,6 +3,7 @@ import { playUrl } from '../video.js';
 import { scanSoon } from '../reserved.js';
 import { getSettings } from '../db.js';
 import { upsertModule, validateModule, previewModule } from './modules.js';
+import { addCourseWords } from '../vocab.js';
 
 const publicQ = (q) => ({ id: q.id, kind: q.kind, prompt: q.prompt, passage: q.passage || '', options: q.options });
 const GRACE = 20; // seconds of network slack for timed checks
@@ -49,10 +50,14 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     const open = req.user.role === 'student' ? await db.one('SELECT id, version FROM lesson_checks WHERE user_id = ? AND item_id = ? AND finished_at IS NULL ORDER BY id DESC LIMIT 1', [req.user.id, item.id]) : null;
     const nextVersion = open?.version || versions[history.length % (versions.length || 1)] || null;
     const showContent = !locked;
+    // opening a vocabulary lesson puts its words into the student's "Course words" deck (spaced reviews 1, 3, 7, 14, 30 days)
+    let deck_added = 0;
+    if (content.type === 'vocab' && showContent && req.user.role === 'student') deck_added = await addCourseWords(req.user.id, item, content.words).catch((e) => { console.error('[course words]', e.message); return 0; });
     const sections = lessons.filter((i) => (i.lesson?.type || 'section') === 'section');
     res.json({
       type: content.type || 'section',
       words: content.type === 'vocab' && showContent ? content.words || [] : undefined,
+      deck_added: content.type === 'vocab' ? deck_added : undefined,
       tested_in: content.tested_in || undefined,
       session: content.type === 'session' ? { time_minutes: content.time_minutes || 0, makeup: content.makeup || '', unlock: content.unlock || '',
         lessons_passed: sections.filter((i) => i.done).length, lessons_total: sections.length } : undefined,

@@ -12,7 +12,7 @@ import { IconArrow, IconBolt, IconCheck, IconClock, IconFlame, IconQuiz, IconTar
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const st = useAsync(() => Promise.all([api.get('/me/analytics'), api.get('/quizzes'), api.get('/placement'), api.get('/me/report'), api.get('/leaderboard?period=week').catch(() => null), api.get('/assignments').catch(() => null)]), []);
+  const st = useAsync(() => Promise.all([api.get('/me/analytics'), api.get('/quizzes'), api.get('/placement'), api.get('/me/report'), api.get('/leaderboard?period=week').catch(() => null), api.get('/assignments').catch(() => null), api.get('/goal').catch(() => null)]), []);
   const first = user.name.split(' ')[0];
   const [pickExam, setPickExam] = useState(false);
   const examLeft = daysUntil(user.exam_date);
@@ -21,7 +21,7 @@ export default function Dashboard() {
   return (
     <div className="page">
       {(needExam || pickExam) && <ExamPicker value={user.exam_date} required={needExam} onClose={() => setPickExam(false)} />}
-      <Gate state={st}>{([a, quizzes, pl, rep, lb, asg]) => {
+      <Gate state={st}>{([a, quizzes, pl, rep, lb, asg, goal]) => {
         const next = quizzes.find((q) => q.status === 'in_progress') || quizzes.find((q) => q.status === 'new') || quizzes[0];
         const all = combine(a, rep);
         const points = all.trend.map((t, i) => ({ value: t.est, label: `${t.title} (${fmtDate(t.date)})`, short: i + 1 }));
@@ -42,6 +42,7 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {goal && !goal.empty && <DailyGoal g={goal} />}
             {!user.access?.can_practice && <PaywallBanner />}
             {!pl.results.length && (
               <Link to="/placement" className="pl-invite">
@@ -154,6 +155,25 @@ export default function Dashboard() {
         );
       }}</Gate>
     </div>
+  );
+}
+
+/** Today's goal: 5 mistakes + 10 words due (fewer when less is due). Doing it keeps the streak going. */
+function DailyGoal({ g }) {
+  const part = (x) => (x.target ? Math.min(100, Math.round((x.done / x.target) * 100)) : 100);
+  const total = Math.round((part(g.mistakes) + part(g.words)) / 2);
+  return (
+    <section className={`goal-card ${g.complete ? 'done' : ''}`} aria-label="Today's goal">
+      <Ring value={total} size={64} stroke={7} label={g.complete ? 'Done' : `${total}%`} color={g.complete ? 'var(--good)' : 'var(--primary)'} />
+      <div className="grow">
+        <b>{g.complete ? 'Daily goal done: streak safe' : "Today's goal"}</b>
+        <p className="muted">{g.mistakes.target ? `${Math.min(g.mistakes.done, g.mistakes.target)}/${g.mistakes.target} mistakes` : 'No mistakes due'} · {g.words.target ? `${Math.min(g.words.done, g.words.target)}/${g.words.target} words` : 'no words due'}</p>
+      </div>
+      <div className="row wrap" style={{ gap: 8 }}>
+        {g.mistakes.done < g.mistakes.target && <Link className="btn primary sm" to="/mistakes/review">Mistakes</Link>}
+        {g.words.done < g.words.target && <Link className="btn soft sm" to="/vocab/review">Words</Link>}
+      </div>
+    </section>
   );
 }
 

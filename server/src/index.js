@@ -25,6 +25,7 @@ import { migrateFinance, registerFinance } from './finance.js';
 import { migrateAssignments, registerAssignments, assignedQuizOpen } from './assignments.js';
 import { migrateReserved, registerReserved, scanReserved, scanSoon } from './reserved.js';
 import { registerProgress } from './progress.js';
+import { migrateMistakes, registerMistakes } from './mistakes.js';
 import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails, moveBalance } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
@@ -75,6 +76,7 @@ await migrateGifs();
 await migrateFinance();
 await migrateAssignments();
 await migrateReserved();
+await migrateMistakes();
 // roadmap history starts with today's roadmap, so even the first change can be undone
 if (!(await db.one('SELECT 1 AS x FROM roadmap_versions LIMIT 1'))) setTimeout(() => rmVersion({ user: { id: null, name: 'System' } }, 'Starting point'), 0);
 // keep exam questions out of practice: the first start scans every quiz and lesson check once
@@ -295,6 +297,7 @@ registerFinance(app, { h, bad, requireMaster });
 registerAssignments(app, { h, bad, requireMaster, requireStudent, roadmapFor });
 registerReserved(app, { h, bad, requireMaster });
 registerProgress(app, { h, bad, requireMaster, roadmapFor, userAnalytics });
+registerMistakes(app, { h, bad, requireStudent, requireMaster });
 
 app.get('/api/me', h(async (req, res) => res.json(await mepayload(req.user))));
 app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
@@ -547,8 +550,9 @@ async function buildReport(id) {
         SELECT done_at FROM roadmap_done WHERE user_id = ? UNION ALL
         SELECT finished_at FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL UNION ALL
         SELECT finished_at FROM practice_sessions WHERE user_id = ? AND finished_at IS NOT NULL UNION ALL
-        SELECT finished_at FROM qbank_mocks WHERE user_id = ? AND finished_at IS NOT NULL
-      ) x WHERE d > now() - interval '28 days' GROUP BY 1 ORDER BY 1`, [id, id, id, id, id, id, id, id]),
+        SELECT finished_at FROM qbank_mocks WHERE user_id = ? AND finished_at IS NOT NULL UNION ALL
+        SELECT at FROM mistake_reviews WHERE user_id = ?
+      ) x WHERE d > now() - interval '28 days' GROUP BY 1 ORDER BY 1`, [id, id, id, id, id, id, id, id, id]),
   ]);
   return {
     qbank: { answered: num(qbTot.n), correct: num(qbTot.ok), last: qbTot.last, skills: qb.map((r) => ({ domain: r.domain, skill: r.skill, answered: num(r.n), correct: num(r.ok) })) },

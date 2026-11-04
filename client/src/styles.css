@@ -2443,3 +2443,32 @@ tr.pf-idle td:first-child b { color: var(--bad); }
 .pf-pick.key { outline: 2px solid var(--good); } .pf-pick.key .pf-bar { background: rgba(34,176,125,.25); }
 .pf-pick.likely { outline: 2px dashed var(--bad); }
 @media (max-width: 700px) { .pf-row { grid-template-columns: 1fr; gap: 4px; } }
+
+/* ---------- My mistakes (prompt 10) ---------- */
+.mk-hero { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; justify-content: space-between; padding: 20px 22px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); }
+.mk-stats { display: flex; gap: 26px; }
+.mk-stats div { display: grid; }
+.mk-stats b { font: 700 1.9rem/1.1 var(--font-head, var(--font)); color: var(--ink); }
+.mk-stats div:first-child b { color: var(--bad); }
+.mk-stats span { font-size: .82rem; color: var(--muted); }
+.mk-act { display: grid; gap: 8px; justify-items: end; }
+.mk-act p { display: flex; gap: 6px; align-items: center; margin: 0; }
+.mk-skill { padding: 0; overflow: hidden; }
+.mk-skill-head { width: 100%; display: flex; gap: 12px; align-items: center; padding: 16px 18px; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; min-height: 56px; }
+.mk-skill-head .grow { display: grid; gap: 2px; }
+.mk-skill-head svg { transition: transform .2s; flex: none; } .mk-skill-head svg.rot { transform: rotate(180deg); }
+.mk-list { list-style: none; margin: 0; padding: 0 18px 12px; display: grid; }
+.mk-list li { display: flex; gap: 10px; align-items: flex-start; padding: 12px 0; border-top: 1px solid var(--line); }
+.mk-list p { margin: 0 0 4px; }
+.goal-card { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 14px 18px; margin-bottom: 18px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+.goal-card.done { border-color: var(--good); background: var(--good-soft); }
+.goal-card .grow { min-width: 160px; } .goal-card p { margin: 2px 0 0; font-size: .88rem; }
+.rp-kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.rp-card.resolved { opacity: .7; }
+.rp-ref { font-size: .78rem; padding: 2px 8px; border-radius: 8px; background: var(--surface-2); }
+@media (max-width: 640px) {
+  .mk-hero { padding: 16px; } .mk-act { justify-items: stretch; width: 100%; } .mk-act .btn { width: 100%; justify-content: center; }
+  .mk-stats { gap: 18px; } .mk-stats b { font-size: 1.5rem; }
+}
+.course-words-note { margin: 6px 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--primary-soft); font-size: .9rem; }
+.mk-psg { color: var(--muted); font-size: .88rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

@@ -67,7 +67,7 @@ function Result({ a }) {
               </ul>
             )}
             {q.explanation && <p className="muted">{rich(q.explanation)}</p>}
-            <div className="row wrap" style={{ gap: 8 }}><AskTeacher about={`Full mock “${a.mock.title}”, ${sec.label}, question ${q.n || i + 1}`} /><ReportMistake about={`Full mock ${a.mock.title}, ${sec.label}, question ${q.n || i + 1} (${q.id})`} /></div>
+            <div className="row wrap" style={{ gap: 8 }}><AskTeacher about={`Full mock “${a.mock.title}”, ${sec.label}, question ${q.n || i + 1}`} /><ReportMistake qref={`fullmock:${q.id}`} about={`Full mock ${a.mock.title}, ${sec.label}, question ${q.n || i + 1} (${q.id})`} /></div>
           </Card>
         ))}
         {!list.length && <Card><p className="muted center">Nothing here.</p></Card>}

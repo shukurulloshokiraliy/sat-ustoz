@@ -73,7 +73,7 @@ export async function fmQuota(user) {
     extra_price: Number(s.fm_extra_price) || 0, balance: Number(bal?.balance || 0) };
 }
 
-async function moduleSets(mock, a = null) {
+export async function moduleSets(mock, a = null) {
   if (mock.mode === 'qbank') { // generated from the Question Bank: the question ids live on the attempt
     const gen = parseJSON(a?.gen, {});
     const ids = Object.values(gen).flat();

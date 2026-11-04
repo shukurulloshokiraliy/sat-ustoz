@@ -8,7 +8,7 @@ import { Avatar } from './ui.jsx';
 import SupportChat from './SupportChat.jsx';
 import {
   IconBookmark, IconBriefcase, IconChats, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
-  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconConsult, IconVolume, IconMute, IconWallet, IconTask } from './icons.jsx';
+  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconConsult, IconVolume, IconMute, IconWallet, IconTask, IconFlag } from './icons.jsx';
 
 const STUDENT_NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, c: '#2A55E5' },
@@ -17,6 +17,7 @@ const STUDENT_NAV = [
   { to: '/vocab', label: 'Vocabulary', icon: IconBook, c: '#E8A93C' },
   { to: '/game', label: 'Word Arena', icon: IconGame, c: '#8E5CF7' },
   { to: '/practice', label: 'Practice', icon: IconBolt, c: '#E2553D', also: ['/question-bank'] },
+  { to: '/mistakes', label: 'My mistakes', icon: IconTarget, c: '#D9425B' },
   { to: '/quizzes', label: 'Quizzes', icon: IconQuiz, c: '#12A39A' },
   { to: '/full-mocks', label: 'Full Mocks', icon: IconDoc, c: '#C2410C' },
   { to: '/analytics', label: 'Results', icon: IconChart, c: '#2A55E5' },
@@ -48,6 +49,7 @@ const MASTER_NAV = [
   { to: '/assignments', label: 'Assignments', icon: IconTask, c: '#0E9F6E' },
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad, c: '#F28B4E' },
   { to: '/question-bank/manage', label: 'Question Bank', icon: IconTarget, c: '#1E8E4E' },
+  { to: '/reports', label: 'Question reports', icon: IconFlag, c: '#D9425B' },
   { to: '/full-mocks', label: 'Full Mocks', icon: IconDoc, c: '#C2410C' },
   { to: '/consultations', label: 'Consultations', icon: IconConsult, c: '#0E9F6E' },
   { to: '/leaderboard', label: 'Leaderboard', icon: IconTrophy, c: '#E8A93C' },
@@ -75,6 +77,12 @@ export default function Layout() {
   // open assignments (new / in progress / retake) as a badge in the menu
   const [todo, setTodo] = useState(0);
   useEffect(() => { if (user.role === 'student') api.get('/assignments').then((d) => setTodo(d.open || 0)).catch(() => {}); }, [user.role, loc.pathname]);
+  // students: mistakes due today · teacher: open question reports
+  const [badge2, setBadge2] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => (user.role === 'student' ? api.get('/goal').then((g) => setBadge2(g.mistakes.due || 0)) : api.get('/question-reports').then((d) => setBadge2(d.open || 0))).catch(() => {}), 400);
+    return () => clearTimeout(t);
+  }, [user.role, loc.pathname]);
 
   return (
     <div className="app">
@@ -89,6 +97,7 @@ export default function Layout() {
           {nav.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end} style={{ '--c': n.c || '#2A55E5' }} className={({ isActive }) => (isActive || on(n) ? 'active' : '')}>{({ isActive }) => (<><span className="nav-ic"><n.icon width={19} height={19} weight={isActive || on(n) ? 'fill' : 'duotone'} /></span>{n.label}
               {n.to === '/assignments' && todo > 0 && <span className="badge-n">{todo}</span>}
+              {(n.to === '/mistakes' || n.to === '/reports') && badge2 > 0 && <span className="badge-n">{badge2}</span>}
               {n.to === '/subscribe' && !user.sub_active && user.access?.subscription_required && <span className="badge-n sun">Get</span>}</>)}</NavLink>
           ))}
         </nav>

@@ -143,7 +143,7 @@ function Summary({ questions, rv, search }) {
                     {q.options.map((o, k) => <li key={k} className={k === res.answer ? 'ok' : k === res.choice ? 'bad' : ''}><b>{L[k]})</b> {rich(o)}{k === res.answer ? ' · correct' : k === res.choice ? ' · your answer' : ''}</li>)}
                   </ul>
                   <p className="muted">{rich(res.explanation)}</p>
-                  <div className="row wrap" style={{ gap: 8 }}><AskTeacher about={`Question Bank ${q.id} (${q.skill}): ${String(q.prompt).slice(0, 120)}`} /><ReportMistake about={`Question ${q.id} (${q.skill})`} /></div>
+                  <div className="row wrap" style={{ gap: 8 }}><AskTeacher about={`Question Bank ${q.id} (${q.skill}): ${String(q.prompt).slice(0, 120)}`} /><ReportMistake qref={`qbank:${q.id}`} about={`Question ${q.id} (${q.skill})`} /></div>
                 </>
               )}
             </Card>
