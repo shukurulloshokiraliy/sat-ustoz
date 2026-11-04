@@ -2418,3 +2418,10 @@ mark.w-hl { background: color-mix(in srgb, var(--sun) 38%, transparent); color: 
 .tc-opt { text-align: left; display: flex; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
 .tc-opt:hover:not(:disabled) { border-color: var(--primary); } .tc-opt:disabled { cursor: default; }
 .tc-opt.right { border-color: var(--good); background: var(--good-soft); } .tc-opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.qb-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 12px 2px; }
+.qb-bulk { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 6px 10px; border-radius: 14px; background: var(--primary-soft); }
+.qb-bulk select { height: 34px; width: auto; padding: 0 28px 0 10px; font-size: .84rem; border-radius: 10px; }
+.qb-pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 18px 0; }
+.rq.picked { box-shadow: 0 0 0 2px var(--primary); }
+.qb-filters select { width: auto; }
+.qb-bar { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 8px 2px; margin: 4px 0 8px; } @media (max-width: 980px) { .qb-bar { top: 60px; } }

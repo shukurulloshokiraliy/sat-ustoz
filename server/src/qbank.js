@@ -88,6 +88,8 @@ export const MOCK_BLUEPRINT = [
   ['boundaries', 4], ['form-structure-sense', 3],
   ['transitions', 3], ['rhetorical-synthesis', 3],
 ];
+/** Normalised passage + question, to spot the same question under another id. */
+export const textKey = (passage, prompt) => `${String(passage || '').toLowerCase().replace(/\[\[|\]\]|\*\*|<[^>]+>/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim()}|${String(prompt || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()}`;
 const MOCK_MINUTES = 32;
 
 /** Settings of a roadmap "Random SAT module" item (stored as JSON in roadmap_items.body). */
@@ -336,12 +338,66 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
   }));
 
   // teacher: browse every question with the key and class statistics
+  // teacher: one page (50) of the Question Bank with filters — never the whole bank at once
   app.get('/api/qbank/admin', requireMaster, h(async (req, res) => {
-    const rows = await db.all(`SELECT q.*, COUNT(a.user_id) AS answered, SUM(CASE WHEN a.first_correct THEN 1 ELSE 0 END) AS first_correct
-      FROM qbank_questions q LEFT JOIN qbank_answers a ON a.question_id = q.id
-      GROUP BY q.id ORDER BY q.skill_id, q.position`);
-    res.json(rows.map((q) => ({ ...pub(q), answer: q.answer, explanation: q.explanation, tip: q.tip, src: q.src, active: q.active, premium: q.premium, edited: q.edited, reserved_for: q.reserved_for || null, reserve_off: !!q.reserve_off,
-      answered: Number(q.answered || 0), first_correct: Number(q.first_correct || 0) })));
+    const where = []; const params = [];
+    const qtxt = String(req.query.q || '').trim().slice(0, 100);
+    if (qtxt) { where.push("(q.id ILIKE ? OR q.passage ILIKE ? OR q.prompt ILIKE ? OR q.options ILIKE ?)"); const p = `%${qtxt.replace(/[%_\\]/g, (c) => '\\' + c)}%`; params.push(p, p, p, p); }
+    if (req.query.skill && req.query.skill !== 'all') { where.push('q.skill_id = ?'); params.push(String(req.query.skill)); }
+    if (['easy', 'medium', 'hard'].includes(req.query.level)) { where.push('q.difficulty = ?'); params.push(req.query.level); }
+    if (req.query.src === 'bundled' || req.query.src === 'upload') { where.push('q.src = ?'); params.push(req.query.src); }
+    if (req.query.view === 'premium') where.push('q.premium'); else if (req.query.view === 'regular') where.push('NOT q.premium');
+    if (req.query.reserved === 'any') where.push('q.reserved_for IS NOT NULL'); else if (req.query.reserved === 'none') where.push('q.reserved_for IS NULL');
+    else if (['exam', 'lesson'].includes(req.query.reserved)) { where.push('q.reserved_for = ?'); params.push(req.query.reserved); }
+    if (req.query.hidden === '1') where.push('NOT q.active');
+    const W = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const total = Number((await db.one(`SELECT COUNT(*) AS n FROM qbank_questions q ${W}`, params)).n);
+    const per = 50; const pages = Math.max(1, Math.ceil(total / per)); const page = Math.max(1, Math.min(pages, Number(req.query.page) || 1));
+    const rows = await db.all(`SELECT q.* FROM qbank_questions q ${W} ORDER BY q.skill_id, q.position, q.id LIMIT ${per} OFFSET ${(page - 1) * per}`, params);
+    const stats = rows.length ? new Map((await db.all(`SELECT question_id, COUNT(*) AS answered, SUM(CASE WHEN first_correct THEN 1 ELSE 0 END) AS first_correct
+      FROM qbank_answers WHERE question_id = ANY(?::text[]) GROUP BY question_id`, [rows.map((r) => r.id)])).map((r) => [r.question_id, r])) : new Map();
+    const counts = req.query.counts === '0' ? null : {
+      skills: await db.all('SELECT skill_id AS id, MIN(skill) AS name, COUNT(*) AS n FROM qbank_questions GROUP BY skill_id ORDER BY skill_id'),
+      all: Number((await db.one('SELECT COUNT(*) AS n FROM qbank_questions')).n),
+      premium: Number((await db.one('SELECT COUNT(*) AS n FROM qbank_questions WHERE premium')).n),
+      reserved: Number((await db.one('SELECT COUNT(*) AS n FROM qbank_questions WHERE reserved_for IS NOT NULL')).n),
+    };
+    res.json({ total, page, pages, counts, rows: rows.map((q) => {
+      const st = stats.get(q.id);
+      return { ...pub(q), answer: q.answer, explanation: q.explanation, tip: q.tip, src: q.src, active: q.active, premium: q.premium, edited: q.edited, reserved_for: q.reserved_for || null, reserve_off: !!q.reserve_off,
+        answered: Number(st?.answered || 0), first_correct: Number(st?.first_correct || 0) };
+    }) });
+  }));
+  // teacher: bulk changes on many questions (difficulty, skill, premium, visibility, reserved)
+  app.post('/api/qbank/admin/bulk', requireMaster, h(async (req, res) => {
+    const ids = (Array.isArray(req.body?.ids) ? req.body.ids : []).map(String).slice(0, 5000);
+    if (!ids.length) return bad(res, 'Choose questions first');
+    const set = req.body?.set || {};
+    if (['easy', 'medium', 'hard'].includes(set.difficulty)) await db.run('UPDATE qbank_questions SET difficulty = ?, edited = true WHERE id = ANY(?::text[])', [set.difficulty, ids]);
+    if (set.skill_id && SKILL.has(set.skill_id)) { const sk = SKILL.get(set.skill_id); await db.run('UPDATE qbank_questions SET skill_id = ?, skill = ?, domain = ?, edited = true WHERE id = ANY(?::text[])', [sk.id, sk.name, sk.domain, ids]); }
+    if ('premium' in set) await db.run('UPDATE qbank_questions SET premium = ? WHERE id = ANY(?::text[])', [!!set.premium, ids]);
+    if ('active' in set) await db.run('UPDATE qbank_questions SET active = ? WHERE id = ANY(?::text[])', [!!set.active, ids]);
+    if ('reserved' in set) {
+      if (['exam', 'lesson'].includes(set.reserved)) await db.run('UPDATE qbank_questions SET reserved_for = ?, reserve_off = false WHERE id = ANY(?::text[])', [set.reserved, ids]);
+      else await db.run('UPDATE qbank_questions SET reserved_for = NULL, reserve_off = true WHERE id = ANY(?::text[])', [ids]);
+    }
+    res.json({ ok: true, count: ids.length });
+  }));
+  // teacher: where one question is used (quizzes and roadmap lesson checks with the same text)
+  app.get('/api/qbank/admin/:id/usage', requireMaster, h(async (req, res) => {
+    const q = await db.one('SELECT id, passage, prompt FROM qbank_questions WHERE id = ?', [req.params.id]);
+    if (!q) return bad(res, 'Not found', 404);
+    const k = textKey(q.passage, q.prompt);
+    const quizzes = (await db.all('SELECT DISTINCT z.id, z.title, x.passage, x.prompt FROM questions x JOIN quizzes z ON z.id = x.quiz_id')).filter((r) => textKey(r.passage, r.prompt) === k)
+      .map((r) => ({ id: r.id, title: r.title })).filter((v, i, a) => a.findIndex((y) => y.id === v.id) === i);
+    const steps = [];
+    for (const it of await db.all("SELECT i.id, i.title, i.content, s.title AS step FROM roadmap_items i JOIN roadmap_steps s ON s.id = i.step_id WHERE i.kind = 'lesson' AND s.deleted_at IS NULL")) {
+      let c; try { c = JSON.parse(it.content || '{}'); } catch { continue; }
+      const all = Object.values(c.checks || {}).flat();
+      if (all.some((x) => String(x?.id) === q.id || textKey(x?.passage, x?.prompt) === k)) steps.push({ step: it.step, lesson: it.title });
+    }
+    const exams = Number((await db.one('SELECT COUNT(*) AS n FROM qbank_mocks WHERE item_id IS NOT NULL AND question_ids LIKE ?', [`%"${q.id}"%`])).n);
+    res.json({ quizzes, steps, exams });
   }));
   app.put('/api/qbank/admin/:id', requireMaster, h(async (req, res) => {
     const q = await db.one('SELECT * FROM qbank_questions WHERE id = ?', [req.params.id]);
@@ -369,8 +425,19 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     if (errs.length) return bad(res, 'The file has problems: ' + errs.join('; '));
     const clash = await db.all("SELECT id FROM qbank_questions WHERE src = 'bundled' AND id = ANY(?::text[])", [file.questions.map((q) => String(q.id))]);
     if (clash.length) return bad(res, `These ids belong to built-in questions — use different ids: ${clash.map((c) => c.id).slice(0, 5).join(', ')}`);
+    // duplicates (same normalised passage + question as another question) are skipped and reported
+    const existing = await db.all('SELECT id, passage, prompt FROM qbank_questions');
+    const byKey = new Map(existing.map((r) => [textKey(r.passage, r.prompt), r.id]));
+    const dupes = [];
+    const fresh = file.questions.filter((x) => {
+      const k = textKey(x.passage, x.prompt); const other = byKey.get(k);
+      if (other && other !== String(x.id) && k.length > 12) { dupes.push({ id: String(x.id), of: other }); return false; }
+      byKey.set(k, String(x.id)); return true;
+    });
+    if (!fresh.length) return bad(res, `Every question in the file is already in the bank (e.g. ${dupes[0]?.id} = duplicate of #${dupes[0]?.of})`);
+    file = { ...file, questions: fresh };
     const ids = await upsertBank(file, 'upload');
     if (req.body?.premium === 'true' || file.premium === true) await db.run('UPDATE qbank_questions SET premium = true WHERE id = ANY(?::text[])', [ids]);
-    res.json({ imported: ids.length, skill: SKILL.get(file.skill_id).name, premium: req.body?.premium === 'true' || file.premium === true });
+    res.json({ imported: ids.length, skill: SKILL.get(file.skill_id).name, premium: req.body?.premium === 'true' || file.premium === true, duplicates: dupes.slice(0, 50), duplicate_count: dupes.length });
   }));
 }
