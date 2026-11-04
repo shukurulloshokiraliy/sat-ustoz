@@ -17,21 +17,21 @@ function blankOut(sentence, word) {
   return re.test(sentence) ? sentence.replace(re, '______') : null;
 }
 
-/** Four kinds of questions: meaning, word from meaning, word in a sentence, spelling from the translation. */
+/** Four kinds of questions: meaning, word from meaning, word in a sentence, spelling from the meaning. */
 function buildTest(words, count) {
   const pool = words.filter((w) => w.definition);
   return shuffle(pool).slice(0, count).map((w, i) => {
     const others = shuffle(pool.filter((x) => x.id !== w.id)).slice(0, 3);
     const blank = blankOut(w.example, w.word);
-    const kinds = ['meaning', 'word', ...(blank ? ['blank'] : []), ...(w.uz && !/\s/.test(w.word) ? ['spell'] : [])];
+    const kinds = ['meaning', 'word', ...(blank ? ['blank'] : []), ...(!/\s/.test(w.word) ? ['spell'] : [])];
     const kind = kinds[i % kinds.length];
-    if (kind === 'spell') return { w, kind, prompt: w.uz, hint: w.definition };
+    if (kind === 'spell') return { w, kind, prompt: w.definition, hint: `${w.word.length} letters · starts with “${w.word[0]}”` };
     const opts = kind === 'meaning' ? [w, ...others].map((x) => x.definition) : [w, ...others].map((x) => x.word);
     const order = shuffle([0, 1, 2, 3].slice(0, opts.length));
     return { w, kind, prompt: kind === 'meaning' ? w.word : kind === 'word' ? w.definition : blank, options: order.map((k) => opts[k]), answer: order.indexOf(0) };
   });
 }
-const ASK = { meaning: 'What does this word mean?', word: 'Which word matches this meaning?', blank: 'Which word completes the sentence?', spell: 'Type the English word for this translation.' };
+const ASK = { meaning: 'What does this word mean?', word: 'Which word matches this meaning?', blank: 'Which word completes the sentence?', spell: 'Type the word that matches this meaning.' };
 
 export default function VocabTest({ words, unitId, setId, onDone }) {
   const qs = useMemo(() => buildTest(words, Math.min(15, words.length)), [words]);

@@ -106,7 +106,6 @@ function Unit({ u, reload }) {
                 <article key={w.id} className="v-word">
                   <div className="row between"><h3>{w.word} <button className="fc-say sm" onClick={() => speak(w.word)} aria-label={`Listen to ${w.word}`}><IconVolume width={16} height={16} /></button></h3><span className={`v-state ${w.state}`}>{STATE[w.state]}</span></div>
                   <p>{w.definition}</p>
-                  {(w.uz || w.ru) && <p className="fc-tr">{w.uz && <span><i>UZ</i> {w.uz}</span>}{w.ru && <span><i>RU</i> {w.ru}</span>}</p>}
                   {w.example && <p className="v-ex">{highlight(w.example, w.word)}</p>}
                 </article>
               ))}
@@ -151,7 +150,6 @@ function WordEditor({ u, reload }) {
               <span className="row" style={{ gap: 4 }}><button className="icon-sm" aria-label="Edit" onClick={() => setEdit(w)}><IconEdit width={15} height={15} /></button><button className="icon-sm danger" aria-label="Remove" onClick={() => setDel(w)}><IconTrash width={15} height={15} /></button></span>
             </div>
             <p>{w.definition}</p>
-            {(w.uz || w.ru) && <p className="fc-tr">{w.uz && <span><i>UZ</i> {w.uz}</span>}{w.ru && <span><i>RU</i> {w.ru}</span>}</p>}
             {w.example && <p className="v-ex">{highlight(w.example, w.word)}</p>}
           </article>
         ))}

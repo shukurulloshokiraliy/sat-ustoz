@@ -28,7 +28,7 @@ export function highlight(sentence, word) {
   const re = new RegExp(`\\b(${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\w*|${stem.length >= 3 ? stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\w*' : '(?!)'})`, 'i');
   const m = sentence.match(re);
   if (!m) return sentence;
-  return <>{sentence.slice(0, m.index)}<b>{m[0]}</b>{sentence.slice(m.index + m[0].length)}</>;
+  return <>{sentence.slice(0, m.index)}<mark className="w-hl">{m[0]}</mark>{sentence.slice(m.index + m[0].length)}</>;
 }
 
 /**
@@ -127,7 +127,6 @@ export default function Flashcards({ words, onDone, title }) {
                 <div className="fc-word sm">{card.word}<button className="fc-say" onClick={(e) => { e.stopPropagation(); speak(card.word); }} aria-label="Listen"><IconVolume /></button></div>
                 <h4>Definition</h4>
                 <p>{card.definition}</p>
-                {(card.uz || card.ru) && <p className="fc-tr">{card.uz && <span><i>UZ</i> {card.uz}</span>}{card.ru && <span><i>RU</i> {card.ru}</span>}</p>}
                 {card.example && <><h4>Example</h4><p className="fc-ex">{highlight(card.example, card.word)}</p></>}
               </div>
             </div>
