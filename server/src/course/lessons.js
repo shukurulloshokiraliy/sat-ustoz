@@ -24,6 +24,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     const content = JSON.parse(item.content || '{}');
     const { steps } = await roadmapFor(user);
     const step = steps.find((s) => s.id === item.step_id);
+    if (!step && user.role !== 'master') return null; // the step is in the Trash
     const lessons = (step?.items || []).filter((i) => i.kind === 'lesson');
     const idx = lessons.findIndex((i) => i.id === item.id);
     const state = lessons[idx] || {};
@@ -96,6 +97,17 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
       lesson: { id: L.item.id, title: L.item.title, module: L.step?.title },
       questions: qs.map(publicQ), answers: JSON.parse(c.answers || '{}'),
     });
+  }));
+
+  // teacher: try a level check exactly as students see it — graded in the browser, nothing is saved
+  app.get('/api/lessons/:id/preview-check', requireMaster, h(async (req, res) => {
+    const item = await db.one("SELECT * FROM roadmap_items WHERE id = ? AND kind = 'lesson'", [req.params.id]);
+    if (!item) return bad(res, 'Not found', 404);
+    const content = JSON.parse(item.content || '{}');
+    const versions = content.versions || Object.keys(content.checks || {});
+    const v = versions.includes(req.query.version) ? req.query.version : versions[0];
+    if (!v) return bad(res, 'This lesson has no level check yet');
+    res.json({ versions, version: v, pass_percent: content.pass_percent ?? 80, questions: (content.checks?.[v] || []).map((q) => ({ ...publicQ(q), answer: q.answer, explanation: q.explanation || '' })) });
   }));
 
   app.put('/api/lesson-checks/:id', requireStudent, h(async (req, res) => {

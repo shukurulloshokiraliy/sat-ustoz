@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, fmtDate } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
-import { Card, Gate, useAsync } from '../../components/ui.jsx';
+import { Card, Gate, Modal, Segmented, useAsync } from '../../components/ui.jsx';
+import { Passage } from '../../components/Passage.jsx';
 import { IconArrow, IconCheck, IconCrown, IconLock, IconPlay } from '../../components/icons.jsx';
 import { Rich, rich } from '../../components/Rich.jsx';
 import { VideoLocked, VideoPlayer } from '../student/Roadmap.jsx';
@@ -93,6 +94,7 @@ function LessonView({ l, reload }) {
                   <h2>{l.type === 'session' ? (l.passed ? 'Passed — this part is complete' : `Pass with ${l.check.pass_percent}% to complete this part`) : l.passed ? 'Passed — the next lesson is open' : `Pass with ${l.check.pass_percent}% to open the next lesson`}</h2>
                   <p className="muted" style={{ marginTop: 4 }}>{l.check.count} questions{l.check.time_minutes ? ` · ${l.check.time_minutes} min` : ''} · {l.check.versions.length} versions ({l.check.versions.join(' → ')}) · each try uses the next version</p>
                 </div>
+                {isTeacher && <TryCheck lessonId={l.id} />}
                 {!isTeacher && (
                   <button className={`btn lg ${l.passed ? 'outline' : 'primary'}`} onClick={() => nav(`/lesson/${l.id}/check`)}>
                     {l.check.open_id ? `Continue version ${l.check.next_version}` : l.passed ? `Practise again · version ${l.check.next_version}` : `Start version ${l.check.next_version}`} <IconArrow />
@@ -194,4 +196,49 @@ function Block({ b }) {
     case 'uz': return <aside className="tip n-uz"><b>Ustoz maslahati:</b> <Rich text={b.text} /></aside>;
     default: return b.text ? <p className="n-p">{rich(b.text)}</p> : null;
   }
+}
+
+/** Teacher: play the level check as a student would — answers are checked here and nothing is saved. */
+function TryCheck({ lessonId }) {
+  const [open, setOpen] = useState(false);
+  const [version, setVersion] = useState('');
+  const st = useAsync(() => (open ? api.get(`/lessons/${lessonId}/preview-check${version ? `?version=${version}` : ''}`) : Promise.resolve(null)), [open, version, lessonId]);
+  const [pick, setPick] = useState({});
+  const L = ['A', 'B', 'C', 'D', 'E'];
+  return (
+    <>
+      <button className="btn lg outline" onClick={() => setOpen(true)}>Try it as a student (not saved) <IconArrow /></button>
+      {open && (
+        <Modal wide title="Level check · teacher preview" onClose={() => { setOpen(false); setPick({}); }}>
+          <Gate state={st}>{(d) => {
+            if (!d) return null;
+            const done = d.questions.filter((q) => pick[q.id] != null);
+            const right = done.filter((q) => pick[q.id] === q.answer).length;
+            return (
+              <div className="stack">
+                <div className="row between wrap">
+                  <Segmented value={d.version} onChange={(v) => { setVersion(v); setPick({}); }} options={d.versions.map((v) => ({ value: v, label: `Version ${v}` }))} />
+                  <b>{right}/{d.questions.length} correct{done.length === d.questions.length ? ` · ${Math.round((right / d.questions.length) * 100)}% (pass ${d.pass_percent}%)` : ''}</b>
+                </div>
+                {d.questions.map((q, i) => (
+                  <div key={q.id} className="card tc-q">
+                    <small className="muted">Question {i + 1}</small>
+                    {q.passage && <Passage text={q.passage} />}
+                    <p><b>{rich(q.prompt)}</b></p>
+                    <div className="tc-opts">
+                      {q.options.map((o, k) => {
+                        const chosen = pick[q.id] === k; const shown = pick[q.id] != null;
+                        return <button key={k} type="button" disabled={shown} className={`tc-opt ${shown && k === q.answer ? 'right' : ''} ${chosen && k !== q.answer ? 'wrong' : ''}`} onClick={() => setPick((p) => ({ ...p, [q.id]: k }))}><b>{L[k]}</b> {rich(o)}</button>;
+                      })}
+                    </div>
+                    {pick[q.id] != null && q.explanation && <p className="muted">{rich(q.explanation)}</p>}
+                  </div>
+                ))}
+              </div>
+            );
+          }}</Gate>
+        </Modal>
+      )}
+    </>
+  );
 }

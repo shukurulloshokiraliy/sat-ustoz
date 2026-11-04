@@ -2410,3 +2410,11 @@ mark.w-hl { background: color-mix(in srgb, var(--sun) 38%, transparent); color: 
 .imp-sum { display: grid; gap: 12px; } .imp-list { margin: 6px 0 0; padding-left: 18px; font-size: .88rem; color: var(--muted); }
 .good-text { color: var(--good); } .warn-text { color: #B7791F; }
 .qb-table-cap { margin: 0; padding: 10px 12px 8px; font-weight: 700; font-size: .92rem; text-align: center; }
+.step-li[draggable] { cursor: grab; } .step-li.dragging { opacity: .45; }
+.step-warn { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; } .step-warn .chip { font-size: .7rem; padding: 2px 7px; }
+.rm-hist { display: grid; gap: 4px; } .rm-hist-row { display: flex; align-items: center; gap: 12px; padding: 10px 6px; border-bottom: 1px solid var(--line); }
+.rm-hist-row small { display: block; color: var(--muted); font-size: .78rem; }
+.tc-q { display: grid; gap: 8px; } .tc-opts { display: grid; gap: 6px; }
+.tc-opt { text-align: left; display: flex; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
+.tc-opt:hover:not(:disabled) { border-color: var(--primary); } .tc-opt:disabled { cursor: default; }
+.tc-opt.right { border-color: var(--good); background: var(--good-soft); } .tc-opt.wrong { border-color: var(--bad); background: var(--bad-soft); }

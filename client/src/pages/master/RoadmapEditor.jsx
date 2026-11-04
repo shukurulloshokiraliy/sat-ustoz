@@ -5,11 +5,24 @@ import { useToast } from '../../context.jsx';
 import { Card, Confirm, Field, Gate, Modal, PageHeader, Segmented, useAsync } from '../../components/ui.jsx';
 import RoadmapMap, { StepDisc, STEP_COLORS } from '../../components/RoadmapMap.jsx';
 import { HandoutEditor } from '../../components/Handout.jsx';
-import { IconDoc, IconDown, IconEdit, IconPlay, IconPlus, IconQuiz, IconTrash, IconUp } from '../../components/icons.jsx';
+import { StepDrawer } from '../student/Roadmap.jsx';
+import { fmtDate } from '../../api.js';
+import { IconDoc, IconDown, IconEdit, IconEye, IconPlay, IconPlus, IconQuiz, IconTrash, IconUp } from '../../components/icons.jsx';
 
 const countLabel = (items) => [['lesson', 'lesson', 'lessons'], ['video', 'video', 'videos'], ['quiz', 'quiz', 'quizzes'], ['random', 'final exam', 'final exams'], ['reading', 'note', 'notes']]
   .map(([k, one, many]) => { const n = items.filter((x) => x.kind === k).length; return n ? `${n} ${n === 1 ? one : many}` : null; })
   .filter(Boolean).join(' · ');
+/** Problems a teacher should fix before students reach the step. */
+const warnings = (s) => {
+  const out = [];
+  const lessons = s.items.filter((i) => i.kind === 'lesson' && (i.lesson?.type || 'section') === 'section');
+  const noVideo = lessons.filter((i) => !i.url).length + s.items.filter((i) => i.kind === 'video' && !i.url).length;
+  if (noVideo) out.push(`${noVideo} without video`);
+  if (lessons.length && !s.handout) out.push('No rules sheet');
+  if (s.items.some((i) => i.kind === 'quiz' && (!i.quiz_title || !Number(i.quiz_questions)))) out.push('Quiz has no questions');
+  return out;
+};
+
 const BLANK = { title: '', subtitle: '', badge: '', color: 'signal', score_from: 200, score_to: 300, pass_pct: 70, description: '', focus: '', items: [] };
 
 export default function RoadmapEditor() {
@@ -27,17 +40,35 @@ export default function RoadmapEditor() {
   };
   const [edit, setEdit] = useState(null); // { step, insertAt }
   const [del, setDel] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [panel, setPanel] = useState(null); // 'trash' | 'history'
+  const [spread, setSpread] = useState(false);
+  const [drag, setDrag] = useState(null);
   const [view, setView] = useState('both');
 
   return (
     <div className="page">
       <PageHeader title="Roadmap" sub="Build the path students follow from 200 to 800. Each step can hold video lessons, study notes and quizzes.">
         <Segmented value={view} onChange={setView} options={[{ value: 'both', label: 'Map + list' }, { value: 'list', label: 'List' }, { value: 'map', label: 'Map' }]} />
+        <button className="btn ghost" onClick={() => setPanel('history')}>History</button>
+        <button className="btn ghost" onClick={() => setPanel('trash')}>Trash</button>
+        <button className="btn ghost" onClick={() => setSpread(true)}>Spread scores 200–800</button>
         <button className="btn ghost" onClick={() => fileRef.current?.click()}>Import module (JSON)</button>
         <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => importModule(e.target.files[0])} />
         <button className="btn primary" onClick={() => setEdit({ step: BLANK, insertAt: null })}><IconPlus /> New step</button>
       </PageHeader>
       <Gate state={st}>{([{ steps }, quizzes]) => {
+        const reorder = async (ids) => {
+          st.setData([{ steps: ids.map((id) => steps.find((s) => s.id === id)) }, quizzes]);
+          try { await api.put('/roadmap/order', { ids }); } catch (e) { toast(e.message, 'bad'); }
+          st.reload();
+        };
+        const dropOn = (i) => {
+          if (drag == null || drag === i) return setDrag(null);
+          const ids = steps.map((s) => s.id);
+          const [m] = ids.splice(drag, 1); ids.splice(i, 0, m);
+          setDrag(null); reorder(ids);
+        };
         const move = async (i, d) => {
           const ids = steps.map((s) => s.id);
           [ids[i], ids[i + d]] = [ids[i + d], ids[i]];
@@ -50,7 +81,8 @@ export default function RoadmapEditor() {
             <div className="card-title"><h2>Steps · {steps.length}</h2><span className="muted" style={{ fontSize: '.82rem' }}>Step 1 is at the bottom of the map</span></div>
             <div className="step-list stagger">
               {steps.map((s, i) => (
-                <div key={s.id} className="step-li">
+                <div key={s.id} className={`step-li ${drag === i ? 'dragging' : ''}`} draggable
+                  onDragStart={(e) => { setDrag(i); e.dataTransfer.effectAllowed = 'move'; }} onDragOver={(e) => e.preventDefault()} onDrop={() => dropOn(i)} onDragEnd={() => setDrag(null)}>
                   <div className="ord">
                     <button aria-label="Move up" disabled={i === 0} onClick={() => move(i, -1)}><IconUp width={14} height={14} /></button>
                     <button aria-label="Move down" disabled={i === steps.length - 1} onClick={() => move(i, 1)}><IconDown width={14} height={14} /></button>
@@ -59,9 +91,11 @@ export default function RoadmapEditor() {
                   <div style={{ minWidth: 0 }}>
                     <b>{i + 1}. {s.title}</b>
                     <small>{s.score_from}–{s.score_to} · {s.items.length ? countLabel(s.items) : 'no lessons — completes by score'}</small>
+                    {warnings(s).length > 0 && <span className="step-warn">{warnings(s).map((w) => <span key={w} className="chip warn">{w}</span>)}</span>}
                   </div>
                   <div className="acts">
                     <button className="icon-sm" aria-label="Insert a step after" title="Insert a step after" onClick={() => setEdit({ step: { ...BLANK, score_from: s.score_to, score_to: Math.min(800, s.score_to + 50) }, insertAt: i + 1 })}><IconPlus width={16} height={16} /></button>
+                    <button className="icon-sm" aria-label="Preview as a student" title="Preview as a student" onClick={() => setPreview({ s: { ...s, total: s.items.length, completed: 0, progress: 0, status: 'current' }, i })}><IconEye width={16} height={16} /></button>
                     <button className="icon-sm" aria-label="Edit" onClick={() => setEdit({ step: s })}><IconEdit width={16} height={16} /></button>
                     <button className="icon-sm danger" aria-label="Delete" onClick={() => setDel(s)}><IconTrash width={16} height={16} /></button>
                   </div>
@@ -84,8 +118,12 @@ export default function RoadmapEditor() {
             {view === 'both' ? <div className="rm-editor">{list}{map}</div> : view === 'list' ? list : map}
             {imp && <ImportModal imp={imp} steps={steps} onClose={() => setImp(null)} onDone={(r) => { setImp(null); toast(`${r.created ? 'Module added' : 'Module updated'} · ${r.ready}/${r.lessons} lessons ready`); st.reload(); }} />}
             {edit && <StepModal init={edit.step} insertAt={edit.insertAt} quizzes={quizzes} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); st.reload(); }} onChanged={st.reload} />}
-            {del && <Confirm title="Delete step" text={`“${del.title}” and its lessons will be removed from the roadmap. Quizzes stay in the Quizzes page.`}
-              onClose={() => setDel(null)} onConfirm={async () => { await api.del('/roadmap/steps/' + del.id); setDel(null); toast('Step deleted'); st.reload(); }} />}
+            {del && <Confirm title="Move this step to the Trash?" confirmLabel="Move to Trash" text={`“${del.title}” leaves the roadmap. It stays in the Trash for 30 days with its lessons and student progress — you can restore it.`}
+              onClose={() => setDel(null)} onConfirm={async () => { await api.del('/roadmap/steps/' + del.id); setDel(null); toast('Moved to Trash'); st.reload(); }} />}
+            {preview && <StepDrawer preview step={preview.s} index={preview.i} prev={steps[preview.i - 1]} onClose={() => setPreview(null)} onChanged={() => {}} />}
+            {spread && <Confirm danger={false} title="Spread score ranges evenly?" confirmLabel="Spread" text={`The ${steps.length} steps get ranges from 200 to 800 in equal parts (about ${Math.round(600 / Math.max(1, steps.length))} points each), in their current order.`}
+              onClose={() => setSpread(false)} onConfirm={async () => { await api.put('/roadmap/spread', {}); setSpread(false); toast('Score ranges updated'); st.reload(); }} />}
+            {panel && <RoadmapPanel kind={panel} onClose={() => setPanel(null)} onChanged={st.reload} />}
           </>
         );
       }}</Gate>
@@ -261,6 +299,37 @@ function ImportModal({ imp, steps, onClose, onDone }) {
           </label>
         )}
       </div>
+    </Modal>
+  );
+}
+
+/** Trash (30 days) and version history, each with Restore. */
+function RoadmapPanel({ kind, onClose, onChanged }) {
+  const toast = useToast();
+  const st = useAsync(() => api.get(kind === 'trash' ? '/roadmap/trash' : '/roadmap/versions'), [kind]);
+  const [busy, setBusy] = useState(0);
+  const restore = async (id) => {
+    setBusy(id);
+    try {
+      await api.post(kind === 'trash' ? `/roadmap/steps/${id}/restore` : `/roadmap/versions/${id}/restore`, {});
+      toast(kind === 'trash' ? 'Step restored' : 'Roadmap restored to that version'); onChanged(); st.reload();
+    } catch (e) { toast(e.message, 'bad'); } finally { setBusy(0); }
+  };
+  return (
+    <Modal wide title={kind === 'trash' ? 'Trash · kept for 30 days' : 'Roadmap history'} onClose={onClose}>
+      <Gate state={st}>{(rows) => (!rows.length ? <p className="muted center">{kind === 'trash' ? 'The Trash is empty.' : 'No changes recorded yet.'}</p> : (
+        <div className="rm-hist">
+          {rows.map((r, i) => (
+            <div key={r.id} className="rm-hist-row">
+              <div className="grow">
+                <b>{kind === 'trash' ? r.title : r.action}</b>
+                <small>{kind === 'trash' ? `${r.items} lessons · deleted ${fmtDate(r.deleted_at)}${r.deleted_by_name ? ` by ${r.deleted_by_name}` : ''}` : `${r.user_name || 'Teacher'} · ${new Date(r.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}${i === 0 ? ' · current' : ''}`}</small>
+              </div>
+              {(kind === 'trash' || i > 0) && <button className="btn soft sm" disabled={busy === r.id} onClick={() => restore(r.id)}>{kind === 'trash' ? 'Restore' : 'Restore this version'}</button>}
+            </div>
+          ))}
+        </div>
+      ))}</Gate>
     </Modal>
   );
 }

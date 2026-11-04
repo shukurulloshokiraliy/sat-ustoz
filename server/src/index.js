@@ -680,8 +680,8 @@ app.post('/api/quizzes/parse', requireMaster, upload.single('file'), h(async (re
 // Quizzes page: public, diagnostic and group quizzes — never roadmap quizzes (those are assignments that open step by step)
 const VISIBLE = `((q.is_public OR q.kind = 'diagnostic'
   OR q.id IN (SELECT quiz_id FROM quiz_groups WHERE group_id = ?))
-  AND q.id NOT IN (SELECT quiz_id FROM roadmap_items WHERE quiz_id IS NOT NULL)
-  AND q.id NOT IN (SELECT retake_quiz_id FROM roadmap_items WHERE retake_quiz_id IS NOT NULL))`;
+  AND q.id NOT IN (SELECT ri.quiz_id FROM roadmap_items ri JOIN roadmap_steps rs ON rs.id = ri.step_id WHERE ri.quiz_id IS NOT NULL AND rs.deleted_at IS NULL)
+  AND q.id NOT IN (SELECT ri.retake_quiz_id FROM roadmap_items ri JOIN roadmap_steps rs ON rs.id = ri.step_id WHERE ri.retake_quiz_id IS NOT NULL AND rs.deleted_at IS NULL))`;
 async function canAccess(user, quizId) {
   if (user.role === 'master') return true;
   if (await db.one(`SELECT 1 AS x FROM quizzes q WHERE q.id = ? AND ${VISIBLE}`, [quizId, user.group_id ?? -1])) return true;
@@ -947,7 +947,7 @@ app.get('/api/me/analytics', requireStudent, h(async (req, res) => res.json(awai
 const STEP_COLORS = ['signal', 'sky', 'sun', 'night', 'white'];
 const ITEM_KINDS = ['video', 'quiz', 'reading', 'lesson', 'random'];
 
-async function loadSteps(where = '', params = []) {
+async function loadSteps(where = 'WHERE deleted_at IS NULL', params = []) {
   const steps = await db.all(`SELECT * FROM roadmap_steps ${where} ORDER BY position, id`, params);
   if (!steps.length) return [];
   const items = await db.all(`SELECT i.*, q.title AS quiz_title, q.kind AS quiz_kind, q.duration_min AS quiz_minutes,
@@ -1131,6 +1131,7 @@ app.post('/api/roadmap/steps', requireMaster, h(async (req, res) => {
     await saveItems(t, sid, items);
     return sid;
   });
+  await rmVersion(req, `Added “${step.title}”`);
   res.json((await loadSteps('WHERE id = ?', [id]))[0]);
 }));
 app.put('/api/roadmap/steps/:id', requireMaster, h(async (req, res) => {
@@ -1142,6 +1143,7 @@ app.put('/api/roadmap/steps/:id', requireMaster, h(async (req, res) => {
     return true;
   });
   if (!ok) return bad(res, 'Not found', 404);
+  await rmVersion(req, `Edited “${step.title}”`);
   res.json((await loadSteps('WHERE id = ?', [req.params.id]))[0]);
 }));
 // rules sheet (PDF) of a step: students download it, the teacher uploads/replaces/removes it
@@ -1207,15 +1209,93 @@ app.delete('/api/roadmap/steps/:id/handout', requireMaster, h(async (req, res) =
   res.json((await loadSteps('WHERE id = ?', [req.params.id]))[0]);
 }));
 
+// deleting a step moves it to the Trash for 30 days (lessons and student progress stay, so Restore brings everything back)
 app.delete('/api/roadmap/steps/:id', requireMaster, h(async (req, res) => {
-  await db.run('DELETE FROM roadmap_steps WHERE id = ?', [req.params.id]);
+  const st = await db.one('SELECT title FROM roadmap_steps WHERE id = ? AND deleted_at IS NULL', [req.params.id]);
+  if (!st) return bad(res, 'Not found', 404);
+  await db.run('UPDATE roadmap_steps SET deleted_at = now(), deleted_by = ? WHERE id = ?', [req.user.id, req.params.id]);
+  await rmVersion(req, `Moved “${st.title}” to Trash`);
   res.json({ ok: true });
 }));
+app.get('/api/roadmap/trash', requireMaster, h(async (req, res) => {
+  await db.run("DELETE FROM roadmap_steps WHERE deleted_at < now() - interval '30 days'");
+  res.json(await db.all(`SELECT s.id, s.title, s.deleted_at, u.name AS deleted_by_name, (SELECT COUNT(*) FROM roadmap_items i WHERE i.step_id = s.id) AS items
+    FROM roadmap_steps s LEFT JOIN users u ON u.id = s.deleted_by WHERE s.deleted_at IS NOT NULL ORDER BY s.deleted_at DESC`));
+}));
+app.post('/api/roadmap/steps/:id/restore', requireMaster, h(async (req, res) => {
+  const st = await db.one('SELECT title FROM roadmap_steps WHERE id = ? AND deleted_at IS NOT NULL', [req.params.id]);
+  if (!st) return bad(res, 'Not in the Trash', 404);
+  await db.run('UPDATE roadmap_steps SET deleted_at = NULL, deleted_by = NULL WHERE id = ?', [req.params.id]);
+  await normalizePositions();
+  await rmVersion(req, `Restored “${st.title}”`);
+  res.json({ ok: true });
+}));
+async function normalizePositions(t = db) {
+  const rows = await t.all('SELECT id FROM roadmap_steps WHERE deleted_at IS NULL ORDER BY position, id');
+  for (let i = 0; i < rows.length; i++) await t.run('UPDATE roadmap_steps SET position = ? WHERE id = ? AND position <> ?', [i, rows[i].id, i]);
+}
 app.put('/api/roadmap/order', requireMaster, h(async (req, res) => {
   const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number) : [];
   await db.tx(async (t) => {
     for (let i = 0; i < ids.length; i++) await t.run('UPDATE roadmap_steps SET position = ? WHERE id = ?', [i, ids[i]]);
   });
+  await rmVersion(req, 'Changed the order of steps');
+  res.json({ ok: true });
+}));
+// "Spread score ranges evenly from 200 to 800" across the current steps (rounded to 10)
+app.put('/api/roadmap/spread', requireMaster, h(async (req, res) => {
+  const steps = await db.all('SELECT id FROM roadmap_steps WHERE deleted_at IS NULL ORDER BY position, id');
+  const n = steps.length || 1;
+  const at = (i) => Math.round((200 + (600 * i) / n) / 10) * 10;
+  await db.tx(async (t) => { for (let i = 0; i < steps.length; i++) await t.run('UPDATE roadmap_steps SET score_from = ?, score_to = ? WHERE id = ?', [at(i), at(i + 1), steps[i].id]); });
+  await rmVersion(req, 'Spread score ranges from 200 to 800');
+  res.json({ ok: true });
+}));
+
+// ---------- roadmap version history: who changed what, when, with "Restore this version" ----------
+const ITEM_SNAP = ['id', 'step_id', 'position', 'kind', 'title', 'quiz_id', 'url', 'body', 'retake_quiz_id', 'retake_hours', 'status'];
+async function rmVersion(req, action) {
+  try {
+    const steps = await db.all(`SELECT id, position, ${STEP_COLS.join(', ')} FROM roadmap_steps WHERE deleted_at IS NULL ORDER BY position, id`);
+    const items = await db.all(`SELECT ${ITEM_SNAP.join(', ')} FROM roadmap_items WHERE step_id = ANY(?::int[]) ORDER BY step_id, position`, [steps.map((x) => x.id)]);
+    await db.run('INSERT INTO roadmap_versions (user_id, user_name, action, data) VALUES (?,?,?,?)', [req.user.id, req.user.name, String(action).slice(0, 200), JSON.stringify({ steps, items })]);
+    await db.run('DELETE FROM roadmap_versions WHERE id NOT IN (SELECT id FROM roadmap_versions ORDER BY id DESC LIMIT 60)');
+  } catch (e) { console.error('[roadmap version]', e.message); }
+}
+app.get('/api/roadmap/versions', requireMaster, h(async (req, res) => {
+  // the first time history is opened: keep today's roadmap as the starting point
+  if (!(await db.one('SELECT 1 AS x FROM roadmap_versions LIMIT 1'))) await rmVersion({ user: { id: null, name: 'System' } }, 'Starting point');
+  res.json(await db.all("SELECT id, user_name, action, created_at, (length(data) > 0) AS ok FROM roadmap_versions ORDER BY id DESC LIMIT 60"));
+}));
+app.post('/api/roadmap/versions/:id/restore', requireMaster, h(async (req, res) => {
+  const v = await db.one('SELECT * FROM roadmap_versions WHERE id = ?', [Number(req.params.id)]);
+  if (!v) return bad(res, 'Version not found', 404);
+  const { steps, items } = JSON.parse(v.data);
+  await db.tx(async (t) => {
+    const keepSteps = [];
+    for (const st of steps) {
+      if (!(await t.one('SELECT 1 AS x FROM roadmap_steps WHERE id = ?', [st.id]))) continue; // purged from the Trash
+      await t.run(`UPDATE roadmap_steps SET position = ?, deleted_at = NULL, deleted_by = NULL, ${STEP_COLS.map((k) => `${k} = ?`).join(', ')} WHERE id = ?`, [st.position, ...STEP_COLS.map((k) => st[k]), st.id]);
+      keepSteps.push(st.id);
+      const snap = items.filter((i) => i.step_id === st.id);
+      const keep = [];
+      for (const it of snap) {
+        const cur = await t.one('SELECT kind FROM roadmap_items WHERE id = ? AND step_id = ?', [it.id, st.id]);
+        if (cur) {
+          if (cur.kind === 'lesson') await t.run('UPDATE roadmap_items SET position = ?, title = ?, url = ? WHERE id = ?', [it.position, it.title, it.url, it.id]);
+          else await t.run('UPDATE roadmap_items SET position=?, kind=?, title=?, quiz_id=?, url=?, body=?, retake_quiz_id=?, retake_hours=? WHERE id = ?', [it.position, it.kind, it.title, it.quiz_id, it.url, it.body, it.retake_quiz_id, it.retake_hours, it.id]);
+          keep.push(it.id);
+        } else if (it.kind !== 'lesson') {
+          keep.push((await t.one('INSERT INTO roadmap_items (step_id, position, kind, title, quiz_id, url, body, retake_quiz_id, retake_hours) VALUES (?,?,?,?,?,?,?,?,?) RETURNING id', [st.id, it.position, it.kind, it.title, it.quiz_id, it.url, it.body, it.retake_quiz_id, it.retake_hours])).id);
+        }
+      }
+      await t.run("DELETE FROM roadmap_items WHERE step_id = ? AND kind <> 'lesson' AND NOT (id = ANY(?::int[]))", [st.id, keep]);
+    }
+    // steps added after that version go to the Trash (restorable)
+    await t.run('UPDATE roadmap_steps SET deleted_at = now(), deleted_by = ? WHERE deleted_at IS NULL AND NOT (id = ANY(?::int[]))', [req.user.id, keepSteps]);
+    await normalizePositions(t);
+  });
+  await rmVersion(req, `Restored the version from ${new Date(v.created_at).toLocaleString('en-GB', { timeZone: 'Asia/Tashkent', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`);
   res.json({ ok: true });
 }));
 

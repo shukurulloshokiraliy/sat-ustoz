@@ -81,8 +81,10 @@ export function VideoLocked() {
   );
 }
 
-function StepDrawer({ step, index, prev, onClose, onChanged }) {
-  const { user } = useAuth();
+/** One step's lessons. `preview` = the teacher sees it exactly as a subscribed student would (actions are not saved). */
+export function StepDrawer({ step, index, prev, onClose, onChanged, preview }) {
+  const { user: me } = useAuth();
+  const user = preview ? { ...me, role: 'student', access: { can_practice: true, roadmap: true } } : me;
   const toast = useToast();
   const nav = useNavigate();
   const [expanded, setExpanded] = useState(() => new Set());
@@ -93,6 +95,7 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
 
   const toggle = (id) => setExpanded((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const mark = async (it, value) => {
+    if (preview) { toast('Preview — students mark this as done'); return; }
     setBusy(it.id);
     try { await api.post(`/roadmap/items/${it.id}/done`, { done: value }); onChanged(); if (value) toast('Nice — marked as done'); }
     catch (e) { toast(e.message, 'bad'); }
@@ -100,7 +103,7 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
   };
 
   return (
-    <Modal wide onClose={onClose} label={step.title} title={<span className="step-head"><StepDisc step={step} size={52} state={locked ? 'locked' : ''} /><span><small className="muted" style={{ display: 'block', fontSize: '.75rem', fontWeight: 600 }}>STEP {index + 1} · {step.score_from}–{step.score_to}</small>{step.title}</span></span>}>
+    <Modal wide onClose={onClose} label={step.title} title={preview ? <span className="step-head"><span className="chip warn">Student preview</span>{step.title}</span> : <span className="step-head"><StepDisc step={step} size={52} state={locked ? 'locked' : ''} /><span><small className="muted" style={{ display: 'block', fontSize: '.75rem', fontWeight: 600 }}>STEP {index + 1} · {step.score_from}–{step.score_to}</small>{step.title}</span></span>}>
       {step.subtitle && <p className="muted" style={{ marginTop: -6 }}>{step.subtitle}</p>}
       {locked && (
         <div className="error-box" style={{ justifyContent: 'flex-start', gap: 8, padding: 12, background: 'var(--surface-2)', color: 'var(--muted)', borderColor: 'var(--line)' }}>
@@ -153,7 +156,7 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
                     <div className="item-act row" style={{ gap: 6 }}>
                       {!canRoadmap && user.role === 'student'
                         ? <Link className="btn soft sm" to="/subscribe"><IconLock width={15} height={15} /> Subscribe</Link>
-                        : user.role === 'student' && <button className={`btn sm ${it.done ? 'ghost' : 'primary'}`} disabled={locked} onClick={() => nav(`/exam/${it.id}`)}>{it.tries ? 'New attempt' : 'Start'} <IconArrow width={15} height={15} /></button>}
+                        : user.role === 'student' && <button className={`btn sm ${it.done ? 'ghost' : 'primary'}`} disabled={locked} onClick={() => (preview ? toast('Preview — students start the final exam here') : nav(`/exam/${it.id}`))}>{it.tries ? 'New attempt' : 'Start'} <IconArrow width={15} height={15} /></button>}
                     </div>
                   </div>
                 );
@@ -176,7 +179,7 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
                       ? <Link className="btn soft sm" to="/subscribe"><IconLock width={15} height={15} /> Subscribe</Link>
                       : it.retake_opens_at
                         ? <span className="chip warn" title="The retake opens after the waiting time">Retake {new Date(it.retake_opens_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                        : <button className="btn primary sm" disabled={locked} onClick={() => nav(`/quiz/${it.current_quiz_id || it.quiz_id}`)}>{it.best != null ? 'Retake' : 'Start'} <IconArrow width={15} height={15} /></button>)}
+                        : <button className="btn primary sm" disabled={locked} onClick={() => (preview ? toast('Preview — students start the quiz here') : nav(`/quiz/${it.current_quiz_id || it.quiz_id}`))}>{it.best != null ? 'Retake' : 'Start'} <IconArrow width={15} height={15} /></button>)}
                     {it.kind !== 'quiz' && <button className="btn ghost sm" disabled={locked} onClick={() => toggle(it.id)}>{isOpen ? 'Hide' : it.kind === 'video' ? 'Watch' : 'Read'}</button>}
                     {it.kind !== 'quiz' && (
                       <button className={`btn sm ${it.done ? 'ghost' : 'soft'}`} disabled={locked || busy === it.id} onClick={() => mark(it, !it.done)}>
