@@ -33,6 +33,13 @@ function Home({ d, reload }) {
   const [imp, setImp] = useState(null); // set
   const toast = useToast();
   const t = d.totals;
+  // sets fold to one line each; the set you are working on starts open (due words, else the first unfinished one)
+  const [openSets, setOpenSets] = useState(() => {
+    const all = d.decks.flatMap((x) => x.sets).filter((x) => x.open);
+    const cur = all.find((x) => x.units.some((u) => u.due)) || all.find((x) => x.units.some((u) => u.learned < u.words)) || all[0];
+    return new Set(cur ? [cur.id] : []);
+  });
+  const toggle = (id) => setOpenSets((o) => { const n = new Set(o); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   return (
     <>
       <section className="v-hero">
@@ -77,11 +84,19 @@ function Home({ d, reload }) {
           {deck.sets.map((s) => {
             const words = s.units.reduce((n, u) => n + u.words, 0);
             const learned = s.units.reduce((n, u) => n + u.learned, 0);
+            const due = s.units.reduce((n, u) => n + (u.due || 0), 0);
             return (
-              <div key={s.id} className={`v-set ${s.open ? '' : 'locked'}`}>
+              <div key={s.id} className={`v-set ${s.open ? '' : 'locked'} ${openSets.has(s.id) ? 'open' : 'shut'}`}>
                 <div className="v-set-head">
-                  <span className="v-set-n">{s.n}</span>
-                  <div className="grow"><b>{s.title}</b><small>{s.units.length} units · {words} words · {learned} learned</small></div>
+                  <button type="button" className="v-set-toggle" aria-expanded={openSets.has(s.id)} onClick={() => toggle(s.id)}>
+                    <span className="v-set-n">{s.n}</span>
+                    <span className="grow v-set-info">
+                      <b>{s.title}</b>
+                      <small>{s.units.length} units · {words} words{due ? <em> · {due} due</em> : ''}</small>
+                      <span className="v-set-bar" aria-label={`${learned} of ${words} learned`}><span style={{ width: `${words ? Math.round((learned / words) * 100) : 0}%` }} /></span>
+                    </span>
+                    <svg className="v-set-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
                   {s.video_url && <button className="btn soft sm" onClick={() => setVideo(s)}><IconPlay width={16} height={16} /> Set video</button>}
                   {teacher && <>
                     <button className="btn soft sm" onClick={() => setImp(s)}><IconUpload width={16} height={16} /> Import</button>
@@ -91,7 +106,7 @@ function Home({ d, reload }) {
                   </>}
                   {!s.open && <span className="chip"><IconLock width={14} height={14} /> Subscription</span>}
                 </div>
-                <div className="v-units">
+                {openSets.has(s.id) && <div className="v-units">
                   {s.units.map((u) => {
                     const pct = u.words ? u.learned / u.words : 0;
                     const body = (
@@ -109,7 +124,7 @@ function Home({ d, reload }) {
                       : <Link key={u.id} to="/subscribe" className="v-unit locked">{body}</Link>;
                   })}
                   {teacher && <button type="button" className="v-unit v-unit-add" onClick={() => setForm({ kind: 'unit', mode: 'new', parent: s })}><IconPlus width={18} height={18} /> Add unit</button>}
-                </div>
+                </div>}
               </div>
             );
           })}
