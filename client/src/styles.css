@@ -1737,16 +1737,11 @@ em.hi, .sr-bars i.hi { background: #1E8E4E; } em.mid, .sr-bars i.mid { backgroun
   :root:not([data-theme='dark']) .pub-nav-mobile-cta .btn.on-dark { color: #161B3D; border-color: var(--line); }
 }
 /* practice hub on phones: nothing sticky over the list; a slim start bar at the bottom instead */
-.pt-mobile-go { display: none; }
 @media (max-width: 900px) {
   .pt-side, .app .pt-side { position: static; top: auto; }
   .pt-start { padding: 18px; gap: 10px; grid-template-columns: auto 1fr; justify-items: start; text-align: left; align-items: center; }
   .pt-start > svg, .pt-start .ring { width: 72px !important; height: 72px !important; grid-row: span 2; }
   .pt-start > .btn, .pt-start > small, .pt-start > .bad-text { grid-column: 1 / -1; }
-  .pt-mobile-go { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px -18px rgba(22,27,61,.5); }
-  .pt-mobile-go span { display: grid; line-height: 1.2; } .pt-mobile-go b { font-size: .95rem; } .pt-mobile-go small { color: var(--muted); font-size: .76rem; }
-  .pt-hub { padding-bottom: 96px; }
-  .app .pt-mobile-go { bottom: calc(64px + env(safe-area-inset-bottom)); }
 }
 @media (max-width: 900px) { .pt-start .ring svg { width: 100%; height: 100%; } .pt-start .ring-in strong { font-size: 1.1rem; } }
 
@@ -2323,3 +2318,24 @@ body.menu-open .sc-fab, body.menu-open .sc-panel { display: none; }
 .wallet-chip.has { border-style: solid; border-color: rgba(34,176,125,.35); background: rgba(34,176,125,.1); color: #1A9A6C; }
 .wallet-chip:hover { border-color: var(--primary); color: var(--primary); }
 :root[data-theme='dark'] .wallet-chip.has { color: #4FD18A; }
+
+/* aurora as a fixed layer: phones (iOS) ignore background-attachment: fixed, which made the gradient stretch and band */
+:root[data-theme='dark'] body { background: var(--bg); }
+:root[data-theme='dark'] body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(900px 520px at 8% -6%, rgba(124, 92, 255, .22), transparent 62%),
+    radial-gradient(800px 520px at 100% 8%, rgba(42, 85, 229, .2), transparent 60%),
+    radial-gradient(700px 520px at 85% 100%, rgba(34, 176, 125, .12), transparent 60%),
+    radial-gradient(600px 420px at 0% 95%, rgba(255, 203, 61, .07), transparent 60%);
+}
+@media (max-width: 640px) {
+  :root[data-theme='dark'] body::before {
+    background:
+      radial-gradient(420px 360px at 0% 0%, rgba(124, 92, 255, .26), transparent 65%),
+      radial-gradient(380px 320px at 100% 30%, rgba(42, 85, 229, .2), transparent 65%),
+      radial-gradient(380px 340px at 100% 100%, rgba(34, 176, 125, .14), transparent 65%),
+      radial-gradient(320px 300px at 0% 80%, rgba(255, 203, 61, .08), transparent 65%);
+  }
+}
+:root[data-theme='dark'] .pub, :root[data-theme='dark'] .pr { background: transparent; }

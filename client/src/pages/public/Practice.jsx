@@ -141,12 +141,6 @@ export default function Practice() {
               </div>
             )}
           </aside>
-          {!blocked && (
-            <div className="pt-mobile-go">
-              <span><b>{size} questions</b><small>{Math.max(5, Math.round((meta.minutes * size) / meta.test_size))} min · {skills.length ? `${skills.length} skill${skills.length > 1 ? 's' : ''}` : 'all skills'}</small></span>
-              <button className="btn sun" disabled={busy || size < 3} onClick={start}>{busy ? 'Preparing…' : 'Start the test'} <IconArrow width={16} height={16} /></button>
-            </div>
-          )}
         </div>
       )}
     </div>
