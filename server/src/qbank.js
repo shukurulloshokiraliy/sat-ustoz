@@ -8,7 +8,8 @@ import { satScore } from './scoring.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { db } from './db.js';
+import { db, getSettings } from './db.js';
+import { moveBalance } from './tiers.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIR = path.join(__dirname, 'content', 'qbank');
@@ -102,10 +103,20 @@ CREATE TABLE IF NOT EXISTS qbank_mocks (
 CREATE INDEX IF NOT EXISTS idx_qbank_mocks_user ON qbank_mocks(user_id, started_at DESC);
 ALTER TABLE qbank_mocks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE qbank_mocks ADD COLUMN IF NOT EXISTS estimate INTEGER;
+ALTER TABLE qbank_mocks ADD COLUMN IF NOT EXISTS paid BOOLEAN NOT NULL DEFAULT false;
 `);
 }
 
 export function registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor, upload, usedToday }) {
+  // Take a quiz: the plan's free quizzes a day, then a small price per extra quiz from the wallet
+  const quizQuota = async (user) => {
+    if (user.role === 'master') return { limit: 0, used: 0, left: 0, extra_price: 0, balance: 0 };
+    const s = await getSettings();
+    const limit = (await accessFor(user)).tier?.quiz_day || 0;
+    const used = (await usedToday(user.id)).quizzes;
+    const bal = await db.one('SELECT balance FROM users WHERE id = ?', [user.id]);
+    return { limit, used, left: limit ? Math.max(0, limit - used) : null, extra_price: Number(s.quiz_extra_price) || 0, balance: Number(bal?.balance || 0) };
+  };
   const openLevels = async (user) => (user.role === 'master' || (await accessFor(user)).can_practice ? LEVELS : [FREE_LEVEL]);
 
   // overview: domains → skills with counts and the student's own progress
@@ -191,15 +202,17 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const list = await db.all('SELECT id, score, total, estimate, started_at, finished_at FROM qbank_mocks WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 10', [req.user.id]);
     const open = await db.one(`SELECT id FROM qbank_mocks WHERE user_id = ? AND finished_at IS NULL AND started_at > now() - interval '${MOCK_MINUTES} minutes' ORDER BY id DESC LIMIT 1`, [req.user.id]);
     const mockAcc = list.length ? Math.round((list.reduce((s, m) => s + m.score, 0) / list.reduce((s, m) => s + m.total, 0)) * 100) : null;
-    res.json({ mocks: list, open: open?.id || null, accuracy: await accuracy(req.user.id), mock_accuracy: mockAcc, questions: MOCK_BLUEPRINT.reduce((s, [, n]) => s + n, 0), minutes: MOCK_MINUTES });
+    res.json({ quota: await quizQuota(req.user), mocks: list, open: open?.id || null, accuracy: await accuracy(req.user.id), mock_accuracy: mockAcc, questions: MOCK_BLUEPRINT.reduce((s, [, n]) => s + n, 0), minutes: MOCK_MINUTES });
   }));
 
   // start a new module (or resume the one still running)
   app.post('/api/qbank/mock', requireStudent, h(async (req, res) => {
     const open = await db.one(`SELECT * FROM qbank_mocks WHERE user_id = ? AND finished_at IS NULL AND started_at > now() - interval '${MOCK_MINUTES} minutes' ORDER BY id DESC LIMIT 1`, [req.user.id]);
     if (open && !req.body?.fresh) return res.json(await mockState(open, false));
-    const qcap = (await accessFor(req.user)).tier?.quiz_day || 0;
-    if (qcap && req.user.role !== 'master' && (await usedToday(req.user.id)).quizzes >= qcap) return bad(res, `Your plan includes ${qcap} quiz${qcap === 1 ? '' : 'zes'} a day. Come back tomorrow or upgrade your plan.`, 402, { code: 'daily_limit' });
+    const quota = await quizQuota(req.user);
+    const paid = quota.limit > 0 && quota.left <= 0;
+    // beyond the plan's daily quizzes: one more for a small price from the wallet, only when the student asks to pay
+    if (paid && (!req.body?.pay || !quota.extra_price)) return bad(res, `Today's ${quota.limit} free quiz${quota.limit === 1 ? '' : 'zes'} used. Take one more for ${quota.extra_price.toLocaleString('en-US').replace(/,/g, ' ')} from your wallet or come back tomorrow.`, 402, { code: 'daily_limit', quota });
     const levels = await openLevels(req.user);
     const picked = [];
     for (const [skill, n] of MOCK_BLUEPRINT) {
@@ -209,7 +222,12 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
       picked.push(...rows.sort((a, b) => LV[a.difficulty] - LV[b.difficulty]).map((r) => r.id));
     }
     if (picked.length < 10) return bad(res, 'The Question Bank does not have enough questions yet');
-    const m = await db.one('INSERT INTO qbank_mocks (user_id, question_ids, total) VALUES (?,?,?) RETURNING *', [req.user.id, JSON.stringify(picked), picked.length]);
+    const m = await db.tx(async (t) => {
+      const r = await t.one('INSERT INTO qbank_mocks (user_id, question_ids, total, paid) VALUES (?,?,?,?) RETURNING *', [req.user.id, JSON.stringify(picked), picked.length, paid]);
+      if (paid && (await moveBalance(t, req.user.id, -quota.extra_price, 'quiz', { note: 'Extra quiz', ref: `qz:${r.id}` })) == null) throw Object.assign(new Error('Not enough money in your wallet. Top it up first.'), { status: 402 });
+      return r;
+    }).catch((e) => { if (e.status === 402) return { err: e.message }; throw e; });
+    if (m.err) return bad(res, m.err, 402, { code: 'balance_low', quota });
     res.json(await mockState(m, false));
   }));
 

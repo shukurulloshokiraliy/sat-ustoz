@@ -20,7 +20,8 @@ import { registerLessons } from './course/lessons.js';
 import { registerQbank, syncQbank, migrateQbankMocks } from './qbank.js';
 import { registerFullMocks, migrateFullMocks } from './fullmock.js';
 import { registerVideo, playUrl, isBunny } from './video.js';
-import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails } from './tiers.js';
+import { migrateGifs, registerGifs, gifMap } from './gifs.js';
+import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails, moveBalance } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
 import { migrateSite, seedSite, registerSitePublic, registerSiteAdmin } from './site.js';
@@ -66,6 +67,7 @@ await migrateBot();
 await migrateVocab();
 await migrateQbankMocks();
 await migrateFullMocks();
+await migrateGifs();
 await migrateTiers();
 await migrateSecurity();
 await db.exec(`
@@ -177,7 +179,7 @@ app.get('/api/config', h(async (req, res) => {
     google: !!(process.env.GOOGLE_CLIENT_ID || s.google_client_id),
     telegram_bot: s.telegram_bot,
     prices: { month: +s.price_month || 0, quarter: +s.price_quarter || 0, currency: s.currency },
-    tiers: readTiers(s), free: tierOf({ role: 'student' }, s), fm_extra_price: Number(s.fm_extra_price) || 0,
+    tiers: readTiers(s), free: tierOf({ role: 'student' }, s), fm_extra_price: Number(s.fm_extra_price) || 0, quiz_extra_price: Number(s.quiz_extra_price) || 0,
   });
 }));
 
@@ -273,6 +275,7 @@ registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor: (u) => ac
 registerFullMocks(app, { h, bad, requireStudent, requireMaster, upload });
 registerTiers(app, { h, bad, requireStudent, requireMaster });
 registerVideo(app, { h, bad, requireMaster });
+registerGifs(app, { h, bad, requireMaster });
 
 app.get('/api/me', h(async (req, res) => res.json(await mepayload(req.user))));
 app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
@@ -282,25 +285,70 @@ app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
  * 10 points per correct SAT answer (Question Bank, Take a quiz, practice tests, quizzes), 2 per vocabulary
  * review, 5 per correct Word Arena answer, 1 per minute of active study. Only first name + initial is shown.
  */
-app.get('/api/leaderboard', h(async (req, res) => {
-  const week = req.query.period !== 'all';
-  const since = week ? "date_trunc('week', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent'" : "'1970-01-01'::timestamptz";
+const WEEK_START = "date_trunc('week', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent'";
+const shortName = (n) => { const w = String(n || '').trim().split(/\s+/); return w[0] + (w[1] ? ` ${w[1][0]}.` : ''); };
+/** Students ranked by points between `since` and `until` (SQL expressions). */
+async function boardRows(since, until, meId) {
+  const rng = (col) => `${col} >= ${since} AND ${col} < ${until}`;
   const rows = await db.all(`
     WITH pts AS (
-      SELECT user_id, 10 * COUNT(*) AS p FROM qbank_answers WHERE correct AND answered_at >= ${since} GROUP BY user_id
-      UNION ALL SELECT user_id, 10 * SUM(score) FROM practice_sessions WHERE user_id IS NOT NULL AND finished_at >= ${since} GROUP BY user_id
-      UNION ALL SELECT user_id, 10 * SUM(CASE WHEN total > 0 THEN score ELSE 0 END) FROM attempts WHERE finished_at >= ${since} GROUP BY user_id
-      UNION ALL SELECT user_id, 2 * COUNT(*) FROM vocab_progress WHERE last_at >= ${since} GROUP BY user_id
-      UNION ALL SELECT user_id, 5 * SUM(correct) FROM game_players WHERE user_id IS NOT NULL AND joined_at >= ${since} GROUP BY user_id
-      UNION ALL SELECT user_id, SUM(seconds) / 60 FROM user_activity WHERE day >= (${since})::date GROUP BY user_id
+      SELECT user_id, 10 * COUNT(*) AS p FROM qbank_answers WHERE correct AND ${rng('answered_at')} GROUP BY user_id
+      UNION ALL SELECT user_id, 10 * SUM(score) FROM practice_sessions WHERE user_id IS NOT NULL AND ${rng('finished_at')} GROUP BY user_id
+      UNION ALL SELECT user_id, 10 * SUM(CASE WHEN total > 0 THEN score ELSE 0 END) FROM attempts WHERE ${rng('finished_at')} GROUP BY user_id
+      UNION ALL SELECT user_id, 2 * COUNT(*) FROM vocab_progress WHERE ${rng('last_at')} GROUP BY user_id
+      UNION ALL SELECT user_id, 5 * SUM(correct) FROM game_players WHERE user_id IS NOT NULL AND ${rng('joined_at')} GROUP BY user_id
+      UNION ALL SELECT user_id, SUM(seconds) / 60 FROM user_activity WHERE day >= (${since})::date AND day < (${until})::date GROUP BY user_id
     )
     SELECT u.id, u.name, u.avatar_url, COALESCE(SUM(pts.p), 0) AS points
     FROM users u LEFT JOIN pts ON pts.user_id = u.id
     WHERE u.role = 'student' GROUP BY u.id HAVING COALESCE(SUM(pts.p), 0) > 0 OR u.id = ?
-    ORDER BY points DESC, u.id`, [req.user.id]);
-  const short = (n) => { const w = String(n || '').trim().split(/\s+/); return w[0] + (w[1] ? ` ${w[1][0]}.` : ''); };
-  const list = rows.map((r, i) => ({ rank: i + 1, id: r.id, name: short(r.name), avatar_url: r.avatar_url, points: Number(r.points), me: r.id === req.user.id }));
-  res.json({ period: week ? 'week' : 'all', total: list.filter((x) => x.points > 0).length, top: list.slice(0, 50), me: list.find((x) => x.me) || null });
+    ORDER BY points DESC, u.id`, [meId || 0]);
+  return rows.map((r, i) => ({ rank: i + 1, id: r.id, name: shortName(r.name), avatar_url: r.avatar_url, points: Number(r.points), me: r.id === meId }));
+}
+const DEFAULT_PRIZES = [{ text: '30 000 so‘m to your wallet', bonus: 30000 }, { text: '20 000 so‘m to your wallet', bonus: 20000 }, { text: '10 000 so‘m to your wallet', bonus: 10000 }];
+const readPrizes = (s) => { try { const p = JSON.parse(s.lb_prizes || ''); if (Array.isArray(p)) return p.slice(0, 5); } catch { /* default */ } return DEFAULT_PRIZES; };
+
+app.get('/api/leaderboard', h(async (req, res) => {
+  const week = req.query.period !== 'all';
+  const list = await boardRows(week ? WEEK_START : "'1970-01-01'::timestamptz", "now() + interval '1 minute'", req.user.id);
+  const ranked = list.filter((x) => x.points > 0);
+  const me = list.find((x) => x.me) || null;
+  // the one just above you, so you know how many points it takes to pass them
+  const above = me && me.rank > 1 ? list[me.rank - 2] : null;
+  const s = await getSettings();
+  const ends = (await db.one(`SELECT (${WEEK_START}) + interval '7 days' AS t`)).t;
+  const last = (await boardRows(`(${WEEK_START}) - interval '7 days'`, WEEK_START, 0)).filter((x) => x.points > 0).slice(0, 3);
+  const wk = (await db.one(`SELECT to_char((${WEEK_START}) - interval '7 days', 'YYYY-MM-DD') AS d`)).d;
+  const paid = new Set((await db.all('SELECT ref FROM balance_ledger WHERE ref LIKE ?', [`lb:${wk}:%`])).map((r) => r.ref));
+  res.json({
+    period: week ? 'week' : 'all', total: ranked.length, top: list.slice(0, 50), me,
+    chase: above && me.points >= 0 ? { name: above.name, rank: above.rank, gap: above.points - me.points + 1 } : null,
+    prizes: readPrizes(s), prize_note: s.lb_prize_note || '', ends_at: ends,
+    last_week: { week: wk, winners: last.map((x, i) => ({ ...x, awarded: paid.has(`lb:${wk}:${i + 1}`) })) },
+  });
+}));
+app.put('/api/leaderboard/prizes', requireMaster, h(async (req, res) => {
+  const prizes = (Array.isArray(req.body?.prizes) ? req.body.prizes : []).slice(0, 3).map((p) => ({
+    text: String(p?.text || '').trim().slice(0, 80), bonus: Math.max(0, Math.min(10_000_000, Math.round(+p?.bonus || 0))),
+  }));
+  await setSettings({ lb_prizes: JSON.stringify(prizes), lb_prize_note: String(req.body?.note || '').trim().slice(0, 200) });
+  res.json({ prizes, note: String(req.body?.note || '').trim().slice(0, 200) });
+}));
+// teacher: pay last week's wallet prizes (each place once — the ledger ref stops double payments)
+app.post('/api/leaderboard/award', requireMaster, h(async (req, res) => {
+  const s = await getSettings();
+  const prizes = readPrizes(s);
+  const wk = (await db.one(`SELECT to_char((${WEEK_START}) - interval '7 days', 'YYYY-MM-DD') AS d`)).d;
+  const last = (await boardRows(`(${WEEK_START}) - interval '7 days'`, WEEK_START, 0)).filter((x) => x.points > 0).slice(0, 3);
+  let n = 0;
+  for (let i = 0; i < last.length; i++) {
+    const bonus = prizes[i]?.bonus || 0;
+    if (!bonus) continue;
+    const ok = await db.tx((t) => moveBalance(t, last[i].id, bonus, 'prize', { note: `Leaderboard #${i + 1} · week of ${wk}`, ref: `lb:${wk}:${i + 1}`, by: req.user.id }));
+    if (ok != null) n++;
+  }
+  audit(req, 'leaderboard_award', wk, `${n} prizes`);
+  res.json({ awarded: n });
 }));
 app.put('/api/me', h(async (req, res) => {
   const { name, target_english, target_math, exam_date } = req.body || {};
@@ -354,7 +402,7 @@ app.get('/api/audit', requireMaster, h(async (req, res) => {
 app.get('/api/settings', requireMaster, h(async (req, res) => {
   const st = await getSettings();
   const secret = (v) => (v ? `••••${String(v).slice(-4)}` : '');
-  res.json({ ...st, bunny_api_key: secret(st.bunny_api_key), bunny_token_key: secret(st.bunny_token_key), bunny_env: !!process.env.BUNNY_API_KEY, google_configured: !!(process.env.GOOGLE_CLIENT_ID || st.google_client_id), google_env: !!process.env.GOOGLE_CLIENT_ID, database: DB_KIND });
+  res.json({ ...st, bunny_api_key: secret(st.bunny_api_key), bunny_token_key: secret(st.bunny_token_key), giphy_key: secret(st.giphy_key), giphy_env: !!process.env.GIPHY_API_KEY, bunny_env: !!process.env.BUNNY_API_KEY, google_configured: !!(process.env.GOOGLE_CLIENT_ID || st.google_client_id), google_env: !!process.env.GOOGLE_CLIENT_ID, database: DB_KIND });
 }));
 app.put('/api/settings', requireMaster, h(async (req, res) => {
   const b = req.body || {};
@@ -373,16 +421,17 @@ app.put('/api/settings', requireMaster, h(async (req, res) => {
   if ('pay_holder' in b) patch.pay_holder = String(b.pay_holder || '').trim().slice(0, 60);
   if ('tiers' in b) patch.tiers = cleanTiers(b.tiers);
   if ('fm_extra_price' in b) patch.fm_extra_price = digits(b.fm_extra_price) || '0';
+  if ('quiz_extra_price' in b) patch.quiz_extra_price = digits(b.quiz_extra_price) || '0';
   if ('free_q_day' in b) patch.free_q_day = String(Math.max(0, Math.min(999, Math.round(+b.free_q_day || 0))));
   if ('bunny_library_id' in b) patch.bunny_library_id = String(b.bunny_library_id || '').replace(/\D/g, '').slice(0, 12);
-  for (const k of ['bunny_api_key', 'bunny_token_key']) if (k in b && !String(b[k]).startsWith('••••')) patch[k] = String(b[k] || '').trim().replace(/[^\w-]/g, '').slice(0, 100);
+  for (const k of ['bunny_api_key', 'bunny_token_key', 'giphy_key']) if (k in b && !String(b[k]).startsWith('••••')) patch[k] = String(b[k] || '').trim().replace(/[^\w-]/g, '').slice(0, 100);
   if ('live_link' in b) patch.live_link = /^https?:\/\//i.test(String(b.live_link || '').trim()) ? String(b.live_link).trim().slice(0, 300) : '';
   if ('live_note' in b) patch.live_note = String(b.live_note || '').trim().slice(0, 300);
   for (const k of ['fm_free', 'fm_month', 'fm_quarter']) if (k in b) patch[k] = String(Math.max(0, Math.min(99, Math.round(+b[k] || 0))));
   if ('telegram_bot' in b) patch.telegram_bot = String(b.telegram_bot || '').trim().replace(/^@/, '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 64);
   const out = await setSettings(patch);
   await audit(req, 'settings_changed', '', Object.keys(patch).join(', '));
-  res.json({ ...out, bunny_api_key: out.bunny_api_key ? `••••${out.bunny_api_key.slice(-4)}` : '', bunny_token_key: out.bunny_token_key ? `••••${out.bunny_token_key.slice(-4)}` : '' });
+  res.json({ ...out, bunny_api_key: out.bunny_api_key ? `••••${out.bunny_api_key.slice(-4)}` : '', bunny_token_key: out.bunny_token_key ? `••••${out.bunny_token_key.slice(-4)}` : '', giphy_key: out.giphy_key ? `••••${out.giphy_key.slice(-4)}` : '' });
 }));
 
 // ---------- groups (teacher) ----------
@@ -870,14 +919,17 @@ async function loadSteps(where = '', params = []) {
     FROM roadmap_items i LEFT JOIN quizzes q ON q.id = i.quiz_id
     WHERE i.step_id = ANY(?::int[]) ORDER BY i.position, i.id`, [steps.map((s) => s.id)]);
   const sheets = new Map((await db.all('SELECT step_id, name, title, pages, size, src, updated_at FROM step_handouts WHERE step_id = ANY(?::int[])', [steps.map((s) => s.id)])).map((h) => [h.step_id, h]));
+  const stepGifs = await gifMap('step', steps.map((s) => s.id));
+  const itemGifs = await gifMap('item', items.map((i) => i.id));
   const by = {};
   for (const it of items) {
+    it.gif = itemGifs.get(it.id) || null;
     const { content, ...rest } = it; // lesson content (incl. answers) never leaves through the roadmap
     (by[it.step_id] ||= []).push(it.kind === 'lesson' ? { ...rest, lesson: lessonSummary(it) } : rest);
   }
   return steps.map((s) => {
     const h = sheets.get(s.id);
-    return { ...s, items: by[s.id] || [], handout: h ? { name: h.name, title: h.title || h.name, pages: h.pages, size: h.size, src: h.src, updated_at: h.updated_at } : null };
+    return { ...s, gif: stepGifs.get(s.id) || null, items: by[s.id] || [], handout: h ? { name: h.name, title: h.title || h.name, pages: h.pages, size: h.size, src: h.src, updated_at: h.updated_at } : null };
   });
 }
 

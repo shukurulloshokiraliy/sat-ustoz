@@ -109,6 +109,7 @@ export default function App() {
             <Route path="question-bank/manage" element={<QbankAdmin />} />
             <Route path="full-mocks" element={<FullMockAdmin />} />
             <Route path="consultations" element={<ConsultationsAdmin />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="website" element={<Website />} />
             <Route path="support" element={<Support />} />
           </>

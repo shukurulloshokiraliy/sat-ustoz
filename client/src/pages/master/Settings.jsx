@@ -53,6 +53,9 @@ function Form({ init }) {
           <Field label="Extra full mock (from balance)"><input inputMode="numeric" value={f.fm_extra_price} onChange={set('fm_extra_price')} /></Field>
         </div>
         <div className="grid g3">
+          <Field label="Extra quiz (from balance)" hint="after the plan's free quizzes a day"><input inputMode="numeric" value={f.quiz_extra_price ?? ''} onChange={set('quiz_extra_price')} /></Field>
+        </div>
+        <div className="grid g3">
           <Field label="Currency"><input maxLength={3} value={f.currency} onChange={set('currency')} /></Field>
           <Field label="Live lessons link" hint="plan 4"><input value={f.live_link || ''} onChange={set('live_link')} placeholder="https://meet.google.com/…" /></Field>
           <Field label="Live lessons schedule"><input value={f.live_note || ''} onChange={set('live_note')} placeholder="Tue & Thu, 19:00" /></Field>
@@ -80,6 +83,22 @@ function Form({ init }) {
             <li>Library → <b>API</b>: copy the <b>Library ID</b> and the <b>API key</b>.</li>
             <li>Library → <b>Security</b>: turn on <b>Embed view token authentication</b>, copy the <b>Token authentication key</b>, and in <b>Allowed referrers</b> add <code>ustozsat.uz</code> and <code>www.ustozsat.uz</code>.</li>
             <li>Paste the three values here and press Save settings. Then open Roadmap → edit a step → <b>Upload MP4</b>.</li>
+          </ol>
+        </details>
+      </Card>
+      <Card className="stack">
+        <h2>GIFs and memes (GIPHY)</h2>
+        <small className="muted">Lets you search GIPHY when you add a GIF to a roadmap topic, lesson or vocabulary unit. Without a key you can still paste GIF links.</small>
+        {init.giphy_env ? <span className="chip good">Set on the server (environment variables)</span> : (
+          <Field label="GIPHY API key" hint="developers.giphy.com → Create an API key"><input type="password" autoComplete="off" value={f.giphy_key || ''} onChange={set('giphy_key')} placeholder="xxxxxxxxxxxxxxxxxxxxxxxx" /></Field>
+        )}
+        <details>
+          <summary className="linkish" style={{ cursor: 'pointer' }}>How to get a key (3 minutes, free)</summary>
+          <ol className="muted tg-steps" style={{ marginTop: 8 }}>
+            <li>Open <a href="https://developers.giphy.com/dashboard/" target="_blank" rel="noreferrer">developers.giphy.com</a> and sign up.</li>
+            <li>Press <b>Create an API Key</b> → choose <b>API</b> (not SDK) → name it “SAT Ustoz”.</li>
+            <li>Copy the key, paste it here and press Save settings.</li>
+            <li>The free beta key allows about 100 searches an hour — plenty for adding GIFs. Students only load the saved GIFs, which does not count.</li>
           </ol>
         </details>
       </Card>

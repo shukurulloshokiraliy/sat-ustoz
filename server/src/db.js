@@ -341,12 +341,16 @@ const DEFAULT_SETTINGS = {
   fm_month: '3',    // ... with the monthly plan
   fm_quarter: '7',  // (old, replaced by tiers)
   tiers: '',        // JSON: names, prices and limits of the 4 plans (see tiers.js)
+  lb_prizes: '',           // leaderboard prizes for places 1–3 (JSON: [{ text, bonus }])
+  lb_prize_note: '',
+  quiz_extra_price: '3000', // one quiz beyond the plan's daily quizzes, paid from the balance
   fm_extra_price: '20000', // one full mock beyond the weekly limit, paid from the balance
   free_q_day: '20', // Question Bank answers per day without a subscription
   live_link: '',    // live online lessons (plan 4): meeting link
   live_note: '',    // ... and the schedule shown to students
   bunny_library_id: '', // Bunny Stream video library (video lessons)
   bunny_api_key: '',    // secret: library API key (upload)
+  giphy_key: '',        // secret: GIPHY API key (teacher GIF search)
   bunny_token_key: '',  // secret: embed token authentication key (signed player links)
 };
 export async function getSettings() {

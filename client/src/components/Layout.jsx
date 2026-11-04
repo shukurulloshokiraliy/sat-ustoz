@@ -45,6 +45,7 @@ const MASTER_NAV = [
   { to: '/question-bank/manage', label: 'Question Bank', icon: IconTarget, c: '#1E8E4E' },
   { to: '/full-mocks', label: 'Full Mocks', icon: IconDoc, c: '#C2410C' },
   { to: '/consultations', label: 'Consultations', icon: IconConsult, c: '#0E9F6E' },
+  { to: '/leaderboard', label: 'Leaderboard', icon: IconTrophy, c: '#E8A93C' },
   { to: '/vocab', label: 'Vocabulary', icon: IconBook, c: '#E8A93C' },
   { to: '/game', label: 'Word Arena', icon: IconGame, c: '#8E5CF7' },
   { to: '/website', label: 'Website', icon: IconGlobe, c: '#5C88FF' },

@@ -6,6 +6,7 @@ import { Confirm, ErrorBox, Spinner } from '../../components/ui.jsx';
 import { BBFooter, BBNavigator, BBOptions, BBQuestionBar, BBReview, BBShell, BBSplit, Highlightable, useElimination } from '../../components/Bluebook.jsx';
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
+import { fmtMoney } from '../student/Subscribe.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
 const DIRECTIONS = (
@@ -20,7 +21,29 @@ const DIRECTIONS = (
 export default function MockTaker() {
   const nav = useNavigate();
   const [st, setSt] = useState({ data: null, err: null });
-  useEffect(() => { api.post('/qbank/mock', {}).then((data) => setSt({ data })).catch((err) => setSt({ err })); }, []);
+  const [paying, setPaying] = useState(false);
+  const begin = (pay = false) => { setPaying(pay); setSt({ data: null, err: null }); api.post('/qbank/mock', pay ? { pay: true } : {}).then((data) => setSt({ data })).catch((err) => setSt({ err })); };
+  useEffect(() => { begin(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const q = st.err?.data?.quota;
+  if (q && (st.err.data.code === 'daily_limit' || st.err.data.code === 'balance_low')) {
+    const enough = q.balance >= q.extra_price && q.extra_price > 0;
+    return (
+      <div className="quota-wall">
+        <div className="card stack">
+          <small className="tq-eyebrow">TAKE A QUIZ</small>
+          <h2>Today's {q.limit} free quiz{q.limit === 1 ? '' : 'zes'} done — nice work</h2>
+          <p className="muted">{q.extra_price ? <>One more quiz costs <b>{fmtMoney(q.extra_price, 'UZS')}</b> from your wallet. Your wallet: <b>{fmtMoney(q.balance, 'UZS')}</b>.</> : 'New free quizzes open tomorrow.'}</p>
+          {st.err.data.code === 'balance_low' && <p className="error-box">{st.err.message}</p>}
+          <div className="row wrap">
+            {enough && <button className="btn sun lg" disabled={paying && !st.err} onClick={() => begin(true)}>Pay {fmtMoney(q.extra_price, 'UZS')} and start</button>}
+            {!enough && q.extra_price > 0 && <button className="btn primary lg" onClick={() => nav('/subscribe')}>Top up my wallet</button>}
+            <button className="btn ghost lg" onClick={() => nav('/quizzes')}>Back to quizzes</button>
+          </div>
+          <small className="muted">A bigger plan gives more free quizzes every day.</small>
+        </div>
+      </div>
+    );
+  }
   if (st.err) return <div style={{ padding: 40, maxWidth: 520, margin: '0 auto' }}><ErrorBox error={st.err} /><button className="btn ghost" style={{ marginTop: 16 }} onClick={() => nav('/quizzes')}>Back to quizzes</button></div>;
   if (!st.data) return <div style={{ height: '100vh', display: 'grid', placeItems: 'center' }}><Spinner label="Building your quiz…" /></div>;
   return <Runner m={st.data} />;

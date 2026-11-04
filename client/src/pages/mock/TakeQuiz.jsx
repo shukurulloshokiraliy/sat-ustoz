@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { api, fmtDate } from '../../api.js';
 import { useAsync } from '../../components/ui.jsx';
 import { IconArrow, IconClock, IconTarget } from '../../components/icons.jsx';
+import { fmtMoney } from '../student/Subscribe.jsx';
 
 const ORDER = ['Words in Context', 'Reading', 'Grammar', 'Transitions', 'Student notes'];
 
@@ -22,6 +23,11 @@ export default function TakeQuizCard() {
           <Link className="btn sun lg" to="/mock">{d?.open ? 'Continue my quiz' : 'Take a quiz'} <IconArrow /></Link>
           <span className="tq-time"><IconClock width={16} height={16} /> {d?.minutes || 32} min</span>
         </div>
+        {d?.quota?.limit > 0 && !d.open && (
+          <small className="fm-left">{d.quota.left > 0
+            ? `${d.quota.left} of ${d.quota.limit} free today${d.quota.extra_price ? ` · then ${fmtMoney(d.quota.extra_price, 'UZS')} per quiz from your wallet` : ''}`
+            : `Today's ${d.quota.limit} free used${d.quota.extra_price ? ` · one more costs ${fmtMoney(d.quota.extra_price, 'UZS')} from your wallet` : ' · new ones tomorrow'}`}</small>
+        )}
       </div>
       <div className="tq-stats">
         <div className="tq-acc">

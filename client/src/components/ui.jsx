@@ -36,8 +36,24 @@ export const Card = ({ className = '', children, style, ...rest }) => (
   <section className={`card ${className}`} style={style} {...rest}>{children}</section>
 );
 
-export const Spinner = ({ label = "Loading…" }) => (
-  <div className="loading" role="status"><span className="spinner" /> <span>{label}</span></div>
+const LOAD_LINES = ['Every question gets you closer to 800', 'Small steps, big score', 'Warming up your brain', 'Good things take a second'];
+/** Branded loader: a dot runs along the 200 → 800 score track. */
+export const Spinner = ({ label = "Loading…" }) => {
+  const [line] = useState(() => LOAD_LINES[Math.floor(Math.random() * LOAD_LINES.length)]);
+  return (
+    <div className="loading ld" role="status" aria-label={label}>
+      <div className="ld-track" aria-hidden="true"><b>200</b><span><i /></span><b>800</b></div>
+      <span className="ld-label">{label === 'Loading…' ? line : label}</span>
+    </div>
+  );
+};
+
+/** Page placeholder while data loads: shimmering header and cards that appear one by one. */
+export const PageSkeleton = () => (
+  <div className="sk-page" role="status" aria-label="Loading">
+    <div className="sk sk-title" /><div className="sk sk-sub" />
+    <div className="sk-grid">{[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="sk sk-card" style={{ '--i': i }}><span /><span /><span /></div>)}</div>
+  </div>
 );
 
 export const ErrorBox = ({ error, onRetry }) => (
@@ -57,7 +73,7 @@ export const Empty = ({ icon, title, text, children }) => (
 );
 
 export function Gate({ state, children }) {
-  if (state.loading && !state.data) return <Spinner />;
+  if (state.loading && !state.data) return <PageSkeleton />;
   if (state.error) return <ErrorBox error={state.error} onRetry={state.reload} />;
   return children(state.data);
 }

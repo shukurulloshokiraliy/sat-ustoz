@@ -1,6 +1,6 @@
 // Icons: Phosphor (https://phosphoricons.com), wrapped so the app keeps one naming scheme.
 // <IconX width={18} /> sets the size; pass weight="duotone" | "bold" | "fill" where a heavier mark fits.
-import { House, MapTrifold, ChatsCircle, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowsClockwise, BookOpenText, BookmarkSimple, Briefcase, Cards, CaretDown, ChartLineUp, Check, Clock, Copy, Crown, DotsThree, DownloadSimple, Eye, EyeSlash, FileText, Fire, Flag, GameController, GearSix, Globe, InstagramLogo, Key, Lightning, Link, List, ListChecks, Lock, MagnifyingGlass, Medal, Moon, PaperPlaneRight, Path, PencilSimple, Play, Plus, Printer, Prohibit, SignOut, SpeakerHigh, SpeakerSlash, SquaresFour, Stack, Sun, Target, TelegramLogo, Trophy, Calculator, CalendarCheck, Trash, UploadSimple, User, UsersThree, X } from '@phosphor-icons/react';
+import { House, Gif, MapTrifold, ChatsCircle, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowsClockwise, BookOpenText, BookmarkSimple, Briefcase, Cards, CaretDown, ChartLineUp, Check, Clock, Copy, Crown, DotsThree, DownloadSimple, Eye, EyeSlash, FileText, Fire, Flag, GameController, GearSix, Globe, InstagramLogo, Key, Lightning, Link, List, ListChecks, Lock, MagnifyingGlass, Medal, Moon, PaperPlaneRight, Path, PencilSimple, Play, Plus, Printer, Prohibit, SignOut, SpeakerHigh, SpeakerSlash, SquaresFour, Stack, Sun, Target, TelegramLogo, Trophy, Calculator, CalendarCheck, Trash, UploadSimple, User, UsersThree, X } from '@phosphor-icons/react';
 
 const ph = (C, base = 'regular') => function Icon({ width, height, size, weight, strokeWidth, ...rest }) {
   return <C size={size || width || height || 20} weight={weight || base} aria-hidden="true" {...rest} />;
@@ -66,6 +66,7 @@ export const IconGame = ph(GameController);
 export const IconMore = ph(DotsThree);
 export const IconVolume = ph(SpeakerHigh);
 export const IconFlip = ph(Cards);
+export const IconGif = ph(Gif);
 
 export const IconGoogle = (props) => (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" {...props}>

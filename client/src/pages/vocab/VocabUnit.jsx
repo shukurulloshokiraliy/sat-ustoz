@@ -8,6 +8,7 @@ import { ItemForm, Ring } from './VocabHome.jsx';
 import { VideoPlayer } from '../student/Roadmap.jsx';
 import Flashcards, { highlight, speak } from './Flashcards.jsx';
 import VocabTest from './VocabTest.jsx';
+import GifSlot from '../../components/GifSlot.jsx';
 import ImportWords from './ImportWords.jsx';
 
 const STATE = { new: 'New', learning: 'Learning', review: 'Learned' };
@@ -76,6 +77,7 @@ function Unit({ u, reload }) {
               <button className="btn ghost sm danger-text" onClick={() => setDelUnit(true)}><IconTrash width={16} height={16} /> Delete unit</button>
             </>}
           </div>
+          <div className="vu-gif"><GifSlot kind="unit" refId={u.id} gif={u.gif} compact /></div>
         </div>
         {!teacher && (
           <div className="vu-stats">

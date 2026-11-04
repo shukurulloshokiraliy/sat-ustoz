@@ -6,6 +6,7 @@ import { Gate, Modal, PageHeader, Progress, useAsync } from '../../components/ui
 import RoadmapMap, { ContinueBar, StepDisc, stepColor } from '../../components/RoadmapMap.jsx';
 import { IconArrow, IconCheck, IconDoc, IconLock, IconPlay, IconQuiz } from '../../components/icons.jsx';
 import { HandoutRow } from '../../components/Handout.jsx';
+import GifSlot from '../../components/GifSlot.jsx';
 
 export default function Roadmap() {
   const st = useAsync(() => api.get('/roadmap'), []);
@@ -107,6 +108,7 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
           <IconLock width={16} height={16} /> Finish “{prev?.title || 'the previous step'}” to unlock this step.
         </div>
       )}
+      <div className="step-gif"><GifSlot kind="step" refId={step.id} gif={step.gif} compact /></div>
       {step.description && <p>{step.description}</p>}
       {step.handout && <HandoutRow stepId={step.id} h={step.handout} locked={user.role === 'student' && !canRoadmap && !step.items.some((x) => x.lesson?.free)} />}
       {step.focus && <div className="tag-list">{step.focus.split(',').filter(Boolean).map((f) => <span key={f} className="chip">{f.trim()}</span>)}</div>}

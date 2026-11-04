@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db } from './db.js';
+import { gifMap } from './gifs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIR = path.join(__dirname, 'content', 'vocab');
@@ -158,7 +159,7 @@ export function registerVocab(app, { h, bad, requireMaster, requireStudent, acce
     const prog = await db.all('SELECT * FROM vocab_progress WHERE user_id = ? AND word_id = ANY(?::int[])', [req.user.id, words.map((w) => w.id)]);
     const pm = new Map(prog.map((p) => [p.word_id, p]));
     const siblings = await db.all('SELECT id, n, title FROM vocab_units WHERE set_id = ? AND NOT hidden ORDER BY n', [u.set_id]);
-    res.json({ id: u.id, n: u.n, title: u.title, set: { id: u.set_id, n: u.set_n, title: u.set_title, video_url: u.video_url, deck_id: u.deck_id }, siblings,
+    res.json({ id: u.id, n: u.n, title: u.title, gif: (await gifMap('unit', [u.id])).get(u.id) || null, set: { id: u.set_id, n: u.set_n, title: u.set_title, video_url: u.video_url, deck_id: u.deck_id }, siblings,
       words: words.map((w) => pubWord(w, pm.get(w.id))) });
   }));
 
