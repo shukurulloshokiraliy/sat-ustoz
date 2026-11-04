@@ -59,7 +59,9 @@ export async function assignmentsFor(user, roadmapFor) {
         continue;
       }
       if (it.kind !== 'quiz' || !it.quiz_id) continue;
-      out.push({ key: `r${it.id}`, source: 'roadmap', type: 'quiz', title: it.title || it.quiz_title, quiz_id: it.quiz_id,
+      const cur = it.current_quiz_id || it.quiz_id;
+      out.push({ key: `r${it.id}`, source: 'roadmap', type: 'quiz', title: it.title || it.quiz_title, quiz_id: cur,
+        retake: it.retake_quiz_id ? { on: cur === it.retake_quiz_id, used: !!it.retake_used, opens_at: it.retake_opens_at || null, passed: !!it.done } : null,
         step: { id: s.id, title: s.title, index: i + 1 }, pass_pct: s.pass_pct, attempts_allowed: 0, due_at: null,
         minutes: it.quiz_minutes, questions: Number(it.quiz_questions || 0),
         locked: s.status === 'locked', lock_reason: s.status === 'locked' ? `Finish “${steps[i - 1]?.title || 'the previous step'}” to unlock` : null });
@@ -80,6 +82,13 @@ export async function assignmentsFor(user, roadmapFor) {
     const r = res.get(a.quiz_id);
     a.best = r?.best ?? null; a.tries = r?.tries || 0; a.open_attempt = r?.open_id || null;
     a.status = a.locked ? 'locked' : statusOf(r, a.pass_pct, a.attempts_allowed);
+    if (a.retake && !a.locked) {
+      // Exam A / B pair: passing either completes it; the next one opens after the waiting time
+      if (a.retake.passed) a.status = 'passed';
+      else if (a.retake.opens_at) a.status = 'waiting';
+      else if (a.retake.on || a.retake.used) a.status = r?.open_id ? 'in_progress' : 'retake';
+      if (a.retake.on) a.title = `${a.title} · retake`;
+    }
     a.overdue = !!(a.due_at && new Date(a.due_at) < new Date() && a.status !== 'passed');
   }
   return out;
@@ -88,7 +97,7 @@ export async function assignmentsFor(user, roadmapFor) {
 /** Can this user open this roadmap / assigned quiz right now? */
 export async function assignedQuizOpen(user, quizId, roadmapFor) {
   const list = await assignmentsFor(user, roadmapFor);
-  return list.some((a) => a.quiz_id === Number(quizId) && !a.locked && a.status !== 'failed');
+  return list.some((a) => a.quiz_id === Number(quizId) && !a.locked && a.status !== 'failed' && a.status !== 'waiting');
 }
 
 export function registerAssignments(app, { h, bad, requireMaster, requireStudent, roadmapFor }) {

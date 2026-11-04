@@ -174,7 +174,9 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
                   <div className="item-act row" style={{ gap: 6 }}>
                     {it.kind === 'quiz' && (needsSub
                       ? <Link className="btn soft sm" to="/subscribe"><IconLock width={15} height={15} /> Subscribe</Link>
-                      : <button className="btn primary sm" disabled={locked} onClick={() => nav(`/quiz/${it.quiz_id}`)}>{it.best != null ? 'Retake' : 'Start'} <IconArrow width={15} height={15} /></button>)}
+                      : it.retake_opens_at
+                        ? <span className="chip warn" title="The retake opens after the waiting time">Retake {new Date(it.retake_opens_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        : <button className="btn primary sm" disabled={locked} onClick={() => nav(`/quiz/${it.current_quiz_id || it.quiz_id}`)}>{it.best != null ? 'Retake' : 'Start'} <IconArrow width={15} height={15} /></button>)}
                     {it.kind !== 'quiz' && <button className="btn ghost sm" disabled={locked} onClick={() => toggle(it.id)}>{isOpen ? 'Hide' : it.kind === 'video' ? 'Watch' : 'Read'}</button>}
                     {it.kind !== 'quiz' && (
                       <button className={`btn sm ${it.done ? 'ghost' : 'soft'}`} disabled={locked || busy === it.id} onClick={() => mark(it, !it.done)}>

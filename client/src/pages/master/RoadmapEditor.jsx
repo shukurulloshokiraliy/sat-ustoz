@@ -172,6 +172,16 @@ function StepModal({ init, insertAt, quizzes, onClose, onSaved, onChanged }) {
               {quizzes.map((q) => <option key={q.id} value={q.id}>{q.title} · {q.questions} questions{q.kind !== 'practice' ? ` (${q.kind})` : ''}</option>)}
             </select>
           )}
+          {it.kind === 'quiz' && (
+            <div className="grid g2">
+              <label className="field"><span>Retake quiz (Exam B)</span>
+                <select value={it.retake_quiz_id || ''} onChange={(e) => setItem(it._k, { retake_quiz_id: e.target.value ? Number(e.target.value) : null })}>
+                  <option value="">No retake</option>
+                  {quizzes.filter((q) => q.id !== Number(it.quiz_id)).map((q) => <option key={q.id} value={q.id}>{q.title}</option>)}
+                </select></label>
+              <label className="field"><span>Wait before retake, hours</span><input type="number" min="0" max="720" value={it.retake_hours ?? 24} onChange={(e) => setItem(it._k, { retake_hours: e.target.value })} disabled={!it.retake_quiz_id} /></label>
+            </div>
+          )}
           {it.kind === 'random' && <RandomExamFields value={it.body} onChange={(body) => setItem(it._k, { body })} />}
           {it.kind === 'reading' && <textarea rows={4} value={it.body} onChange={(e) => setItem(it._k, { body: e.target.value })} placeholder="Rules, examples, tips…" aria-label="Notes" />}
         </div>

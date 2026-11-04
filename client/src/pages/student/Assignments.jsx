@@ -7,7 +7,7 @@ import { IconArrow, IconCheck, IconClock, IconLock, IconPlus, IconRoad, IconSear
 
 const STATUS = {
   new: ['New', 'primary'], in_progress: ['In progress', 'warn'], retake: ['Retake available', 'warn'],
-  passed: ['Passed', 'good'], failed: ['No attempts left', 'bad'], locked: ['Locked', ''],
+  passed: ['Passed', 'good'], failed: ['No attempts left', 'bad'], locked: ['Locked', ''], waiting: ['Retake opens soon', 'warn'],
 };
 
 export default function Assignments() {
@@ -27,7 +27,7 @@ function StudentAssignments() {
 }
 
 export function AssignmentList({ items, teacherView }) {
-  const todo = items.filter((a) => ['new', 'in_progress', 'retake'].includes(a.status))
+  const todo = items.filter((a) => ['new', 'in_progress', 'retake', 'waiting'].includes(a.status))
     .sort((a, b) => (a.due_at ? new Date(a.due_at) : 9e15) - (b.due_at ? new Date(b.due_at) : 9e15));
   const done = items.filter((a) => a.status === 'passed' || a.status === 'failed');
   const later = items.filter((a) => a.status === 'locked');
@@ -60,8 +60,10 @@ function AssignmentCard({ a, teacherView }) {
         </div>
         {a.note && <p className="muted as-note">{a.note}</p>}
         {a.locked && <p className="muted as-note">{a.lock_reason}</p>}
+        {a.status === 'waiting' && <p className="muted as-note">Not passed yet — the retake opens {fmtDate(a.retake.opens_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}. Review your mistakes first.</p>}
       </div>
-      {!teacherView && !a.locked && a.status !== 'failed' && <Link className={`btn ${a.status === 'passed' ? 'ghost' : 'primary'} sm`} to={a.type === 'exam' ? `/exam/${a.item_id}` : `/quiz/${a.quiz_id}`}>{btn} <IconArrow width={15} height={15} /></Link>}
+      {teacherView && a.retake && <span className="chip">{a.retake.used ? 'Retake used' : 'No retake yet'}</span>}
+      {!teacherView && !a.locked && a.status !== 'failed' && a.status !== 'waiting' && <Link className={`btn ${a.status === 'passed' ? 'ghost' : 'primary'} sm`} to={a.type === 'exam' ? `/exam/${a.item_id}` : `/quiz/${a.quiz_id}`}>{btn} <IconArrow width={15} height={15} /></Link>}
     </article>
   );
 }

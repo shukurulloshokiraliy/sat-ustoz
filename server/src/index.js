@@ -680,7 +680,8 @@ app.post('/api/quizzes/parse', requireMaster, upload.single('file'), h(async (re
 // Quizzes page: public, diagnostic and group quizzes — never roadmap quizzes (those are assignments that open step by step)
 const VISIBLE = `((q.is_public OR q.kind = 'diagnostic'
   OR q.id IN (SELECT quiz_id FROM quiz_groups WHERE group_id = ?))
-  AND q.id NOT IN (SELECT quiz_id FROM roadmap_items WHERE quiz_id IS NOT NULL))`;
+  AND q.id NOT IN (SELECT quiz_id FROM roadmap_items WHERE quiz_id IS NOT NULL)
+  AND q.id NOT IN (SELECT retake_quiz_id FROM roadmap_items WHERE retake_quiz_id IS NOT NULL))`;
 async function canAccess(user, quizId) {
   if (user.role === 'master') return true;
   if (await db.one(`SELECT 1 AS x FROM quizzes q WHERE q.id = ? AND ${VISIBLE}`, [quizId, user.group_id ?? -1])) return true;
@@ -960,8 +961,10 @@ async function loadSteps(where = '', params = []) {
 async function roadmapFor(user) {
   const steps = await loadSteps();
   if (user.role === 'master') return { steps, estimate: null };
-  const best = new Map((await db.all(`SELECT quiz_id, MAX(ROUND(100.0 * score / NULLIF(total, 0))) AS best FROM attempts
-    WHERE user_id = ? AND finished_at IS NOT NULL GROUP BY quiz_id`, [user.id])).map((r) => [r.quiz_id, r.best || 0]));
+  const qrows = await db.all(`SELECT quiz_id, MAX(ROUND(100.0 * score / NULLIF(total, 0))) AS best, COUNT(*) AS tries, MAX(finished_at) AS last_at FROM attempts
+    WHERE user_id = ? AND finished_at IS NOT NULL GROUP BY quiz_id`, [user.id]);
+  const best = new Map(qrows.map((r) => [r.quiz_id, r.best || 0]));
+  const qinfo = new Map(qrows.map((r) => [r.quiz_id, r]));
   const done = new Set((await db.all('SELECT item_id FROM roadmap_done WHERE user_id = ?', [user.id])).map((r) => r.item_id));
   const exams = new Map((await db.all(`SELECT item_id, MAX(ROUND(100.0 * score / NULLIF(total, 0))) AS best, COUNT(*) AS tries
     FROM qbank_mocks WHERE user_id = ? AND item_id IS NOT NULL AND finished_at IS NOT NULL GROUP BY item_id`, [user.id])).map((r) => [r.item_id, r]));
@@ -982,7 +985,21 @@ async function roadmapFor(user) {
       }
       if (it.kind === 'quiz') {
         const b = it.quiz_id ? best.get(it.quiz_id) ?? null : null;
-        return { ...it, best: b, done: b != null && b >= s.pass_pct };
+        if (!it.retake_quiz_id) return { ...it, best: b, done: b != null && b >= s.pass_pct, current_quiz_id: it.quiz_id };
+        // Exam A / Exam B: B opens only after failing A (after a wait); failing B alternates back to A after the wait
+        const rb = best.get(it.retake_quiz_id) ?? null;
+        const passed = (b != null && b >= s.pass_pct) || (rb != null && rb >= s.pass_pct);
+        const a = qinfo.get(it.quiz_id); const r = qinfo.get(it.retake_quiz_id);
+        let current = it.quiz_id; let opensAt = null;
+        const lastA = a ? new Date(a.last_at) : null; const lastB = r ? new Date(r.last_at) : null;
+        const last = lastA && (!lastB || lastA > lastB) ? 'A' : lastB ? 'B' : null;
+        if (!passed && last) {
+          current = last === 'A' ? it.retake_quiz_id : it.quiz_id;
+          const t = new Date((last === 'A' ? lastA : lastB).getTime() + (it.retake_hours ?? 24) * 3600e3);
+          if (t > new Date()) opensAt = t;
+        }
+        return { ...it, best: Math.max(b ?? -1, rb ?? -1) < 0 ? null : Math.max(b ?? -1, rb ?? -1), done: passed,
+          current_quiz_id: current, retake_used: !!r, retake_opens_at: opensAt, tries: (Number(a?.tries) || 0) + (Number(r?.tries) || 0) };
       }
       if (it.kind === 'lesson') {
         const type = it.lesson?.type || 'section';
@@ -1040,6 +1057,8 @@ function stepBody(b) {
       id: it?.id ? Number(it.id) : null, kind,
       title: String(it?.title || '').trim().slice(0, 160),
       quiz_id: kind === 'quiz' && it?.quiz_id ? Number(it.quiz_id) : null,
+      retake_quiz_id: kind === 'quiz' && it?.retake_quiz_id && Number(it.retake_quiz_id) !== Number(it.quiz_id) ? Number(it.retake_quiz_id) : null,
+      retake_hours: Math.max(0, Math.min(720, Math.round(Number(it?.retake_hours ?? 24)) || 0)),
       url: kind === 'video' || kind === 'lesson' ? url : '',
       body: kind === 'reading' ? String(it?.body || '').slice(0, 10000) : kind === 'random' ? JSON.stringify(randomCfg(typeof it?.body === 'string' ? it.body : JSON.stringify(it?.body || {}))) : '',
     };
@@ -1077,12 +1096,12 @@ async function saveItems(t, stepId, items) {
       }
       continue;
     }
-    const vals = [i, it.kind, it.title, it.quiz_id, it.url, it.body];
+    const vals = [i, it.kind, it.title, it.quiz_id, it.url, it.body, it.retake_quiz_id, it.retake_hours];
     if (it.id && (await t.one('SELECT 1 AS x FROM roadmap_items WHERE id = ? AND step_id = ?', [it.id, stepId]))) {
-      await t.run('UPDATE roadmap_items SET position=?, kind=?, title=?, quiz_id=?, url=?, body=? WHERE id = ?', [...vals, it.id]);
+      await t.run('UPDATE roadmap_items SET position=?, kind=?, title=?, quiz_id=?, url=?, body=?, retake_quiz_id=?, retake_hours=? WHERE id = ?', [...vals, it.id]);
       keep.push(it.id);
     } else {
-      keep.push((await t.run('INSERT INTO roadmap_items (step_id, position, kind, title, quiz_id, url, body) VALUES (?,?,?,?,?,?,?) RETURNING id', [stepId, ...vals])).id);
+      keep.push((await t.run('INSERT INTO roadmap_items (step_id, position, kind, title, quiz_id, url, body, retake_quiz_id, retake_hours) VALUES (?,?,?,?,?,?,?,?,?) RETURNING id', [stepId, ...vals])).id);
     }
   }
   await t.run('DELETE FROM roadmap_items WHERE step_id = ? AND NOT (id = ANY(?::int[]))', [stepId, keep]);
