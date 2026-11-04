@@ -86,7 +86,7 @@ export default function Dashboard() {
               </div>
 
               <div className="dash-col dash-side">
-                <div className="d-card"><StudentCard user={user} stats={{ ...all, estimate: est }} compact hideDays={!needExam} /></div>
+                <div className="d-card"><StudentCard user={user} compact /></div>
                 <Card className="next-card d-next">
                   <div className="stack sm" style={{ position: 'relative' }}>
                     <span className="chip">{next ? (next.status === 'in_progress' ? "Continue" : next.status === 'new' ? "New quiz" : "Retake") : 'Take a quiz'}</span>
