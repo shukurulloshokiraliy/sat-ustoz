@@ -719,8 +719,9 @@ async function saveQuiz(req, existingId) {
   const dur = Math.max(0, Math.min(300, Math.round(+duration_min || 0)));
   return db.tx(async (t) => {
     let id = existingId;
-    if (id) await t.run('UPDATE quizzes SET title = ?, section = ?, kind = ?, is_public = ?, duration_min = ? WHERE id = ?', [title.trim(), sec, knd, !!is_public, dur, id]);
-    else id = (await t.run('INSERT INTO quizzes (title, section, kind, is_public, duration_min, created_by) VALUES (?,?,?,?,?,?) RETURNING id', [title.trim(), sec, knd, !!is_public, dur, req.user.id])).id;
+    const shC = !!req.body?.shuffle_choices; const shQ = !!req.body?.shuffle_questions;
+    if (id) await t.run('UPDATE quizzes SET title = ?, section = ?, kind = ?, is_public = ?, duration_min = ?, shuffle_choices = ?, shuffle_questions = ? WHERE id = ?', [title.trim(), sec, knd, !!is_public, dur, shC, shQ, id]);
+    else id = (await t.run('INSERT INTO quizzes (title, section, kind, is_public, duration_min, created_by, shuffle_choices, shuffle_questions) VALUES (?,?,?,?,?,?,?,?) RETURNING id', [title.trim(), sec, knd, !!is_public, dur, req.user.id, shC, shQ])).id;
 
     const keep = new Set();
     for (let i = 0; i < questions.length; i++) {
@@ -789,9 +790,21 @@ function timing(quiz, attempt) {
   const elapsed = Math.floor((Date.now() - new Date(attempt.started_at).getTime()) / 1000);
   return { total_seconds: total, remaining: total ? Math.max(0, total - elapsed) : null, elapsed };
 }
+/** Small seeded shuffle: the same attempt always gets the same order (resume after reload). */
+function seedRnd(seed) { let x = seed >>> 0 || 1; return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296; }; }
+function shuffled(list, rnd) { const a = [...list]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
 async function attemptPayload(attempt, quiz) {
   const rows = await db.all('SELECT * FROM questions WHERE quiz_id = ? ORDER BY position, id', [quiz.id]);
-  const qs = rows.map(qPublic);
+  let qs = rows.map(qPublic);
+  // per-quiz options: shuffle questions inside each skill (skill order stays) and/or the answer choices.
+  // Choices keep their original key (grading is unchanged) and get a display label A–D in the new order.
+  if (quiz.shuffle_questions) {
+    const rnd = seedRnd(attempt.id * 7919);
+    const order = [...new Set(qs.map((q) => q.topic || ''))];
+    qs = order.flatMap((t) => shuffled(qs.filter((q) => (q.topic || '') === t), rnd));
+  }
+  if (quiz.shuffle_choices) qs = qs.map((q) => ({ ...q, options: shuffled(q.options, seedRnd(attempt.id * 31 + q.id)).map((o, i) => ({ ...o, label: LETTERS[i] })) }));
   const progress = JSON.parse(attempt.progress || '{}');
   // practice mode: questions already checked come back with their feedback (resume after reload)
   const checked = {};

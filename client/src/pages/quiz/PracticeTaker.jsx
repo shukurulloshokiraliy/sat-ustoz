@@ -4,11 +4,12 @@ import { api } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Confirm } from '../../components/ui.jsx';
 import { BBPracticeRunner } from '../../components/Bluebook.jsx';
-import { domainOf, withBlanks } from '../../lib.js';
+import { Passage } from '../../components/Passage.jsx';
+import { rich } from '../../components/Rich.jsx';
+import { domainOf } from '../../lib.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 const clock = (s) => `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
-const blank = (i) => <span key={i} className="blank" aria-label="blank" />;
 const XP_RIGHT = 10;
 const XP_TRY = 5;
 
@@ -78,10 +79,10 @@ export default function PracticeTaker({ initial }) {
 
   const items = questions.map((x) => ({
     id: x.id,
-    passage: x.passage ? <>{withBlanks(x.passage, blank)}</> : null,
-    prompt: x.prompt,
+    passage: x.passage ? <Passage text={x.passage} /> : null,
+    prompt: rich(x.prompt),
     meta: <><span>{x.topic}</span>{domainOf(x.topic) && <span className="chip domain">{domainOf(x.topic)}</span>}{xp > 0 && <span className="chip sun">+{xp} XP</span>}</>,
-    options: x.options,
+    options: x.options.map((o) => ({ ...o, text: rich(o.text) })),
   }));
   return (
     <>

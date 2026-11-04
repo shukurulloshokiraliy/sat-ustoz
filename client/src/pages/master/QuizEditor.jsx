@@ -30,7 +30,8 @@ function Editor({ quiz, groups }) {
   const nav = useNavigate();
   const toast = useToast();
   const fileRef = useRef();
-  const [meta, setMeta] = useState({ title: quiz?.title || '', section: quiz?.section || 'english', kind: quiz?.kind || 'practice', is_public: quiz ? !!quiz.is_public : true, duration_min: quiz?.duration_min ?? 0 });
+  const [meta, setMeta] = useState({ title: quiz?.title || '', section: quiz?.section || 'english', kind: quiz?.kind || 'practice', is_public: quiz ? !!quiz.is_public : true, duration_min: quiz?.duration_min ?? 0, shuffle_choices: quiz ? !!quiz.shuffle_choices : false, shuffle_questions: quiz ? !!quiz.shuffle_questions : false });
+  const touched = useRef({ title: !!quiz, time: !!quiz }); // never overwrite what the teacher typed
   const [groupIds, setGroupIds] = useState(new Set(quiz?.group_ids || []));
   const [qs, setQs] = useState(() => (quiz?.questions || []).map((q) => ({ ...q, _k: 'q' + q.id })));
   const [busy, setBusy] = useState(false);
@@ -51,9 +52,13 @@ function Editor({ quiz, groups }) {
       const fd = new FormData(); fd.append('file', file);
       const r = await api.upload('/quizzes/parse', fd);
       setQs((l) => [...l, ...r.questions.map((q) => ({ ...blank(), ...q }))]);
-      if (!meta.title) setMeta((m) => ({ ...m, title: file.name.replace(/\.[^.]+$/, '') }));
-      if (!meta.duration_min) setMeta((m) => ({ ...m, duration_min: Math.ceil((qs.length + r.questions.length) * 0.8) }));
-      toast(`${r.questions.length} questions imported — please review them`);
+      // fill the name and time only when they are still empty (the teacher may type while the file is read)
+      setMeta((m) => ({ ...m,
+        title: !touched.current.title && !m.title.trim() ? file.name.replace(/\.[^.]+$/, '') : m.title,
+        duration_min: !touched.current.time && !Number(m.duration_min) ? Math.ceil((qs.length + r.questions.length) * 0.8) : m.duration_min }));
+      setShowErrors(true); // rows the parser could not read (no correct answer, fewer than 4 choices) show in red right away
+      const broken = r.questions.filter((q) => problems({ ...blank(), ...q }).length).length;
+      toast(broken ? `${r.questions.length} questions imported — ${broken} need fixing (marked in red)` : `${r.questions.length} questions imported — please review them`, broken ? 'bad' : undefined);
     } catch (e) { toast(e.message, 'err'); } finally { setParsing(false); if (fileRef.current) fileRef.current.value = ''; }
   };
 
@@ -79,15 +84,19 @@ function Editor({ quiz, groups }) {
 
       <Card className="stack">
         <div className="form-grid">
-          <div className="full"><Field label={"Quiz name"}><input value={meta.title} onChange={(e) => setMeta({ ...meta, title: e.target.value })} placeholder="Boundaries 1 Fast Quiz" /></Field></div>
+          <div className="full"><Field label={"Quiz name"}><input value={meta.title} onChange={(e) => { touched.current.title = true; setMeta({ ...meta, title: e.target.value }); }} placeholder="Boundaries 1 Fast Quiz" /></Field></div>
           <Field label={"Section"}><select value={meta.section} onChange={(e) => setMeta({ ...meta, section: e.target.value })}><option value="english">Reading & Writing</option><option value="math">Math</option></select></Field>
-          <Field label={"Time (minutes)"} hint={"0 = untimed"}><input type="number" min="0" max="300" value={meta.duration_min} onChange={(e) => setMeta({ ...meta, duration_min: e.target.value })} /></Field>
+          <Field label={"Time (minutes)"} hint={"0 = untimed"}><input type="number" min="0" max="300" value={meta.duration_min} onChange={(e) => { touched.current.time = true; setMeta({ ...meta, duration_min: e.target.value }); }} /></Field>
           <div className="full"><Field label="Type">
-            <Segmented value={meta.kind} onChange={(kind) => setMeta({ ...meta, kind })} options={[{ value: 'practice', label: 'Practice' }, { value: 'mock', label: 'Mock test' }]} />
+            <Segmented value={meta.kind} onChange={(kind) => setMeta({ ...meta, kind, ...(quiz ? {} : { shuffle_choices: kind === 'mock' }) })} options={[{ value: 'practice', label: 'Practice' }, { value: 'mock', label: 'Mock test' }]} />
           </Field>
           <small className="muted">Practice shows the answer after each question; a mock test shows results at the end.</small></div>
         </div>
         <div><div className="muted" style={{ fontSize: '.82rem', fontWeight: 600, marginBottom: 8 }}>Who can see it</div>
+          <div className="row wrap" style={{ gap: 16, marginBottom: 12 }}>
+            <label className="row" style={{ cursor: 'pointer' }}><input type="checkbox" checked={meta.shuffle_choices} onChange={(e) => setMeta({ ...meta, shuffle_choices: e.target.checked })} style={{ width: 18, height: 18 }} /> <span>Shuffle answer choices for each student</span></label>
+            <label className="row" style={{ cursor: 'pointer' }}><input type="checkbox" checked={meta.shuffle_questions} onChange={(e) => setMeta({ ...meta, shuffle_questions: e.target.checked })} style={{ width: 18, height: 18 }} /> <span>Shuffle question order within each skill</span></label>
+          </div>
           <label className="row" style={{ marginBottom: 10, cursor: 'pointer' }}><input type="checkbox" checked={meta.is_public} onChange={(e) => setMeta({ ...meta, is_public: e.target.checked })} style={{ width: 18, height: 18 }} /> <span><b>All students</b> <small className="muted">— everyone on the platform (subscribers can start it)</small></span></label>
           {meta.is_public ? null : groups.length === 0 ? <p className="muted">No groups yet. Quizzes linked in the roadmap are visible to everyone.</p> :
             <div className="tag-list">{groups.map((g) => <button key={g.id} type="button" className={`chip chip-btn ${groupIds.has(g.id) ? 'on' : ''}`} onClick={() => setGroupIds((s) => { const n = new Set(s); n.has(g.id) ? n.delete(g.id) : n.add(g.id); return n; })}>{groupIds.has(g.id) ? '✓ ' : ''}{g.name}</button>)}</div>}

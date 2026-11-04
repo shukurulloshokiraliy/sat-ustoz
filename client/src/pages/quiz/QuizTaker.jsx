@@ -5,7 +5,8 @@ import { useAuth, useToast } from '../../context.jsx';
 import { Confirm, Spinner, ErrorBox } from '../../components/ui.jsx';
 import { BBFooter, BBNavigator, BBOptions, BBQuestionBar, BBReview, BBShell, BBSplit, Highlightable } from '../../components/Bluebook.jsx';
 import PracticeTaker from './PracticeTaker.jsx';
-import { withBlanks } from '../../lib.js';
+import { Passage } from '../../components/Passage.jsx';
+import { rich } from '../../components/Rich.jsx';
 
 
 /** Loads (or resumes) the attempt, then shows the exam layout or the practice layout. */
@@ -139,7 +140,8 @@ function ExamTaker({ initial }) {
       const k = e.key.toUpperCase();
       if (view === 'question' && ['A', 'B', 'C', 'D', '1', '2', '3', '4'].includes(k)) {
         const key = 'ABCD'['ABCD1234'.indexOf(k) % 4];
-        if (q?.options.some((o) => o.key === key)) choose(key);
+        const o = q?.options.find((x) => (x.label || x.key) === key); // shuffled choices: the key shown on screen
+        if (o) choose(o.key);
       } else if (e.key === 'ArrowRight' && view === 'question') cur < questions.length - 1 ? go(cur + 1) : setView('review');
       else if (e.key === 'ArrowLeft' && view === 'question') go(cur - 1);
     };
@@ -185,12 +187,12 @@ function ExamTaker({ initial }) {
         )}>
         {view === 'question' ? (
           <BBSplit
-            left={q.passage ? <Highlightable key={q.id} on={hl}>{withBlanks(q.passage, (i) => <span key={i} className="blank" aria-label="blank" />)}</Highlightable> : null}
+            left={q.passage ? <Highlightable key={q.id} on={hl}><Passage text={q.passage} /></Highlightable> : null}
             right={(
               <div key={q.id}>
                 <BBQuestionBar n={cur + 1} marked={a.marked} onMark={mark} elim={elimOn} onElim={() => setElimOn((x) => !x)} />
-                <div className="bb-prompt">{q.prompt}</div>
-                <BBOptions options={q.options} choice={a.choice} eliminated={a.eliminated || []} elim={elimOn} onChoose={choose} onEliminate={eliminate} />
+                <div className="bb-prompt">{rich(q.prompt)}</div>
+                <BBOptions options={q.options.map((o) => ({ ...o, text: rich(o.text) }))} choice={a.choice} eliminated={a.eliminated || []} elim={elimOn} onChoose={choose} onEliminate={eliminate} />
               </div>
             )}
           />

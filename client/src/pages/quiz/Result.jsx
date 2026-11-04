@@ -3,7 +3,9 @@ import { Link, useParams } from 'react-router-dom';
 import { api, fmtDuration } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Bars, Card, Confetti, CountUp, Gate, PageHeader, Ring, Segmented, pctTone, useAsync } from '../../components/ui.jsx';
-import { domainOf, estimateLabel, readiness, withBlanks } from '../../lib.js';
+import { domainOf, estimateLabel, readiness } from '../../lib.js';
+import { Passage } from '../../components/Passage.jsx';
+import { rich } from '../../components/Rich.jsx';
 import { IconBookmark, IconBookmarkFill, IconFlag } from '../../components/icons.jsx';
 
 export function QuestionReview({ item, showSave = true }) {
@@ -28,15 +30,15 @@ export function QuestionReview({ item, showSave = true }) {
           {showSave && <button className={`btn sm ${saved ? 'soft' : 'ghost'}`} onClick={toggle}>{saved ? <IconBookmarkFill width={16} height={16} /> : <IconBookmark width={16} height={16} />} {saved ? "Saved" : "Save"}</button>}
         </div>
       )}
-      <div className="passage">{withBlanks(item.passage, (i) => <span key={i} className="blank" aria-label="blank" />)}</div>
-      <p style={{ fontWeight: 500 }}>{item.prompt}</p>
+      {item.passage && <div className="passage"><Passage text={item.passage} /></div>}
+      <p style={{ fontWeight: 500 }}>{rich(item.prompt)}</p>
       <div className="stack sm">
         {item.options.map((o) => {
           const right = o.key === item.correct;
           const mineWrong = item.choice === o.key && !right;
           return (
             <div key={o.key} className={`ropt ${right ? 'correct' : ''} ${mineWrong ? 'mine-wrong' : ''}`}>
-              <span className="L">{o.key}</span><span>{o.text}</span>
+              <span className="L">{o.key}</span><span>{rich(o.text)}</span>
               {right && <span className="tagr">{item.choice === o.key ? "Your answer · correct" : "Correct answer"}</span>}
               {mineWrong && <span className="tagr">{"Your answer"}</span>}
             </div>

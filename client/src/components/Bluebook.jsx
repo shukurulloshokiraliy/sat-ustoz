@@ -167,7 +167,7 @@ export function BBOptions({ options, choice, eliminated = [], elim, onChoose, on
         return (
           <div key={o.key} className={`bb-opt ${st} ${out ? 'out' : ''}`}>
             <button type="button" role="radio" aria-checked={mine} className="bb-opt-main" disabled={disabled || !!reveal} onClick={() => onChoose(o.key)}>
-              <span className="bb-L">{o.key}</span>
+              <span className="bb-L">{o.label || o.key}</span>
               <span className="bb-t">{o.text}</span>
               {reveal && o.key === reveal.correct && <IconCheck className="bb-ok" width={20} height={20} />}
               {reveal && mine && o.key !== reveal.correct && <IconX className="bb-no" width={20} height={20} />}
