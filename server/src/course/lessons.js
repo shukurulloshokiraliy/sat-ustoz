@@ -2,7 +2,7 @@ import { db } from '../db.js';
 import { playUrl } from '../video.js';
 import { scanSoon } from '../reserved.js';
 import { getSettings } from '../db.js';
-import { upsertModule, validateModule } from './modules.js';
+import { upsertModule, validateModule, previewModule } from './modules.js';
 
 const publicQ = (q) => ({ id: q.id, kind: q.kind, prompt: q.prompt, passage: q.passage || '', options: q.options });
 const GRACE = 20; // seconds of network slack for timed checks
@@ -146,12 +146,27 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
   }));
 
   // teacher: import / update a course module from JSON (e.g. grammar2.json later)
-  app.post('/api/roadmap/modules', requireMaster, h(async (req, res) => {
-    const errs = validateModule(req.body);
+  // body: the module JSON, or { module, mode: 'update' | 'new', after_step_id } after the preview
+  const unwrap = (b) => (b && b.module && b.module.sections ? b : { module: b, mode: 'update', after_step_id: null });
+  app.post('/api/roadmap/modules/preview', requireMaster, h(async (req, res) => {
+    const { module: m } = unwrap(req.body);
+    const errs = validateModule(m);
     if (errs.length) return bad(res, 'The file has problems: ' + errs.join('; '));
-    const { n } = await db.one('SELECT COUNT(*) AS n FROM roadmap_steps');
-    const r = await upsertModule(req.body, { src: 'upload', insertAt: n });
-    await scanSoon(req.body?.exam_reserve?.unused_question_bank_ids || []);
+    if (!m.id) return bad(res, 'The module needs a top-level "id" (e.g. "words-in-context") so it can be updated later');
+    res.json({ id: m.id, title: m.title, sections: m.sections.length, ...(await previewModule(m)) });
+  }));
+  app.post('/api/roadmap/modules', requireMaster, h(async (req, res) => {
+    const { module: m, mode, after_step_id: after } = unwrap(req.body);
+    const errs = validateModule(m);
+    if (errs.length) return bad(res, 'The file has problems: ' + errs.join('; '));
+    if (!m.id) return bad(res, 'The module needs a top-level "id" (e.g. "words-in-context") so it can be updated later');
+    let insertAt = Number((await db.one('SELECT COUNT(*) AS n FROM roadmap_steps')).n);
+    if (after) { const p = await db.one('SELECT position FROM roadmap_steps WHERE id = ?', [Number(after)]); if (p) insertAt = p.position + 1; }
+    else if (after === 0) insertAt = 0;
+    // "Import as a new step": a copy with its own module id, so the existing step stays as it is
+    const mod = mode === 'new' && (await db.one('SELECT 1 AS x FROM roadmap_steps WHERE module_id = ?', [m.id])) ? { ...m, id: `${m.id}-${Date.now().toString(36)}` } : m;
+    const r = await upsertModule(mod, { src: 'upload', insertAt });
+    await scanSoon(m?.exam_reserve?.unused_question_bank_ids || []);
     res.json(r);
   }));
 }

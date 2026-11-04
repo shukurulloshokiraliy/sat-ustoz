@@ -79,6 +79,31 @@ function sessionContent(m) {
 }
 const AUTO_DESC = /^\d+ lessons\. Each lesson has/;
 
+/** What an import would change: sections added / changed / removed and how many check questions differ. */
+export async function previewModule(m) {
+  const step = m.id ? await db.one('SELECT id, title, position FROM roadmap_steps WHERE module_id = ?', [m.id]) : null;
+  if (!step) return { exists: null, added: m.sections.map((s) => s.title), changed: [], removed: [], questions_changed: 0 };
+  const items = await db.all("SELECT title, content FROM roadmap_items WHERE step_id = ? AND kind = 'lesson'", [step.id]);
+  const old = new Map();
+  for (const it of items) { try { const c = JSON.parse(it.content || '{}'); if (c.section_id) old.set(c.section_id, { title: it.title, c }); } catch { /* skip */ } }
+  const qs = (c) => JSON.stringify(c?.checks || {});
+  const added = []; const changed = []; let qChanged = 0;
+  m.sections.forEach((s, i) => {
+    const o = old.get(s.id);
+    if (!o) { added.push(s.title); return; }
+    const n = lessonContent(m, s, i + 1);
+    const before = JSON.stringify({ ...o.c, order: 0 }); const after = JSON.stringify({ ...n, order: 0 });
+    if (before !== after) changed.push(s.title);
+    const ob = Object.values(o.c.checks || {}).flat(); const nb = Object.values(n.checks || {}).flat();
+    const key = (q) => JSON.stringify([q.passage, q.prompt, q.options, q.answer]);
+    const os = new Set(ob.map(key));
+    qChanged += nb.filter((q) => !os.has(key(q))).length;
+    old.delete(s.id);
+  });
+  const removed = [...old.entries()].filter(([id]) => !String(id).startsWith('_')).map(([, o]) => o.title);
+  return { exists: step, added, changed, removed, questions_changed: qChanged };
+}
+
 /**
  * Creates or updates the roadmap step for a module. Existing lesson items are matched by section id,
  * so student progress and the teacher's video links survive content updates.

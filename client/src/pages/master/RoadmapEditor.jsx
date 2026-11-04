@@ -16,12 +16,12 @@ export default function RoadmapEditor() {
   const st = useAsync(() => Promise.all([api.get('/roadmap'), api.get('/quizzes')]), []);
   const toast = useToast();
   const fileRef = useRef(null);
+  const [imp, setImp] = useState(null); // { module, preview }
   const importModule = async (file) => {
     if (!file) return;
     try {
-      const r = await api.post('/roadmap/modules', JSON.parse(await file.text()));
-      toast(`${r.created ? 'Module added' : 'Module updated'} · ${r.ready}/${r.lessons} lessons ready`);
-      st.reload();
+      const module = JSON.parse(await file.text());
+      setImp({ module, preview: await api.post('/roadmap/modules/preview', module) });
     } catch (e) { toast(e instanceof SyntaxError ? 'This is not a valid JSON file' : e.message, 'bad'); }
     finally { if (fileRef.current) fileRef.current.value = ''; }
   };
@@ -82,6 +82,7 @@ export default function RoadmapEditor() {
         return (
           <>
             {view === 'both' ? <div className="rm-editor">{list}{map}</div> : view === 'list' ? list : map}
+            {imp && <ImportModal imp={imp} steps={steps} onClose={() => setImp(null)} onDone={(r) => { setImp(null); toast(`${r.created ? 'Module added' : 'Module updated'} · ${r.ready}/${r.lessons} lessons ready`); st.reload(); }} />}
             {edit && <StepModal init={edit.step} insertAt={edit.insertAt} quizzes={quizzes} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); st.reload(); }} onChanged={st.reload} />}
             {del && <Confirm title="Delete step" text={`“${del.title}” and its lessons will be removed from the roadmap. Quizzes stay in the Quizzes page.`}
               onClose={() => setDel(null)} onConfirm={async () => { await api.del('/roadmap/steps/' + del.id); setDel(null); toast('Step deleted'); st.reload(); }} />}
@@ -218,5 +219,48 @@ function RandomExamFields({ value, onChange }) {
       <div className="rx-skills">{EXAM_SKILLS.map(([id, name]) => <button key={id} type="button" className={`chip ${cfg.skills.includes(id) ? 'primary' : ''}`} onClick={() => tog(id)}>{name}</button>)}</div>
       <small className="muted">Skills follow the real SAT module order and blueprint, scaled to the number of questions. Each student gets a new set (questions they have not answered first, never reserved exam or lesson questions); a retry builds a new set.</small>
     </div>
+  );
+}
+
+/** Module import: what changes, update the existing step or add a new one, and where. */
+function ImportModal({ imp, steps, onClose, onDone }) {
+  const toast = useToast();
+  const p = imp.preview;
+  const [mode, setMode] = useState(p.exists ? 'update' : 'new');
+  const [after, setAfter] = useState(steps.length ? String(steps[steps.length - 1].id) : '');
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    setBusy(true);
+    try { onDone(await api.post('/roadmap/modules', { module: imp.module, mode, after_step_id: after === 'start' ? 0 : after ? Number(after) : null })); }
+    catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); }
+  };
+  const List = ({ title, items, tone }) => (items.length ? <div><b className={tone}>{title} · {items.length}</b><ul className="imp-list">{items.slice(0, 12).map((x) => <li key={x}>{x}</li>)}{items.length > 12 && <li>… and {items.length - 12} more</li>}</ul></div> : null);
+  return (
+    <Modal wide title={`Import “${p.title || p.id}”`} onClose={onClose}
+      footer={<><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn primary" disabled={busy} onClick={go}>{mode === 'update' ? 'Update step' : 'Add step'}</button></>}>
+      <div className="stack">
+        {p.exists ? (
+          <>
+            <div className="banner"><div className="grow"><b>This module is already step {p.exists.position + 1}: {p.exists.title}</b><small>Updating keeps uploaded videos, the rules sheet, the step position, score range and student progress (lessons match by section id).</small></div></div>
+            <Segmented value={mode} onChange={setMode} options={[{ value: 'update', label: 'Update existing step' }, { value: 'new', label: 'Import as a new step' }]} />
+          </>
+        ) : <p className="muted">A new step with {p.sections} lessons.</p>}
+        {mode === 'update' && p.exists ? (
+          <div className="imp-sum">
+            <List title="Sections added" items={p.added} tone="good-text" />
+            <List title="Sections changed" items={p.changed} tone="warn-text" />
+            <List title="Sections removed" items={p.removed} tone="bad-text" />
+            <p className="muted">{p.questions_changed} check question{p.questions_changed === 1 ? '' : 's'} new or changed{!p.added.length && !p.changed.length && !p.removed.length ? ' · nothing else changes' : ''}.</p>
+          </div>
+        ) : (
+          <label className="field"><span>Put the new step</span>
+            <select value={after} onChange={(e) => setAfter(e.target.value)}>
+              <option value="start">At the start</option>
+              {steps.map((s, i) => <option key={s.id} value={s.id}>After step {i + 1}: {s.title}</option>)}
+            </select>
+          </label>
+        )}
+      </div>
+    </Modal>
   );
 }
