@@ -121,10 +121,10 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
 
   // overview: domains → skills with counts and the student's own progress
   app.get('/api/qbank', h(async (req, res) => {
-    const counts = await db.all('SELECT skill_id, difficulty, COUNT(*) AS n FROM qbank_questions WHERE active AND NOT premium GROUP BY skill_id, difficulty');
+    const counts = await db.all('SELECT skill_id, difficulty, COUNT(*) AS n FROM qbank_questions WHERE active AND NOT premium AND reserved_for IS NULL GROUP BY skill_id, difficulty');
     const mine = req.user.role === 'student' ? await db.all(`SELECT q.skill_id, COUNT(*) AS answered, SUM(CASE WHEN a.correct THEN 1 ELSE 0 END) AS correct,
         SUM(CASE WHEN a.first_correct THEN 1 ELSE 0 END) AS first_correct
-      FROM qbank_answers a JOIN qbank_questions q ON q.id = a.question_id WHERE a.user_id = ? AND q.active AND NOT q.premium GROUP BY q.skill_id`, [req.user.id]) : [];
+      FROM qbank_answers a JOIN qbank_questions q ON q.id = a.question_id WHERE a.user_id = ? AND q.active AND NOT q.premium AND q.reserved_for IS NULL GROUP BY q.skill_id`, [req.user.id]) : [];
     const levels = await openLevels(req.user);
     const by = new Map(mine.map((r) => [r.skill_id, r]));
     const domains = DOMAINS.map((d) => {
@@ -153,7 +153,7 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const limit = Math.min(30, Math.max(1, Number(req.query.limit) || 10));
     const rows = await db.all(`SELECT q.*, a.correct AS last_correct FROM qbank_questions q
       LEFT JOIN qbank_answers a ON a.question_id = q.id AND a.user_id = ?
-      WHERE q.active AND NOT q.premium AND q.skill_id = ANY(?::text[]) AND q.difficulty = ANY(?::text[])
+      WHERE q.active AND NOT q.premium AND q.reserved_for IS NULL AND q.skill_id = ANY(?::text[]) AND q.difficulty = ANY(?::text[])
         ${status === 'new' ? 'AND a.question_id IS NULL' : status === 'mistakes' ? 'AND a.correct = false' : ''}
       ORDER BY (a.question_id IS NOT NULL), random() LIMIT ?`, [req.user.id, skillIds, allowed, limit]);
     res.json({ questions: rows.map(pub), status, levels: allowed });
@@ -161,7 +161,7 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
 
   // check one answer → reveal the key, explanation and tip; remember the result
   app.post('/api/qbank/questions/:id/check', requireStudent, h(async (req, res) => {
-    const q = await db.one('SELECT * FROM qbank_questions WHERE id = ? AND active AND NOT premium', [req.params.id]);
+    const q = await db.one('SELECT * FROM qbank_questions WHERE id = ? AND active AND NOT premium AND reserved_for IS NULL', [req.params.id]);
     if (!q) return bad(res, 'Question not found', 404);
     if (!(await openLevels(req.user)).includes(q.difficulty)) return bad(res, 'This question needs an active subscription', 402, { code: 'subscription_required' });
     const cap = (await accessFor(req.user)).tier?.q_day || 0;
@@ -218,7 +218,7 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     for (const [skill, n] of MOCK_BLUEPRINT) {
       // questions the student has not seen come first; inside a skill, easier questions first (as on the test)
       const rows = await db.all(`SELECT q.id, q.difficulty FROM qbank_questions q LEFT JOIN qbank_answers a ON a.question_id = q.id AND a.user_id = ?
-        WHERE q.active AND NOT q.premium AND q.skill_id = ? AND q.difficulty = ANY(?::text[]) ORDER BY (a.question_id IS NOT NULL), random() LIMIT ?`, [req.user.id, skill, levels, n]);
+        WHERE q.active AND NOT q.premium AND q.reserved_for IS NULL AND q.skill_id = ? AND q.difficulty = ANY(?::text[]) ORDER BY (a.question_id IS NOT NULL), random() LIMIT ?`, [req.user.id, skill, levels, n]);
       picked.push(...rows.sort((a, b) => LV[a.difficulty] - LV[b.difficulty]).map((r) => r.id));
     }
     if (picked.length < 10) return bad(res, 'The Question Bank does not have enough questions yet');
@@ -270,7 +270,7 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const rows = await db.all(`SELECT q.*, COUNT(a.user_id) AS answered, SUM(CASE WHEN a.first_correct THEN 1 ELSE 0 END) AS first_correct
       FROM qbank_questions q LEFT JOIN qbank_answers a ON a.question_id = q.id
       GROUP BY q.id ORDER BY q.skill_id, q.position`);
-    res.json(rows.map((q) => ({ ...pub(q), answer: q.answer, explanation: q.explanation, tip: q.tip, src: q.src, active: q.active, premium: q.premium, edited: q.edited,
+    res.json(rows.map((q) => ({ ...pub(q), answer: q.answer, explanation: q.explanation, tip: q.tip, src: q.src, active: q.active, premium: q.premium, edited: q.edited, reserved_for: q.reserved_for || null, reserve_off: !!q.reserve_off,
       answered: Number(q.answered || 0), first_correct: Number(q.first_correct || 0) })));
   }));
   app.put('/api/qbank/admin/:id', requireMaster, h(async (req, res) => {

@@ -1,5 +1,6 @@
 import { db } from '../db.js';
 import { playUrl } from '../video.js';
+import { scanSoon } from '../reserved.js';
 import { getSettings } from '../db.js';
 import { upsertModule, validateModule } from './modules.js';
 
@@ -150,6 +151,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     if (errs.length) return bad(res, 'The file has problems: ' + errs.join('; '));
     const { n } = await db.one('SELECT COUNT(*) AS n FROM roadmap_steps');
     const r = await upsertModule(req.body, { src: 'upload', insertAt: n });
+    await scanSoon(req.body?.exam_reserve?.unused_question_bank_ids || []);
     res.json(r);
   }));
 }

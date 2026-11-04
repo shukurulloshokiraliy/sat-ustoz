@@ -23,6 +23,7 @@ import { registerVideo, playUrl, isBunny } from './video.js';
 import { migrateGifs, registerGifs } from './gifs.js';
 import { migrateFinance, registerFinance } from './finance.js';
 import { migrateAssignments, registerAssignments, assignedQuizOpen } from './assignments.js';
+import { migrateReserved, registerReserved, scanReserved, scanSoon } from './reserved.js';
 import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails, moveBalance } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
@@ -72,6 +73,12 @@ await migrateFullMocks();
 await migrateGifs();
 await migrateFinance();
 await migrateAssignments();
+await migrateReserved();
+// keep exam questions out of practice: the first start scans every quiz and lesson check once
+if (!(await db.one("SELECT 1 AS x FROM settings WHERE key = '_reserved_v1'"))) {
+  await scanReserved().catch((e) => console.error('[reserved]', e.message));
+  await db.run("INSERT INTO settings (key, value) VALUES ('_reserved_v1', '1') ON CONFLICT (key) DO NOTHING");
+}
 await migrateTiers();
 await migrateSecurity();
 await db.exec(`
@@ -282,6 +289,7 @@ registerVideo(app, { h, bad, requireMaster });
 registerGifs(app, { h, bad, requireMaster });
 registerFinance(app, { h, bad, requireMaster });
 registerAssignments(app, { h, bad, requireMaster, requireStudent, roadmapFor });
+registerReserved(app, { h, bad, requireMaster });
 
 app.get('/api/me', h(async (req, res) => res.json(await mepayload(req.user))));
 app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
@@ -734,10 +742,12 @@ async function saveQuiz(req, existingId) {
     return id;
   });
 }
-app.post('/api/quizzes', requireMaster, h(async (req, res) => res.json({ id: await saveQuiz(req) })));
+app.post('/api/quizzes', requireMaster, h(async (req, res) => { const id = await saveQuiz(req); await scanSoon(); res.json({ id }); }));
 app.put('/api/quizzes/:id', requireMaster, h(async (req, res) => {
   if (!(await db.one('SELECT 1 AS x FROM quizzes WHERE id = ?', [req.params.id]))) return bad(res, 'Not found', 404);
-  res.json({ id: await saveQuiz(req, Number(req.params.id)) });
+  const id = await saveQuiz(req, Number(req.params.id));
+  await scanSoon();
+  res.json({ id });
 }));
 app.put('/api/quizzes/:id/groups', requireMaster, h(async (req, res) => {
   const ids = Array.isArray(req.body?.group_ids) ? req.body.group_ids : [];
@@ -750,6 +760,7 @@ app.put('/api/quizzes/:id/groups', requireMaster, h(async (req, res) => {
 }));
 app.delete('/api/quizzes/:id', requireMaster, h(async (req, res) => {
   await db.run('DELETE FROM quizzes WHERE id = ?', [req.params.id]);
+  await scanSoon();
   res.json({ ok: true });
 }));
 app.get('/api/quizzes/:id', requireMaster, h(async (req, res) => {

@@ -167,7 +167,7 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
       gen[m] = [];
       for (const [skill, n] of MOCK_BLUEPRINT) {
         const pool = await db.all(`SELECT q.id, q.difficulty, (a.question_id IS NOT NULL) AS seen FROM qbank_questions q
-          LEFT JOIN qbank_answers a ON a.question_id = q.id AND a.user_id = ? WHERE q.active AND q.skill_id = ? ORDER BY random()`, [userId, skill]);
+          LEFT JOIN qbank_answers a ON a.question_id = q.id AND a.user_id = ? WHERE q.active AND q.reserved_for IS NULL AND q.skill_id = ? ORDER BY random()`, [userId, skill]);
         const pick = [];
         for (let i = 0; i < n; i++) {
           const want = MIX[m][i % 3];
