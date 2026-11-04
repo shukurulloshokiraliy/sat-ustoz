@@ -4,7 +4,7 @@ import { api, fmtDate } from '../../api.js';
 import { useToast } from '../../context.jsx';
 import { Avatar, Card, Confirm, Empty, Field, Gate, Modal, PageHeader, Segmented, copyText, pctTone, useAsync } from '../../components/ui.jsx';
 import { WalletEdit } from './Finance.jsx';
-import { IconCopy, IconCrown, IconGoogle, IconKey, IconPlus, IconSearch, IconTrash, IconUsers } from '../../components/icons.jsx';
+import { IconCopy, IconCrown, IconGoogle, IconPlus, IconSearch, IconTrash, IconUsers } from '../../components/icons.jsx';
 
 export default function Students() {
   const st = useAsync(() => Promise.all([api.get('/students'), api.get('/groups')]), []);
@@ -19,11 +19,6 @@ export default function Students() {
   const nav = useNavigate();
   const toast = useToast();
   const gid = params.get('group') || '';
-
-  const resetPw = async (s) => {
-    try { const r = await api.post(`/students/${s.id}/reset-password`); setCred({ title: "New password", rows: [{ name: s.name, login: r.login, password: r.password }] }); }
-    catch (e) { toast(e.message, 'err'); }
-  };
 
   return (
     <div className="page">
@@ -74,7 +69,7 @@ export default function Students() {
                           <td className="nowrap">{Number(s.week_seconds) >= 60 ? <b>{Math.round(s.week_seconds / 60)} min</b> : <span className="muted">—</span>}</td>
                           <td className="muted nowrap">{fmtDate(s.created_at)}</td>
                           <td className="actions" onClick={(e) => e.stopPropagation()}>
-                            <button className="icon-btn sm" title={"Reset password"} aria-label={"Reset password"} onClick={() => resetPw(s)}><IconKey width={16} height={16} /></button>{' '}
+                            
                             <button className="icon-btn sm danger" title={"Delete"} aria-label={"Delete"} onClick={() => setDel(s)}><IconTrash width={16} height={16} /></button>
                           </td>
                         </tr>

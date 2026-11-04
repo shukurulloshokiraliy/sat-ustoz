@@ -579,6 +579,8 @@ app.put('/api/students/:id', requireMaster, h(async (req, res) => {
   res.json({ ok: true });
 }));
 app.post('/api/students/:id/reset-password', requireMaster, h(async (req, res) => {
+  // a student keeps the password they chose; the teacher replaces it only when asked, after confirming
+  if (req.body?.confirm !== true) return bad(res, 'Confirm the password reset first');
   const pw = String(req.body?.password || '').trim() || genPassword();
   if (req.body?.password) { const weak = weakPassword(pw); if (weak) return bad(res, weak); }
   const r = await db.run("UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ? AND role = 'student'", [bcrypt.hashSync(pw, 12), req.params.id]);

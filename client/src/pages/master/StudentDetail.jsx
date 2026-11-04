@@ -51,6 +51,7 @@ export default function StudentDetail() {
   const [edit, setEdit] = useState(false);
   const [del, setDel] = useState(false);
   const [cred, setCred] = useState(null);
+  const [resetAsk, setResetAsk] = useState(false);
   const [sub, setSub] = useState(false);
 
   return (
@@ -60,7 +61,7 @@ export default function StudentDetail() {
           <PageHeader title={s.name} sub={<><Link to="/students">Students</Link> / {s.email || '@' + s.login}{s.group_name ? ` · ${s.group_name}` : ''}</>}>
             <button className={`btn ${s.sub_active ? 'soft' : 'primary'}`} onClick={() => setSub(true)}><IconCrown width={16} height={16} /> {s.sub_active ? 'Extend subscription' : 'Activate subscription'}</button>
             <button className="btn ghost" onClick={() => setEdit(true)}><IconEdit width={16} height={16} /> {"Edit"}</button>
-            <button className="btn ghost" onClick={async () => { const r = await api.post(`/students/${s.id}/reset-password`); setCred({ title: "New password", rows: [{ name: s.name, login: r.login, password: r.password }] }); }}><IconKey width={16} height={16} /> {"Reset password"}</button>
+            {s.provider !== 'google' && <button className="btn ghost" onClick={() => setResetAsk(true)}><IconKey width={16} height={16} /> {"Reset password"}</button>}
             <button className="btn danger-ghost" onClick={() => setDel(true)}><IconTrash width={16} height={16} /> {"Delete"}</button>
           </PageHeader>
           <div className="grid g4 keep2 stagger">
@@ -88,6 +89,9 @@ export default function StudentDetail() {
           )}
           {sub && <SubscriptionModal student={s} onClose={() => setSub(false)} onDone={() => { setSub(false); st.reload(); }} />}
           {edit && <EditStudent s={s} groups={groups} onClose={() => setEdit(false)} onSaved={() => { setEdit(false); toast("Saved"); st.reload(); }} />}
+          {resetAsk && <Confirm title="Reset this student's password?" confirmLabel="Yes, make a new password" onClose={() => setResetAsk(false)}
+            onConfirm={async () => { setResetAsk(false); try { const r = await api.post(`/students/${s.id}/reset-password`, { confirm: true }); setCred({ title: "New password", rows: [{ name: s.name, login: r.login, password: r.password }] }); } catch (e) { toast(e.message, 'bad'); } }}
+            text={`${s.name}'s current password will stop working and they will be signed out everywhere. Do this only if the student forgot their password — passwords are stored encrypted, so nobody (not even you) can see the old one.`} />}
           {del && <Confirm title={"Delete student"} text={`${s.name} and all of their results will be deleted.`} onClose={() => setDel(false)} onConfirm={async () => { await api.del('/students/' + s.id); toast("Deleted"); nav('/students'); }} />}
           {cred && <Credentials {...cred} onClose={() => setCred(null)} />}
         </>
