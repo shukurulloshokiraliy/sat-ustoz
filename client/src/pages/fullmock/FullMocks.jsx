@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, fmtDate } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
-import { Card, Confirm, Empty, Gate, PageHeader, useAsync } from '../../components/ui.jsx';
+import { Card, Confirm, Gate, PageHeader, useAsync } from '../../components/ui.jsx';
 import { fmtMoney } from '../student/Subscribe.jsx';
 import FullMockCard from '../mock/FullMockCard.jsx';
 import { IconArrow, IconClock, IconDoc, IconLock } from '../../components/icons.jsx';
@@ -24,8 +24,6 @@ export default function FullMocks() {
   return (
     <div className="page">
       <PageHeader title="Full Mocks" sub="Full Reading & Writing sections: Module 1, then a harder or easier Module 2, scored like the SAT." />
-      {user.role === 'student' && <FullMockCard />}
-      <h2 className="fm-sec">Official practice tests</h2>
       <Gate state={st}>{({ quota: q, mocks }) => (
         <>
           <div className={`fm-quota ${q.left ? '' : 'out'}`}>
@@ -38,7 +36,9 @@ export default function FullMocks() {
             <div className="fm-bal"><small>Balance</small><b>{fmtMoney(q.balance, 'UZS')}</b><Link to="/subscribe#pay">Top up</Link></div>
             {q.plan === 'free' && user.role === 'student' && <Link className="btn sun" to="/subscribe">More mocks with a plan <IconArrow width={16} height={16} /></Link>}
           </div>
-          {!mocks.length ? <Card><Empty icon={<IconDoc />} title="No full mocks yet" text="Your teacher will add official mocks here soon." /></Card> : (
+          {user.role === 'student' && <FullMockCard />}
+          {mocks.length > 0 && <h2 className="fm-sec">Official practice tests</h2>}
+          {mocks.length > 0 && (
             <div className="fm-list stagger">
               {mocks.map((m) => {
                 const open = m.attempts.find((a) => a.stage !== 'done');

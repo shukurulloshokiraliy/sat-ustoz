@@ -21,6 +21,7 @@ import { registerQbank, syncQbank, migrateQbankMocks } from './qbank.js';
 import { registerFullMocks, migrateFullMocks } from './fullmock.js';
 import { registerVideo, playUrl, isBunny } from './video.js';
 import { migrateGifs, registerGifs, gifMap } from './gifs.js';
+import { migrateFinance, registerFinance } from './finance.js';
 import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails, moveBalance } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
@@ -68,6 +69,7 @@ await migrateVocab();
 await migrateQbankMocks();
 await migrateFullMocks();
 await migrateGifs();
+await migrateFinance();
 await migrateTiers();
 await migrateSecurity();
 await db.exec(`
@@ -276,6 +278,7 @@ registerFullMocks(app, { h, bad, requireStudent, requireMaster, upload });
 registerTiers(app, { h, bad, requireStudent, requireMaster });
 registerVideo(app, { h, bad, requireMaster });
 registerGifs(app, { h, bad, requireMaster });
+registerFinance(app, { h, bad, requireMaster });
 
 app.get('/api/me', h(async (req, res) => res.json(await mepayload(req.user))));
 app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
@@ -460,7 +463,7 @@ app.delete('/api/groups/:id', requireMaster, h(async (req, res) => {
 
 // ---------- students (teacher) ----------
 const studentRow = `SELECT u.id, u.name, u.login, u.email, u.provider, u.avatar_url, u.group_id, g.name AS group_name, u.target_english, u.target_math,
-  u.exam_date, u.created_at, u.last_login_at, u.diagnostic_score, u.cefr, u.admitted, u.placement_at, u.sub_until, u.sub_plan,
+  u.exam_date, u.created_at, u.last_login_at, u.balance, u.diagnostic_score, u.cefr, u.admitted, u.placement_at, u.sub_until, u.sub_plan,
   (SELECT MAX(finished_at) FROM attempts a WHERE a.user_id = u.id) AS last_active,
   (SELECT COUNT(*) FROM attempts a WHERE a.user_id = u.id AND a.finished_at IS NOT NULL) AS attempts,
   (SELECT COALESCE(SUM(seconds), 0) FROM user_activity x WHERE x.user_id = u.id AND x.day > CURRENT_DATE - 7) AS week_seconds,

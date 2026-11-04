@@ -36,9 +36,6 @@ export default function FullMockCard() {
           <button className="btn sun lg" disabled={busy} onClick={go}>{d?.open ? 'Continue my full mock' : 'Start full mock'} <IconArrow /></button>
           <span className="tq-time"><IconClock width={16} height={16} /> 2 × 32 min</span>
         </div>
-        {q && !d?.open && (
-          <small className="fm-left">{q.left > 0 ? `${q.left} of ${q.limit} free this week (${q.plan_name} plan)` : `This week's ${q.limit} used · one more costs ${fmtMoney(q.extra_price, 'UZS')} from your wallet`}</small>
-        )}
       </div>
       <div className="tq-stats">
         <div className="tq-acc">

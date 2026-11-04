@@ -126,10 +126,14 @@ export function registerTiers(app, { h, bad, requireMaster, requireStudent }) {
   }));
   // teacher: top up (or correct) a student's balance — the only way money is added
   app.post('/api/students/:id/balance', requireMaster, h(async (req, res) => {
-    const amount = Math.round(Number(req.body?.amount));
-    if (!Number.isFinite(amount) || !amount || Math.abs(amount) > 10_000_000) return bad(res, 'Enter an amount');
-    const u = await db.one("SELECT id FROM users WHERE id = ? AND role = 'student'", [req.params.id]);
+    const u = await db.one("SELECT id, balance FROM users WHERE id = ? AND role = 'student'", [req.params.id]);
     if (!u) return bad(res, 'Not found', 404);
+    // { amount: +/-N } adds or subtracts; { set: N } sets the wallet to exactly N (the difference is logged)
+    const target = req.body?.set != null ? Math.round(Number(req.body.set)) : null;
+    if (target != null && (!Number.isFinite(target) || target < 0 || target > 100_000_000)) return bad(res, 'Enter the new balance');
+    const amount = target != null ? target - Number(u.balance || 0) : Math.round(Number(req.body?.amount));
+    if (target != null && !amount) return res.json({ balance: target });
+    if (!Number.isFinite(amount) || !amount || Math.abs(amount) > 100_000_000) return bad(res, 'Enter an amount');
     const after = await db.tx((t) => moveBalance(t, u.id, amount, amount > 0 ? 'top_up' : 'correction', { note: req.body?.note || '', by: req.user.id }));
     if (after == null) return bad(res, 'The balance cannot go below zero');
     const { audit } = await import('./security.js');

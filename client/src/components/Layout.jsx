@@ -7,7 +7,7 @@ import { Avatar } from './ui.jsx';
 import SupportChat from './SupportChat.jsx';
 import {
   IconBookmark, IconBriefcase, IconChats, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
-  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconConsult, IconVolume, IconMute } from './icons.jsx';
+  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconConsult, IconVolume, IconMute, IconWallet } from './icons.jsx';
 
 const STUDENT_NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, c: '#2A55E5' },
@@ -33,6 +33,7 @@ const STUDENT_TABS = [
 const MASTER_TABS = [
   { to: '/', label: 'Overview', icon: IconDashboard, end: true, c: '#2A55E5' },
   { to: '/students', label: 'Students', icon: IconUsers, c: '#2A55E5' },
+  { to: '/finance', label: 'Finance', icon: IconWallet, c: '#22B07D' },
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad, c: '#F28B4E' },
   { to: '/support', label: 'Support', icon: IconChats, c: '#E0569B' },
 ];

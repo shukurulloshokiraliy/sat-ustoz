@@ -3,6 +3,7 @@ import MockTaker from './pages/mock/MockTaker.jsx';
 import ActivityTracker from './components/ActivityTracker.jsx';
 import MockResult from './pages/mock/MockResult.jsx';
 import Leaderboard from './pages/student/Leaderboard.jsx';
+import Finance from './pages/master/Finance.jsx';
 import FullMocks from './pages/fullmock/FullMocks.jsx';
 import FullMockTaker from './pages/fullmock/FullMockTaker.jsx';
 import FullMockResult from './pages/fullmock/FullMockResult.jsx';
@@ -110,6 +111,7 @@ export default function App() {
             <Route path="full-mocks" element={<FullMockAdmin />} />
             <Route path="consultations" element={<ConsultationsAdmin />} />
             <Route path="leaderboard" element={<Leaderboard />} />
+            <Route path="finance" element={<Finance />} />
             <Route path="website" element={<Website />} />
             <Route path="support" element={<Support />} />
           </>
