@@ -124,7 +124,7 @@ export default function Layout() {
           <button className="icon-btn" onClick={toggle} aria-label={"Toggle theme"}>{theme === 'dark' ? <IconSun /> : <IconMoon />}</button>
         </div>
         <main className="main"><Suspense fallback={<div style={{ minHeight: '50vh', display: 'grid', placeItems: 'center' }}><Spinner /></div>}><Outlet /></Suspense></main>
-        <SupportChat />
+        {user.role === 'student' && <SupportChat />}
         <nav className="tabbar" aria-label="Quick menu">
           {(user.role === 'master' ? MASTER_TABS : STUDENT_TABS).map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end} style={{ '--c': n.c || '#2A55E5' }} className={({ isActive }) => (isActive || on(n) ? 'active' : '')}>{({ isActive }) => (<><n.icon width={22} height={22} weight={isActive || on(n) ? 'fill' : 'duotone'} /><span>{n.label}</span></>)}</NavLink>

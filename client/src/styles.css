@@ -2527,3 +2527,67 @@ tr.pf-idle td:first-child b { color: var(--bad); }
 .focus-line { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 0; padding: 10px 14px; border-radius: 12px; font-size: .9rem; background: var(--good-soft); }
 .focus-line.warn { background: var(--warn-soft); }
 .focus-line b { font-weight: 700; }
+
+/* =====================================================================
+   Dark mode, round 3 — graphite. Neutral charcoal surfaces (no blue cast) so the brand colours
+   carry the page: Signal blue for actions, Sun for rewards, Mint/Coral for right/wrong.
+   Three surface steps (ground → card → raised), hairline borders, light only where it matters.
+   ===================================================================== */
+:root[data-theme='dark'] {
+  --bg: #0E0F12; --surface: #17181C; --surface-2: #1F2025; --line: #2A2C33;
+  --ink: #ECEDF0; --muted: #9EA1AD;
+  --primary: #7F9BFF; --signal-hover: #9AB0FF; --primary-soft: rgba(91, 124, 255, .14); --sky-50: rgba(91, 124, 255, .14);
+  --accent-soft: rgba(60, 203, 154, .13); --good-soft: rgba(60, 203, 154, .13); --mint-50: rgba(60, 203, 154, .13);
+  --warn-soft: rgba(255, 203, 61, .12); --sun-50: rgba(255, 203, 61, .12);
+  --bad-soft: rgba(255, 122, 107, .13); --coral-50: rgba(255, 122, 107, .13);
+  --good: #5BD69C; --warn: #FFD25C; --bad: #FF8A7A;
+  --track: #26282F;
+  --shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 12px 32px -20px rgba(0, 0, 0, .8);
+  --shadow-lg: 0 28px 70px -28px rgba(0, 0, 0, .9);
+}
+/* one quiet light source at the top instead of the coloured aurora */
+:root[data-theme='dark'] body::before {
+  background:
+    radial-gradient(1100px 520px at 50% -12%, rgba(91, 124, 255, .09), transparent 65%),
+    radial-gradient(600px 400px at 100% 0%, rgba(255, 203, 61, .035), transparent 60%);
+}
+:root[data-theme='dark'] .card, :root[data-theme='dark'] .fin-kpi, :root[data-theme='dark'] .pub-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(255, 255, 255, 0) 40%), var(--surface);
+  border-color: rgba(255, 255, 255, .07);
+}
+:root[data-theme='dark'] .card:hover { border-color: rgba(255, 255, 255, .13); }
+/* the home page steps are columns, not cards: only their mini panels are surfaces */
+:root[data-theme='dark'] .pub-step { background: none; border: 0; }
+:root[data-theme='dark'] .pub-mini { background: var(--surface); border-color: rgba(255, 255, 255, .08); }
+:root[data-theme='dark'] .sidebar { background: rgba(18, 19, 23, .9); border-right-color: rgba(255, 255, 255, .06); }
+:root[data-theme='dark'] .brand-tile { background: #161B3D; }
+:root[data-theme='dark'] .nav a:hover { background: rgba(255, 255, 255, .04); }
+:root[data-theme='dark'] .nav a.active { background: rgba(255, 255, 255, .06); }
+:root[data-theme='dark'] .topbar, :root[data-theme='dark'] .tabbar { background: rgba(14, 15, 18, .86); border-color: rgba(255, 255, 255, .06); }
+:root[data-theme='dark'] input, :root[data-theme='dark'] select, :root[data-theme='dark'] textarea { background: #121317; border-color: #2E3038; }
+:root[data-theme='dark'] input:focus, :root[data-theme='dark'] select:focus, :root[data-theme='dark'] textarea:focus { border-color: var(--primary); }
+:root[data-theme='dark'] .segmented { background: rgba(255, 255, 255, .04); }
+:root[data-theme='dark'] .chip { background: rgba(255, 255, 255, .06); }
+:root[data-theme='dark'] .btn.soft { background: rgba(127, 155, 255, .12); color: #B7C6FF; }
+:root[data-theme='dark'] .btn.soft:hover { background: rgba(127, 155, 255, .2); }
+:root[data-theme='dark'] .btn.ghost { border-color: rgba(255, 255, 255, .12); }
+/* headings: plain light text (the blue-to-yellow gradient read as decoration) */
+:root[data-theme='dark'] .page-head h1, :root[data-theme='dark'] .pub-h2 { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--ink); }
+/* brand highlight panels: Night Ink with a soft Signal glow, not violet */
+:root[data-theme='dark'] .tq, :root[data-theme='dark'] .fm-quota, :root[data-theme='dark'] .lb-prizes,
+:root[data-theme='dark'] .pub-teaser, :root[data-theme='dark'] .pub-final, :root[data-theme='dark'] .pt-start {
+  background: radial-gradient(120% 140% at 100% 0%, rgba(42, 85, 229, .45) 0%, rgba(22, 27, 61, .9) 45%, #14172E 100%);
+  border: 1px solid rgba(255, 255, 255, .07);
+}
+:root[data-theme='dark'] .fm-tq { background: radial-gradient(120% 140% at 100% 0%, rgba(194, 65, 12, .4) 0%, rgba(40, 22, 30, .9) 45%, #17141A 100%); }
+:root[data-theme='dark'] .pub-head { background: rgba(14, 15, 18, .78); border-bottom: 1px solid rgba(255, 255, 255, .06); }
+:root[data-theme='dark'] .pub-price { --pp-surface: #17181C; }
+:root[data-theme='dark'] .pub-price.pp-c::after { background: linear-gradient(180deg, rgba(255, 255, 255, .04), transparent 50%), #17181C; }
+:root[data-theme='dark'] .pub-foot { background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .45) 40%); }
+/* test player */
+:root[data-theme='dark'] .bb { --bb-ink: #ECEDF0; --bb-bg: #141518; --bb-soft: #1D1E23; --bb-foot: #141518; --bb-line: #30323A; --bb-blue: #7F9BFF; --bb-blue-soft: rgba(91, 124, 255, .16); }
+:root[data-theme='dark'] .bb-passage { color: #E3E4E8; }
+:root[data-theme='dark'] .bb-hl { background: #E9C94A; color: #141518; }
+:root[data-theme='dark'] .exam-gate-card, :root[data-theme='dark'] .bb-notepop { background: #1B1C21; border: 1px solid rgba(255, 255, 255, .08); }
+/* small fixes */
+.goal-card .ring-in strong { font-size: .85rem; }

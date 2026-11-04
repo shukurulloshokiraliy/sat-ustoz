@@ -3,7 +3,6 @@ import { useReveal } from '../../components/reveal.js';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth, useTheme } from '../../context.jsx';
 import { IconBolt, IconBook, IconChevron, IconCrown, IconUser, IconMenu, IconMoon, IconSun, IconX, Logo } from '../../components/icons.jsx';
-import SupportChat from '../../components/ChatLater.jsx';
 import { useSite } from './site.jsx';
 
 /** Website header (like a product site): menu with dropdowns, Log in, Start free trial. No sign-in needed. */
@@ -80,7 +79,6 @@ export default function PublicLayout() {
       </header>
       {open && <div className="pub-scrim" onClick={() => setOpen(false)} aria-hidden="true" />}
       <main className="pub-main"><Outlet /></main>
-      <SupportChat />
       <footer className="pub-foot">
         <div className="pub-foot-in">
           <div className="pub-foot-brand">
