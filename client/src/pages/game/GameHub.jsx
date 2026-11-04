@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
-import { Gate, useAsync } from '../../components/ui.jsx';
+import { Gate, Modal, useAsync } from '../../components/ui.jsx';
 import { IconArrow } from '../../components/icons.jsx';
-import Character, { CHARACTER_KEYS } from '../../components/Character.jsx';
+import Character, { CHARACTER_KEYS, CHARACTERS, CHARACTER_SETS } from '../../components/Character.jsx';
 import { BOT_LEVELS, ZONES, isVip } from './zones.jsx';
 
 export const hostKey = (code) => `arena-host-${code}`;
@@ -22,6 +22,7 @@ export function Chips({ value, onChange, options, label, dark }) {
   );
 }
 export const DUEL_KEY = 'arena-duel';
+export const HERO_KEY = 'arena-hero';
 export const store = {
   get: (k) => { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
@@ -66,7 +67,7 @@ function Hub({ d }) {
     setQuick(true);
     store.set(DUEL_KEY, JSON.stringify({ opp, level: duelLevel }));
     try {
-      const avatar = CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)];
+      const avatar = CHARACTER_KEYS.includes(store.get(HERO_KEY)) ? store.get(HERO_KEY) : CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)];
       const r = await api.post('/game/quick', { name: (user.name || 'Player').split(' ')[0], avatar, set_ids: sets.map((x) => x.id), opponent: opp, level: duelLevel });
       store.set(playerKey(r.code), r.token);
       if (r.host_token) store.set(hostKey(r.code), r.host_token);
@@ -85,81 +86,128 @@ function Hub({ d }) {
     } catch (e) { toast(e.message, 'bad'); setBusy(false); }
   };
 
+  const [hero, setHero] = useState(() => (CHARACTER_KEYS.includes(store.get(HERO_KEY)) ? store.get(HERO_KEY) : 'owl'));
+  const [pickHero, setPickHero] = useState(false);
+  const [hosting, setHosting] = useState(false);
+  const [step, setStep] = useState(1);
+  const choose = (k) => { setHero(k); store.set(HERO_KEY, k); setPickHero(false); };
+  const rival = opp === 'bot' ? 'robot' : null;
+
   return (
     <>
-      <section className="arena-hero">
-        <div className="arena-hero-copy">
+      {/* the stage: your hero vs the opponent, one big Play button */}
+      <section className="ar-stage">
+        <div className="ar-lights" aria-hidden="true"><i /><i /><i /></div>
+        <div className="ar-copy">
           <small>WORD ARENA</small>
-          <h1>Battle with words.</h1>
-          <p>Host a live vocabulary game for your class or challenge a friend to a duel. Players join from any phone with a 6-digit code.</p>
-          <div className="duel-box">
-            <b>Quick duel</b>
-            <Chips dark label="Opponent" value={opp} onChange={setOpp} options={[{ value: 'player', label: 'Random player' }, { value: 'bot', label: 'Bot' }]} />
-            <Chips dark label="Bot level" value={duelLevel} onChange={pickDuelLevel} options={levelOpts} />
-            <small>{opp === 'bot' ? 'Starts right away against this bot.' : 'Plays a free student; if nobody comes in 25 s, this bot takes the seat.'}</small>
-            <button className="btn sun lg" onClick={quickDuel} disabled={quick}>{quick ? 'Starting…' : 'Play'} <IconArrow /></button>
-          </div>
-          <form className="arena-join" onSubmit={(e) => { e.preventDefault(); if (/^\d{6}$/.test(code)) nav(`/play/${code}`); }}>
-            <input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="Game code" aria-label="Game code" />
-            <button className="btn on-dark lg" disabled={code.length !== 6}>Join with code</button>
-          </form>
+          <h1>Words are your weapon.</h1>
+          <p>Answer word questions faster than your opponent. Right answers move you ahead — first to the finish wins.</p>
         </div>
-        <div className="arena-parade" aria-hidden="true">
-          {['owl', 'lion', 'axolotl', 'unicorn', 'panda', 'shark', 'fox', 'dragon'].map((k, i) => <span key={k} style={{ animationDelay: `${i * 0.18}s` }}><Character kind={k} size={i % 3 === 0 ? 86 : 64} /></span>)}
+        <div className="ar-vs">
+          <button type="button" className="ar-fighter me" onClick={() => setPickHero(true)} aria-label="Change your hero">
+            <span className="ar-ring" style={{ '--c': CHARACTERS[hero]?.body }} />
+            <Character kind={hero} size={128} mood="happy" />
+            <b>{CHARACTERS[hero]?.name}</b><em>Tap to change</em>
+          </button>
+          <span className="ar-vs-badge" aria-hidden="true">VS</span>
+          <div className={`ar-fighter them ${rival ? '' : 'unknown'}`}>
+            <span className="ar-ring" style={{ '--c': rival ? '#5C88FF' : '#8E5CF7' }} />
+            {rival ? <Character kind="robot" size={128} /> : <span className="ar-q" aria-hidden="true">?</span>}
+            <b>{rival ? `${BOT_LEVELS.find((l) => l.id === duelLevel)?.name} bot` : 'Random player'}</b><em>{rival ? 'Starts right away' : 'Bot joins after 25 s'}</em>
+          </div>
+        </div>
+        <div className="ar-controls">
+          <Chips dark label="Opponent" value={opp} onChange={setOpp} options={[{ value: 'player', label: 'Real player' }, { value: 'bot', label: 'Bot' }]} />
+          <Chips dark label="Bot level" value={duelLevel} onChange={pickDuelLevel} options={levelOpts} />
+          <button className="btn sun xl ar-play" onClick={quickDuel} disabled={quick}>{quick ? 'Finding a match…' : 'Play now'} <IconArrow /></button>
         </div>
       </section>
 
-      <section className="arena-host card">
-        <h2>Host a game</h2>
-        <div className="arena-modes">
-          {MODES.map((m) => (
-            <button key={m.id} type="button" className={`arena-mode ${mode === m.id ? 'on' : ''}`} onClick={() => setMode(m.id)} aria-pressed={mode === m.id}>
-              <span className="arena-mode-chars">{m.chars.map((c) => <Character key={c} kind={c} size={44} />)}</span>
-              <b>{m.title}</b><small>{m.text}</small>
-            </button>
-          ))}
-        </div>
-        <div className="arena-field">
-          <b>Zone</b>
-          <div className="arena-zones">
-            {ZONES.map((z) => (
-              <button key={z.id} type="button" className={`arena-zone z-${z.id} ${zone === z.id ? 'on' : ''} ${!z.free && !vip ? 'locked' : ''}`} onClick={() => pickZone(z)} aria-pressed={zone === z.id}>
-                {!z.free && <span className="vip">{vip ? 'VIP' : 'VIP · locked'}</span>}
-                <b>{z.name}</b><small>{z.text}</small>
-              </button>
-            ))}
+      {/* two more ways to play */}
+      <div className="ar-tiles">
+        <form className="ar-tile" onSubmit={(e) => { e.preventDefault(); if (/^\d{6}$/.test(code)) nav(`/play/${code}`); }}>
+          <span className="ar-tile-ic join" aria-hidden="true"><Character kind="chick" size={52} /></span>
+          <div className="grow"><b>Join a game</b><small>Type the 6-digit code from the teacher's screen.</small>
+            <div className="ar-code"><input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="000000" aria-label="Game code" /><button className="btn primary" disabled={code.length !== 6}>Join</button></div>
           </div>
-        </div>
-        <div className="arena-field">
-          <b>Bots</b>
-          <div className="arena-bots">
-            <Chips label="Number of bots" value={bots} onChange={setBots} options={(mode === 'duel' ? [0, 1] : [0, 1, 2, 3, 4, 6]).map((n) => ({ value: n, label: n === 0 ? 'None' : String(n) }))} />
-            {bots > 0 && <div className="arena-lvls">
-              {BOT_LEVELS.map((l) => (
-                <button key={l.id} type="button" className={`arena-lvl l-${l.id} ${botLevel === l.id ? 'on' : ''} ${!l.free && !vip ? 'locked' : ''}`} onClick={() => pickLevel(l)} aria-pressed={botLevel === l.id}>
-                  {!l.free && !vip && <span className="vip">VIP</span>}
-                  <b>{l.name}</b><small>{l.text}</small>
+        </form>
+        <button type="button" className={`ar-tile host ${hosting ? 'on' : ''}`} onClick={() => { setHosting(true); setStep(1); setTimeout(() => document.getElementById('ar-host')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); }}>
+          <span className="ar-tile-ic hostc" aria-hidden="true"><Character kind="owl" size={52} /></span>
+          <div className="grow"><b>Host a game for your class</b><small>Classic, team battle or duel · themed zones · bots · your word sets.</small></div>
+          <IconArrow />
+        </button>
+      </div>
+
+      {/* host: three short steps */}
+      {hosting && (
+        <section className="ar-host card" id="ar-host">
+          <ol className="ar-steps" aria-label="Steps">
+            {['Game type', 'World', 'Words'].map((t, i) => <li key={t} className={step === i + 1 ? 'on' : step > i + 1 ? 'done' : ''}><button type="button" onClick={() => setStep(i + 1)}><span>{i + 1}</span>{t}</button></li>)}
+          </ol>
+          {step === 1 && (
+            <div className="arena-modes">
+              {MODES.map((m) => (
+                <button key={m.id} type="button" className={`arena-mode ${mode === m.id ? 'on' : ''}`} onClick={() => { setMode(m.id); setStep(2); }} aria-pressed={mode === m.id}>
+                  <span className="arena-mode-chars">{m.chars.map((c) => <Character key={c} kind={c} size={52} />)}</span>
+                  <b>{m.title}</b><small>{m.text}</small>
                 </button>
               ))}
-            </div>}
-          </div>
-          <small className="muted">Bots play alongside real players, so you can practise even when you are alone.{!vip && ' Easy bots and the Classic zone are free; the rest come with VIP.'}</small>
-        </div>
-        <div className="arena-opts">
-          <div>
-            <b>Words from</b>
-            <div className="arena-sets">
-              {sets.map((s) => <button key={s.id} type="button" className={chosen.has(s.id) ? 'on' : ''} onClick={() => toggle(s.id)}>{s.title}</button>)}
             </div>
-            {!d.full && <small className="muted">Subscribe to play with all 15 sets.</small>}
-          </div>
-          <div className="arena-nums">
-            <div><b>Questions</b><Chips label="Questions" value={count} onChange={setCount} options={[10, 15, 20, 30].map((n) => ({ value: n, label: String(n) }))} /></div>
-            <div><b>Time</b><Chips label="Time" value={minutes} onChange={setMinutes} options={[2, 3, 5, 8].map((n) => ({ value: n, label: `${n} min` }))} /></div>
-          </div>
-        </div>
-        <button className="btn primary lg block" disabled={busy || !chosen.size} onClick={host}>{busy ? 'Creating…' : 'Create game'} <IconArrow /></button>
-      </section>
+          )}
+          {step === 2 && (
+            <>
+              <div className="ar-worlds">
+                {ZONES.map((z) => (
+                  <button key={z.id} type="button" className={`ar-world w-${z.id} ${zone === z.id ? 'on' : ''} ${!z.free && !vip ? 'locked' : ''}`} onClick={() => pickZone(z)} aria-pressed={zone === z.id}>
+                    <span className="ar-world-scene" aria-hidden="true"><i /><i /><i /><span className="ar-world-runner"><Character kind={z.id === 'ocean' ? 'axolotl' : z.id === 'space' ? 'robot' : z.id === 'jungle' ? 'monkey' : z.id === 'race' ? 'fox' : 'owl'} size={46} /></span></span>
+                    {!z.free && <span className="vip">{vip ? 'VIP' : 'VIP · locked'}</span>}
+                    <b>{z.name}</b><small>{z.text}</small>
+                  </button>
+                ))}
+              </div>
+              <div className="arena-field">
+                <b>Add bots <small className="muted">(they play with your class, so a game works even with few players)</small></b>
+                <Chips label="Number of bots" value={bots} onChange={setBots} options={(mode === 'duel' ? [0, 1] : [0, 1, 2, 3, 4, 6]).map((n) => ({ value: n, label: n === 0 ? 'No bots' : String(n) }))} />
+                {bots > 0 && <Chips label="Bot level" value={botLevel} onChange={(v) => pickLevel(BOT_LEVELS.find((l) => l.id === v))} options={levelOpts} />}
+              </div>
+              <div className="row between"><button className="btn ghost" onClick={() => setStep(1)}>Back</button><button className="btn primary" onClick={() => setStep(3)}>Next <IconArrow width={16} height={16} /></button></div>
+            </>
+          )}
+          {step === 3 && (
+            <>
+              <div className="arena-field">
+                <b>Words from</b>
+                <div className="arena-sets">{sets.map((s) => <button key={s.id} type="button" className={chosen.has(s.id) ? 'on' : ''} onClick={() => toggle(s.id)}>{s.title}</button>)}</div>
+                {!d.full && <small className="muted">Subscribe to play with all sets.</small>}
+              </div>
+              <div className="arena-nums">
+                <div><b>Questions</b><Chips label="Questions" value={count} onChange={setCount} options={[10, 15, 20, 30].map((n) => ({ value: n, label: String(n) }))} /></div>
+                <div><b>Time</b><Chips label="Time" value={minutes} onChange={setMinutes} options={[2, 3, 5, 8].map((n) => ({ value: n, label: `${n} min` }))} /></div>
+              </div>
+              <p className="ar-summary">{MODES.find((m) => m.id === mode)?.title} · {ZONES.find((z) => z.id === zone)?.name}{bots ? ` · ${bots} ${BOT_LEVELS.find((l) => l.id === botLevel)?.name.toLowerCase()} bot${bots > 1 ? 's' : ''}` : ''} · {count} questions · {minutes} min</p>
+              <div className="row between"><button className="btn ghost" onClick={() => setStep(2)}>Back</button>
+                <button className="btn primary lg" disabled={busy || !chosen.size} onClick={host}>{busy ? 'Creating…' : 'Create game'} <IconArrow /></button></div>
+            </>
+          )}
+        </section>
+      )}
+
+      {pickHero && (
+        <Modal title="Choose your hero" onClose={() => setPickHero(false)} wide>
+          {CHARACTER_SETS.map((set) => (
+            <div key={set} className="ar-heroes-set">
+              <small className="muted">{set}</small>
+              <div className="ar-heroes">
+                {CHARACTER_KEYS.filter((k) => CHARACTERS[k].set === set).map((k) => (
+                  <button key={k} type="button" className={`ar-hero r-${CHARACTERS[k].rarity} ${hero === k ? 'on' : ''}`} onClick={() => choose(k)} style={{ '--c': CHARACTERS[k].body }}>
+                    <Character kind={k} size={64} /><span>{CHARACTERS[k].name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </Modal>
+      )}
     </>
   );
 }

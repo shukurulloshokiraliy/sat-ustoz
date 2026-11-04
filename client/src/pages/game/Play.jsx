@@ -4,7 +4,7 @@ import { api } from '../../api.js';
 import { useAuth } from '../../context.jsx';
 import { Confetti, Spinner } from '../../components/ui.jsx';
 import Character, { CHARACTERS, CHARACTER_KEYS, CHARACTER_SETS } from '../../components/Character.jsx';
-import { Chips, DUEL_KEY, hostKey, playerKey, store } from './GameHub.jsx';
+import { Chips, DUEL_KEY, hostKey, playerKey, store, HERO_KEY } from './GameHub.jsx';
 import { BOT_LEVELS, ZONE, ZoneTrack, isVip } from './zones.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
@@ -57,7 +57,7 @@ function Shell({ children, zone = 'classic' }) {
 function Join({ code, room, onJoined }) {
   const { user } = useAuth() || {};
   const [name, setName] = useState(user?.name?.split(' ')[0] || '');
-  const [avatar, setAvatar] = useState(CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)]);
+  const [avatar, setAvatar] = useState(() => (CHARACTER_KEYS.includes(store.get(HERO_KEY)) ? store.get(HERO_KEY) : CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)]));
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [set, setSet] = useState('All');
@@ -79,7 +79,7 @@ function Join({ code, room, onJoined }) {
       </div>
       <div className="arena-pick" role="radiogroup" aria-label="Choose your character">
         {CHARACTER_KEYS.filter((k) => set === 'All' || CHARACTERS[k].set === set).map((k) => (
-          <button type="button" key={k} role="radio" aria-checked={avatar === k} title={CHARACTERS[k].name} className={`r-${CHARACTERS[k].rarity} ${avatar === k ? 'on' : ''}`} onClick={() => setAvatar(k)}>
+          <button type="button" key={k} role="radio" aria-checked={avatar === k} title={CHARACTERS[k].name} className={`r-${CHARACTERS[k].rarity} ${avatar === k ? 'on' : ''}`} onClick={() => { setAvatar(k); store.set(HERO_KEY, k); }}>
             <Character kind={k} size={52} />
           </button>
         ))}

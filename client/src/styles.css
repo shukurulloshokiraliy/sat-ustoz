@@ -2611,3 +2611,121 @@ tr.pf-idle td:first-child b { color: var(--bad); }
 .pp-item { padding: 0; border: 2px solid transparent; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: pointer; aspect-ratio: 4 / 3; }
 .pp-item:hover, .pp-item:focus-visible { border-color: var(--primary); }
 .pp-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* =====================================================================
+   Word Arena v2 — a stage, not a form: your hero vs the opponent, one Play button,
+   two simple tiles, a 3-step host flow and worlds you can see moving.
+   ===================================================================== */
+.ar-stage { position: relative; overflow: hidden; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); grid-template-areas: 'copy vs' 'ctrl vs'; gap: 18px 28px; align-items: center;
+  padding: clamp(22px, 4vw, 40px); border-radius: 30px; color: #fff;
+  background: radial-gradient(70% 90% at 75% 40%, #3B2C8C 0%, transparent 70%), radial-gradient(60% 80% at 10% 100%, #0F4C8C 0%, transparent 70%), linear-gradient(160deg, #161B3D, #0E1030); }
+.ar-stage::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 38%; z-index: -1;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 60px), linear-gradient(180deg, transparent, rgba(255,255,255,.04)); transform: perspective(400px) rotateX(55deg); transform-origin: bottom; }
+.ar-lights { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.ar-lights i { position: absolute; top: -30%; width: 34%; height: 140%; background: linear-gradient(180deg, rgba(255,255,255,.14), transparent 70%); filter: blur(6px); transform-origin: top center; animation: ar-sweep 7s ease-in-out infinite alternate; }
+.ar-lights i:nth-child(1) { left: 48%; } .ar-lights i:nth-child(2) { left: 66%; animation-delay: -2.5s; } .ar-lights i:nth-child(3) { left: 84%; animation-delay: -5s; }
+@keyframes ar-sweep { from { transform: rotate(-16deg); } to { transform: rotate(16deg); } }
+.ar-copy { grid-area: copy; }
+.ar-copy small { font: 800 .74rem var(--font); letter-spacing: .14em; color: var(--sun); }
+.ar-copy h1 { color: #fff; font-size: clamp(1.9rem, 1.3rem + 2.8vw, 3rem); margin: 6px 0 10px; }
+.ar-copy p { color: #D7DDF7; max-width: 440px; line-height: 1.55; }
+.ar-controls { grid-area: ctrl; display: grid; gap: 10px; justify-items: start; }
+.ar-play { font-size: 1.15rem; padding: 16px 30px; border-radius: 18px; box-shadow: 0 10px 0 #C9951B, 0 18px 30px rgba(0,0,0,.35); transition: transform .12s, box-shadow .12s; animation: ar-pulse 2.4s ease-in-out infinite; }
+.ar-play:active { transform: translateY(6px); box-shadow: 0 4px 0 #C9951B, 0 8px 16px rgba(0,0,0,.3); }
+@keyframes ar-pulse { 50% { filter: brightness(1.08); } }
+.ar-vs { grid-area: vs; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.ar-fighter { position: relative; display: grid; justify-items: center; gap: 4px; padding: 10px 6px; background: none; border: 0; color: #fff; font: inherit; cursor: default; }
+button.ar-fighter { cursor: pointer; }
+.ar-fighter .char { position: relative; z-index: 1; animation: ar-bounce 1.6s ease-in-out infinite; filter: drop-shadow(0 14px 10px rgba(0,0,0,.45)); }
+.ar-fighter.them .char { animation-delay: -.8s; transform: scaleX(-1); }
+.ar-fighter.them .char { animation-name: ar-bounce-flip; }
+.ar-fighter b { font: 700 1rem var(--display); position: relative; z-index: 1; }
+.ar-fighter em { font-style: normal; font-size: .78rem; color: #B9C1E6; position: relative; z-index: 1; }
+button.ar-fighter:hover em { color: var(--sun); }
+.ar-ring { position: absolute; top: 18px; width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c) 55%, transparent), transparent 68%); animation: ar-glow 2.4s ease-in-out infinite; }
+.ar-q { display: grid; place-items: center; width: 128px; height: 128px; font: 800 4rem var(--display); color: rgba(255,255,255,.85); position: relative; z-index: 1; animation: ar-bounce 1.6s ease-in-out infinite -.8s; }
+.ar-vs-badge { font: 900 clamp(1.6rem, 1rem + 2vw, 2.6rem) var(--display); color: var(--sun); text-shadow: 0 0 18px rgba(255,203,61,.6), 0 4px 0 #C9951B; animation: ar-vs 1.2s ease-in-out infinite; }
+@keyframes ar-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@keyframes ar-bounce-flip { 0%, 100% { transform: scaleX(-1) translateY(0); } 50% { transform: scaleX(-1) translateY(-12px); } }
+@keyframes ar-glow { 50% { transform: scale(1.12); opacity: .8; } }
+@keyframes ar-vs { 50% { transform: scale(1.15) rotate(-6deg); } }
+.ar-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0; }
+.ar-tile { display: flex; gap: 14px; align-items: center; padding: 16px 18px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); text-align: left; color: inherit; font: inherit; transition: transform .15s, border-color .15s; }
+.ar-tile.host { cursor: pointer; } .ar-tile.host:hover, .ar-tile.host.on { border-color: var(--primary); transform: translateY(-2px); }
+.ar-tile b { display: block; font: 700 1.05rem var(--display); }
+.ar-tile small { color: var(--muted); }
+.ar-tile-ic { flex: none; width: 70px; height: 70px; display: grid; place-items: center; border-radius: 20px; }
+.ar-tile-ic.join { background: var(--warn-soft); } .ar-tile-ic.hostc { background: var(--primary-soft); }
+.ar-code { display: flex; gap: 8px; margin-top: 8px; }
+.ar-code input { width: 180px; font: 800 1.05rem var(--display); letter-spacing: .18em; padding-left: 8px; padding-right: 8px; text-align: center; border-radius: 12px; }
+.ar-host { display: grid; gap: 16px; scroll-margin-top: 80px; }
+.ar-steps { display: flex; gap: 8px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap; }
+.ar-steps button { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: 700 .9rem var(--font); }
+.ar-steps span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--surface-2); font-size: .8rem; }
+.ar-steps li.on button { color: var(--ink); border-color: var(--primary); } .ar-steps li.on span { background: var(--primary); color: #fff; }
+.ar-steps li.done span { background: var(--good-soft); color: var(--good); }
+.ar-worlds { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.ar-world { position: relative; display: grid; gap: 4px; padding: 0 0 12px; border-radius: 18px; overflow: hidden; border: 2px solid var(--line); background: var(--surface); text-align: left; color: inherit; font: inherit; cursor: pointer; transition: transform .15s, border-color .15s; }
+.ar-world:hover { transform: translateY(-3px); } .ar-world.on { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft); }
+.ar-world.locked { opacity: .75; }
+.ar-world b, .ar-world small { padding: 0 12px; } .ar-world small { color: var(--muted); font-size: .8rem; }
+.ar-world .vip { position: absolute; top: 8px; right: 8px; z-index: 3; }
+.ar-world-scene { position: relative; display: block; height: 96px; overflow: hidden; margin-bottom: 6px; }
+.ar-world-scene i { position: absolute; display: block; }
+.ar-world-runner { position: absolute; bottom: 6px; left: 8%; animation: ar-run-across 4.5s linear infinite; }
+.ar-world-runner .char { animation: zt-run .35s ease-in-out infinite alternate; filter: drop-shadow(0 4px 3px rgba(0,0,0,.35)); }
+@keyframes ar-run-across { from { left: -14%; } to { left: 104%; } }
+.w-classic .ar-world-scene { background: linear-gradient(135deg, #2A55E5, #161B3D); }
+.w-classic .ar-world-runner { left: 50%; transform: translateX(-50%); animation: ar-bounce 1.4s ease-in-out infinite; }
+.w-classic .ar-world-scene i { width: 8px; height: 8px; border-radius: 2px; background: #FFCB3D; top: -10px; animation: ar-confetti 2.6s linear infinite; }
+.w-classic .ar-world-scene i:nth-child(1) { left: 20%; } .w-classic .ar-world-scene i:nth-child(2) { left: 55%; background: #3CCB9A; animation-delay: -.9s; } .w-classic .ar-world-scene i:nth-child(3) { left: 82%; background: #F28B6E; animation-delay: -1.7s; }
+@keyframes ar-confetti { to { transform: translateY(120px) rotate(360deg); } }
+.w-race .ar-world-scene { background: linear-gradient(#7CC4F5 0 38%, #3FA34D 38%); }
+.w-race .ar-world-scene::after { content: ''; position: absolute; left: 0; right: 0; bottom: 4px; height: 26px; background: #C9653A repeating-linear-gradient(90deg, rgba(255,255,255,.6) 0 18px, transparent 18px 36px) center / 100% 2px no-repeat; animation: ar-road .6s linear infinite; }
+@keyframes ar-road { to { background-position: -36px center; } }
+.w-race .ar-world-scene i { top: 8px; width: 44px; height: 14px; border-radius: 10px; background: #fff; opacity: .9; animation: ar-cloud 9s linear infinite; }
+.w-race .ar-world-scene i:nth-child(2) { top: 20px; width: 30px; animation-delay: -4s; } .w-race .ar-world-scene i:nth-child(3) { display: none; }
+@keyframes ar-cloud { from { left: 110%; } to { left: -30%; } }
+.w-race .ar-world-runner, .w-jungle .ar-world-runner { z-index: 2; }
+.w-space .ar-world-scene { background: radial-gradient(1px 1px at 15% 30%, #fff 50%, transparent), radial-gradient(1.5px 1.5px at 45% 70%, #fff 50%, transparent), radial-gradient(1px 1px at 80% 20%, #fff 50%, transparent), linear-gradient(120deg, #0B0F35, #2A1060); }
+.w-space .ar-world-scene i:nth-child(1) { right: 10px; top: 10px; width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #F4F1E8, #9C9686); box-shadow: 0 0 18px rgba(255,255,255,.4); }
+.w-space .ar-world-scene i:nth-child(2) { top: 18px; left: -20%; width: 60px; height: 2px; background: linear-gradient(90deg, transparent, #fff); animation: ar-shoot 3.2s ease-in infinite; }
+.w-space .ar-world-scene i:nth-child(3) { left: 30%; bottom: -24px; width: 70px; height: 70px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFB27A, #E2553D); opacity: .7; }
+.w-space .ar-world-runner { bottom: 20px; animation: ar-run-across 5s linear infinite, ar-float 1.6s ease-in-out infinite; }
+@keyframes ar-shoot { 0%, 60% { transform: translate(0, 0); opacity: 0; } 70% { opacity: 1; } 100% { transform: translate(260px, 60px); opacity: 0; } }
+@keyframes ar-float { 50% { margin-bottom: 10px; } }
+.w-ocean .ar-world-scene { background: linear-gradient(#2E9BEA, #0D4FA3); }
+.w-ocean .ar-world-scene::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(100deg, rgba(255,255,255,.08) 0 10px, transparent 10px 40px); animation: ar-rays 6s linear infinite; }
+@keyframes ar-rays { to { background-position: 80px 0; } }
+.w-ocean .ar-world-scene i { bottom: -10px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid rgba(255,255,255,.6); animation: zt-bubble 3.5s linear infinite; }
+.w-ocean .ar-world-scene i:nth-child(1) { left: 25%; } .w-ocean .ar-world-scene i:nth-child(2) { left: 60%; animation-delay: -1.2s; } .w-ocean .ar-world-scene i:nth-child(3) { left: 85%; animation-delay: -2.4s; width: 6px; height: 6px; }
+.w-ocean .ar-world-runner { bottom: 22px; animation: ar-run-across 6s linear infinite, ar-float 2s ease-in-out infinite; }
+.w-jungle .ar-world-scene { background: radial-gradient(ellipse at 10% 0%, #66BB6A, transparent 50%), radial-gradient(ellipse at 90% 0%, #43A047, transparent 50%), linear-gradient(#2E7D32, #1B5E20); }
+.w-jungle .ar-world-scene::after { content: ''; position: absolute; left: 0; right: 0; bottom: 4px; height: 20px; background: #6D4C2F; box-shadow: inset 0 3px 0 #82603F; }
+.w-jungle .ar-world-scene i { top: -6px; width: 3px; height: 54px; background: #81C784; border-radius: 3px; transform-origin: top; animation: zt-vine 2.6s ease-in-out infinite alternate; }
+.w-jungle .ar-world-scene i:nth-child(1) { left: 20%; } .w-jungle .ar-world-scene i:nth-child(2) { left: 52%; height: 40px; animation-delay: -1s; } .w-jungle .ar-world-scene i:nth-child(3) { left: 78%; height: 62px; animation-delay: -1.8s; }
+.ar-summary { padding: 10px 14px; border-radius: 12px; background: var(--surface-2); font-weight: 600; }
+.ar-heroes-set { margin-bottom: 14px; }
+.ar-heroes { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 6px; }
+.ar-hero { display: grid; justify-items: center; gap: 4px; padding: 10px 6px; border-radius: 16px; border: 2px solid var(--line); background: var(--surface); color: inherit; font: 600 .78rem var(--font); cursor: pointer; transition: transform .15s; }
+.ar-hero:hover { transform: translateY(-3px); } .ar-hero.on { border-color: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 25%, transparent); }
+.ar-hero.r-legendary { background: linear-gradient(160deg, rgba(255,203,61,.18), var(--surface)); }
+@media (max-width: 860px) {
+  .ar-stage { grid-template-columns: 1fr; grid-template-areas: 'copy' 'vs' 'ctrl'; text-align: center; }
+  .ar-copy p { margin: 0 auto; } .ar-controls { justify-items: center; } .ar-controls .chips { justify-content: center; }
+  .ar-tiles { grid-template-columns: 1fr; }
+  .ar-fighter .char, .ar-q { width: 96px !important; height: 96px !important; } .ar-ring { width: 116px; height: 116px; }
+}
+@media (prefers-reduced-motion: reduce) { .ar-stage *, .ar-world * { animation: none !important; } }
+
+/* zone tracks during the game: more life in every world */
+.zt-race { background: repeating-linear-gradient(90deg, #3FA34D 0 40px, #379445 40px 80px); animation: ar-grass 1.4s linear infinite; }
+@keyframes ar-grass { to { background-position: -80px 0; } }
+.zt-race .zt-road::after { animation: ar-dash .5s linear infinite; background: none; }
+@keyframes ar-dash { to { transform: translateX(-12px); } }
+.zt-space .zt-scenery i:nth-child(3) { left: -10%; top: 20%; width: 80px; height: 2px; background: linear-gradient(90deg, transparent, #fff); animation: ar-shoot 4s ease-in infinite; }
+.zt-space .zt-scenery i:nth-child(4), .zt-space .zt-scenery i:nth-child(5) { width: 3px; height: 3px; border-radius: 50%; background: #fff; animation: ar-twinkle 1.8s ease-in-out infinite; }
+.zt-space .zt-scenery i:nth-child(4) { left: 40%; top: 15%; } .zt-space .zt-scenery i:nth-child(5) { left: 70%; top: 60%; animation-delay: -.9s; }
+@keyframes ar-twinkle { 50% { opacity: .2; transform: scale(.6); } }
+.zt-runner .char { animation: zt-run .32s ease-in-out infinite alternate; }
+.zt-runner::after { content: ''; position: absolute; bottom: -2px; left: 50%; width: 60%; height: 6px; transform: translateX(-50%); border-radius: 50%; background: rgba(0,0,0,.25); filter: blur(2px); }
