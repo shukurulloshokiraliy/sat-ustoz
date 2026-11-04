@@ -408,6 +408,8 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     await db.run('UPDATE qbank_questions SET active = ?, premium = ?, answer = ?, explanation = ?, edited = edited OR ? WHERE id = ?', [
       'active' in b ? !!b.active : q.active, 'premium' in b ? !!b.premium : q.premium, answer,
       b.explanation != null ? String(b.explanation).slice(0, 4000) : q.explanation, fixed, q.id]);
+    // a fixed key re-grades every answer already given to this question
+    if (answer !== q.answer) await db.run('UPDATE qbank_answers SET correct = (choice = ?) WHERE question_id = ?', [answer, q.id]);
     res.json({ ok: true });
   }));
   app.delete('/api/qbank/admin/:id', requireMaster, h(async (req, res) => {

@@ -24,6 +24,7 @@ import { migrateGifs, registerGifs } from './gifs.js';
 import { migrateFinance, registerFinance } from './finance.js';
 import { migrateAssignments, registerAssignments, assignedQuizOpen } from './assignments.js';
 import { migrateReserved, registerReserved, scanReserved, scanSoon } from './reserved.js';
+import { registerProgress } from './progress.js';
 import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails, moveBalance } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
@@ -293,6 +294,7 @@ registerGifs(app, { h, bad, requireMaster });
 registerFinance(app, { h, bad, requireMaster });
 registerAssignments(app, { h, bad, requireMaster, requireStudent, roadmapFor });
 registerReserved(app, { h, bad, requireMaster });
+registerProgress(app, { h, bad, requireMaster, roadmapFor, userAnalytics });
 
 app.get('/api/me', h(async (req, res) => res.json(await mepayload(req.user))));
 app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));

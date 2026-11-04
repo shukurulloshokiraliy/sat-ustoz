@@ -4,6 +4,7 @@ import ActivityTracker from './components/ActivityTracker.jsx';
 import MockResult from './pages/mock/MockResult.jsx';
 import Leaderboard from './pages/student/Leaderboard.jsx';
 import Finance from './pages/master/Finance.jsx';
+import Progress from './pages/master/Progress.jsx';
 import Assignments from './pages/student/Assignments.jsx';
 import FullMocks from './pages/fullmock/FullMocks.jsx';
 import FullMockTaker from './pages/fullmock/FullMockTaker.jsx';
@@ -114,6 +115,7 @@ export default function App() {
             <Route path="consultations" element={<ConsultationsAdmin />} />
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="finance" element={<Finance />} />
+            <Route path="progress" element={<Progress />} />
             <Route path="assignments" element={<Assignments />} />
             <Route path="website" element={<Website />} />
             <Route path="support" element={<Support />} />
