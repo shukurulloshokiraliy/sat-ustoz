@@ -79,10 +79,10 @@ export default function Login() {
             <input autoFocus type={mode === 'signup' ? 'email' : 'text'} autoComplete={mode === 'signup' ? 'email' : 'username'} autoCapitalize="none" value={form.login} onChange={set('login')} required /></label>
           <label className="field"><span>Password</span>
             <div className="pw-wrap">
-              <input type={showPw ? 'text' : 'password'} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={form.password} onChange={set('password')} required minLength={mode === 'signup' ? 6 : undefined} />
+              <input type={showPw ? 'text' : 'password'} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={form.password} onChange={set('password')} required minLength={mode === 'signup' ? 8 : undefined} />
               <button type="button" className="pw-eye" onClick={() => setShowPw(!showPw)} aria-label={showPw ? 'Hide password' : 'Show password'}>{showPw ? 'Hide' : 'Show'}</button>
             </div>
-            {mode === 'signup' && <small className="muted">At least 6 characters — 6 digits are fine too</small>}</label>
+            {mode === 'signup' && <small className="muted">At least 8 characters. Not 12345678, your name or your email.</small>}</label>
           {mode === 'signup' && (
             <label className="field"><span>Repeat password</span>
               <input type={showPw ? 'text' : 'password'} autoComplete="new-password" value={form.password2} onChange={set('password2')} required />

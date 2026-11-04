@@ -45,6 +45,8 @@ ALTER TABLE tg_state ENABLE ROW LEVEL SECURITY;
 const getKey = async (k) => (await db.one('SELECT value FROM settings WHERE key = ?', [k]))?.value || '';
 const setKey = (k, v) => db.run('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value', [k, String(v ?? '')]);
 const admins = async () => { try { return JSON.parse((await getKey('_tg_admins')) || '[]'); } catch { return []; } };
+/** Security alerts to the teacher's Telegram (never throws). */
+export async function notifyAdmins(text) { try { for (const a of await admins()) await send(a, text); } catch { /* bot not connected */ } }
 
 async function tg(method, body, token) {
   token ||= await getKey('_tg_token');

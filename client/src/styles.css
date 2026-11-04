@@ -1922,3 +1922,4 @@ em.hi, .sr-bars i.hi { background: #1E8E4E; } em.mid, .sr-bars i.mid { backgroun
 .wallet-bal { align-self: center; display: grid; z-index: 1; } .wallet-bal small { font-size: .66rem; text-transform: uppercase; letter-spacing: .1em; opacity: .7; } .wallet-bal span { font: 800 1.8rem var(--display); color: #FFCB3D; }
 .mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: .04em; text-transform: none !important; }
 .warn-text { color: var(--warn); font-weight: 600; font-size: .88rem; }
+.bad-row td { color: var(--bad); }

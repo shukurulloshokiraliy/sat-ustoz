@@ -132,6 +132,8 @@ export function registerTiers(app, { h, bad, requireMaster, requireStudent }) {
     if (!u) return bad(res, 'Not found', 404);
     const after = await db.tx((t) => moveBalance(t, u.id, amount, amount > 0 ? 'top_up' : 'correction', { note: req.body?.note || '', by: req.user.id }));
     if (after == null) return bad(res, 'The balance cannot go below zero');
+    const { audit } = await import('./security.js');
+    await audit(req, 'balance_changed', `student ${u.id}`, `${amount > 0 ? '+' : ''}${amount} → ${after}${req.body?.note ? ` · ${req.body.note}` : ''}`);
     res.json({ balance: after });
   }));
   app.get('/api/students/:id/balance', requireMaster, h(async (req, res) => {

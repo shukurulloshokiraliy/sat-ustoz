@@ -1,6 +1,6 @@
 import { SatDateSelect } from '../components/ExamDate.jsx';
 import { useRef, useState } from 'react';
-import { api } from '../api.js';
+import { api, setToken } from '../api.js';
 import { useAuth, useToast } from '../context.jsx';
 import { Avatar, Card, Field, PageHeader } from '../components/ui.jsx';
 
@@ -17,7 +17,10 @@ export default function Profile() {
   };
   const savePw = async (e) => {
     e.preventDefault();
-    try { await api.put('/me/password', pw); setPw({ current: '', next: '' }); toast("Password saved"); refresh?.(); } catch (ex) { toast(ex.message, 'err'); }
+    try { const r = await api.put('/me/password', pw); if (r.token) setToken(r.token); setPw({ current: '', next: '' }); toast('Password saved. Other devices were signed out.'); refresh?.(); } catch (ex) { toast(ex.message, 'err'); }
+  };
+  const logoutAll = async () => {
+    try { const r = await api.post('/me/logout-all'); setToken(r.token); toast('Signed out on every other device'); } catch (ex) { toast(ex.message, 'err'); }
   };
 
   return (
@@ -46,8 +49,10 @@ export default function Profile() {
             <h2>{user.has_password ? 'Change password' : 'Set a password'}</h2>
             {!user.has_password && <p className="muted" style={{ fontSize: '.88rem' }}>You signed in with Google. Add a password to also sign in with your email ({user.email}).</p>}
             {user.has_password && <Field label={"Current password"}><input type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} required /></Field>}
-            <Field label={"New password"} hint={"At least 6 characters"}><input type="password" autoComplete="new-password" minLength={6} value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} required /></Field>
-            <div><button className="btn ghost">{"Update password"}</button></div>
+            <Field label={"New password"} hint={"At least 8 characters, not 12345678 or your name"}><input type="password" autoComplete="new-password" minLength={8} value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} required /></Field>
+            <div className="row wrap" style={{ gap: 8 }}><button className="btn ghost">{"Update password"}</button>
+              <button type="button" className="btn danger-ghost" onClick={logoutAll}>Sign out everywhere</button></div>
+            <small className="muted">Lost a phone or used a shared computer? “Sign out everywhere” ends every other session at once.</small>
           </form>
         </Card>
       </div>

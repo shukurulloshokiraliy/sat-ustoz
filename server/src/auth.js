@@ -25,13 +25,13 @@ export async function initSecret() {
 
 export const getSecret = () => SECRET;
 
-export const signToken = (user) => jwt.sign({ id: user.id, role: user.role }, SECRET, { expiresIn: '30d' });
+export const signToken = (user) => jwt.sign({ id: user.id, role: user.role, v: Number(user.token_version || 0) }, SECRET, { expiresIn: '30d', algorithm: 'HS256' });
 
 export const subActive = (u) => !!(u?.sub_until && new Date(u.sub_until) > new Date());
 
 export function publicUser(u) {
   if (!u) return null;
-  const { password_hash, ...rest } = u;
+  const { password_hash, token_version, ...rest } = u;
   return { ...rest, has_password: !!password_hash, sub_active: subActive(u) };
 }
 
@@ -41,13 +41,16 @@ export async function requireAuth(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Please sign in' });
   let p;
   try {
-    p = jwt.verify(token, SECRET);
+    p = jwt.verify(token, SECRET, { algorithms: ['HS256'] });
   } catch {
     return res.status(401).json({ error: 'Session expired — please sign in again' });
   }
   try {
     const user = await db.one('SELECT * FROM users WHERE id = ?', [p.id]);
     if (!user) return res.status(401).json({ error: 'Account not found' });
+    // sessions end everywhere when the password changes or "Sign out everywhere" is used
+    if (Number(p.v || 0) !== Number(user.token_version || 0)) return res.status(401).json({ error: 'Session expired — please sign in again' });
+    if (p.role !== user.role) return res.status(401).json({ error: 'Session expired — please sign in again' });
     req.user = user;
     next();
   } catch (e) {

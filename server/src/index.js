@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { corsOptions, securityHeaders, rateLimit, migrateSecurity, audit, weakPassword, clientIp } from './security.js';
 import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
@@ -7,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db, migrate, getSettings, setSettings, DB_KIND } from './db.js';
+import { notifyAdmins } from './tgbot.js';
 import { initSecret, signToken, publicUser, requireAuth, requireMaster, requireStudent, subActive, verifyGoogleCredential } from './auth.js';
 import { parseUpload, buildTemplate, DEFAULT_PROMPT } from './parse.js';
 import { userAnalytics, estimateScore } from './analytics.js';
@@ -32,8 +34,15 @@ const h = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(
 const bad = (res, msg, code = 400, extra = {}) => res.status(code).json({ error: msg, ...extra });
 class HttpError extends Error { constructor(msg, status = 400) { super(msg); this.status = status; } }
 
-app.use(cors());
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+app.use(securityHeaders);
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '5mb' }));
+// floods and scripted guessing: a general cap per IP, a tight one on sign-in / sign-up
+app.use('/api', rateLimit({ windowMs: 60e3, max: 600 }));
+app.use(['/api/auth/login', '/api/auth/register', '/api/auth/google'], rateLimit({ windowMs: 10 * 60e3, max: 40, message: 'Too many sign-in attempts from this network. Wait 10 minutes.' }));
+app.use(['/api/me/password', '/api/plans/buy', '/api/full-mocks', '/api/students'], rateLimit({ windowMs: 60e3, max: 120 }));
 
 /** Fingerprint of the bundled content: when it has not changed, start-up skips the content sync (fast cold starts on Vercel). */
 function contentHash() {
@@ -58,6 +67,7 @@ await migrateVocab();
 await migrateQbankMocks();
 await migrateFullMocks();
 await migrateTiers();
+await migrateSecurity();
 await db.exec(`
 CREATE TABLE IF NOT EXISTS user_activity (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, day DATE NOT NULL, section TEXT NOT NULL,
@@ -182,9 +192,15 @@ app.post('/api/auth/login', h(async (req, res) => {
   const u = id && (await db.one('SELECT * FROM users WHERE login = ? OR email = ?', [id, id]));
   if (!u || !u.password_hash || !bcrypt.compareSync(String(password || ''), u.password_hash)) {
     if (id && u?.password_hash) await noteFail(failKey);
+    if (u?.role === 'master') { await audit(req, 'login_failed', `teacher ${u.id}`); notifyAdmins(`⚠️ Teacher sign-in failed (wrong password). IP: ${clientIp(req)}`); }
     return bad(res, u && !u.password_hash ? 'This account uses Google — tap “Continue with Google”' : 'Incorrect login or password', 401);
   }
   await clearFails(failKey);
+  if (u.role === 'master') {
+    const seen = await db.one("SELECT 1 AS x FROM audit_log WHERE action = 'login' AND actor_id = ? AND ip = ? LIMIT 1", [u.id, clientIp(req)]);
+    await audit({ ...req, user: u }, 'login', `teacher ${u.id}`);
+    if (!seen) notifyAdmins(`🔐 Teacher account signed in from a new network. IP: ${clientIp(req)}. If this was not you, change the password and press “Sign out everywhere”.`);
+  }
   await db.run('UPDATE users SET last_login_at = now(), terms_accepted_at = COALESCE(terms_accepted_at, now()) WHERE id = ?', [u.id]);
   res.json({ token: signToken(u) });
 }));
@@ -196,8 +212,8 @@ app.post('/api/auth/register', h(async (req, res) => {
   if (req.body?.accept_terms !== true) return bad(res, TERMS_MSG);
   if (name.split(/\s+/).filter((w) => w.length >= 2).length < 2) return bad(res, 'Please enter your real first and last name (e.g. Aziz Karimov)');
   if (!EMAIL_RE.test(email)) return bad(res, 'Please enter a valid email');
-  if (password.length < 6) return bad(res, 'Password must be at least 6 characters (numbers are fine, e.g. 6 digits)');
-  if (password.length > 100) return bad(res, 'Password is too long');
+  const weak = weakPassword(password, { name, email });
+  if (weak) return bad(res, weak);
   if (await emailTaken(email)) return bad(res, 'An account with this email already exists — sign in instead (or use “Continue with Google”)', 409);
   // hosted without MASTER_PASSWORD: the owner's email (MASTER_EMAIL) becomes the teacher on first sign-up
   const owner = process.env.MASTER_EMAIL && email === process.env.MASTER_EMAIL.trim().toLowerCase()
@@ -205,7 +221,7 @@ app.post('/api/auth/register', h(async (req, res) => {
   const role = owner ? 'master' : 'student';
   const r = await db.run(
     "INSERT INTO users (name, login, email, password_hash, role, provider, last_login_at, terms_accepted_at) VALUES (?,?,?,?,?,?, now(), now()) RETURNING id",
-    [name, email, email, bcrypt.hashSync(password, 10), role, owner ? 'teacher' : 'email']
+    [name, email, email, bcrypt.hashSync(password, 12), role, owner ? 'teacher' : 'email']
   );
   res.json({ token: signToken({ id: r.id, role }) });
 }));
@@ -317,9 +333,20 @@ app.delete('/api/me/avatar', h(async (req, res) => {
 app.put('/api/me/password', h(async (req, res) => {
   const { current, next } = req.body || {};
   if (req.user.password_hash && !bcrypt.compareSync(String(current || ''), req.user.password_hash)) return bad(res, 'Current password is incorrect');
-  if (String(next || '').length < 6) return bad(res, 'New password must be at least 6 characters');
-  await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [bcrypt.hashSync(next, 10), req.user.id]);
-  res.json({ ok: true });
+  const weak = weakPassword(next, { name: req.user.name, email: req.user.email });
+  if (weak) return bad(res, weak);
+  // a new password ends every other session
+  const u = await db.one('UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ? RETURNING id, role, token_version', [bcrypt.hashSync(String(next), 12), req.user.id]);
+  await audit(req, 'password_changed', `user ${req.user.id}`);
+  res.json({ ok: true, token: signToken(u) });
+}));
+app.post('/api/me/logout-all', h(async (req, res) => {
+  const u = await db.one('UPDATE users SET token_version = token_version + 1 WHERE id = ? RETURNING id, role, token_version', [req.user.id]);
+  await audit(req, 'logout_all', `user ${req.user.id}`);
+  res.json({ token: signToken(u) });
+}));
+app.get('/api/audit', requireMaster, h(async (req, res) => {
+  res.json(await db.all('SELECT id, actor, action, target, detail, ip, at FROM audit_log ORDER BY id DESC LIMIT 100'));
 }));
 
 // ---------- settings (teacher) ----------
@@ -353,6 +380,7 @@ app.put('/api/settings', requireMaster, h(async (req, res) => {
   for (const k of ['fm_free', 'fm_month', 'fm_quarter']) if (k in b) patch[k] = String(Math.max(0, Math.min(99, Math.round(+b[k] || 0))));
   if ('telegram_bot' in b) patch.telegram_bot = String(b.telegram_bot || '').trim().replace(/^@/, '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 64);
   const out = await setSettings(patch);
+  await audit(req, 'settings_changed', '', Object.keys(patch).join(', '));
   res.json({ ...out, bunny_api_key: out.bunny_api_key ? `••••${out.bunny_api_key.slice(-4)}` : '', bunny_token_key: out.bunny_token_key ? `••••${out.bunny_token_key.slice(-4)}` : '' });
 }));
 
@@ -483,7 +511,7 @@ app.post('/api/students', requireMaster, h(async (req, res) => {
   if (await db.one('SELECT 1 AS x FROM users WHERE login = ? OR email = ?', [lg, lg])) return bad(res, 'This login is already taken');
   const pw = String(password || '').trim() || genPassword();
   const r = await db.run("INSERT INTO users (name, login, password_hash, role, provider, group_id) VALUES (?,?,?,'student','teacher',?) RETURNING id",
-    [nm, lg, bcrypt.hashSync(pw, 10), group_id || null]);
+    [nm, lg, bcrypt.hashSync(pw, 12), group_id || null]);
   res.json({ id: r.id, name: nm, login: lg, password: pw });
 }));
 app.put('/api/students/:id', requireMaster, h(async (req, res) => {
@@ -499,13 +527,17 @@ app.put('/api/students/:id', requireMaster, h(async (req, res) => {
 }));
 app.post('/api/students/:id/reset-password', requireMaster, h(async (req, res) => {
   const pw = String(req.body?.password || '').trim() || genPassword();
-  const r = await db.run("UPDATE users SET password_hash = ? WHERE id = ? AND role = 'student'", [bcrypt.hashSync(pw, 10), req.params.id]);
+  if (req.body?.password) { const weak = weakPassword(pw); if (weak) return bad(res, weak); }
+  const r = await db.run("UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ? AND role = 'student'", [bcrypt.hashSync(pw, 12), req.params.id]);
   if (!r.rowCount) return bad(res, 'Not found', 404);
+  await audit(req, 'student_password_reset', `student ${req.params.id}`);
   const u = await db.one('SELECT login FROM users WHERE id = ?', [req.params.id]);
   res.json({ password: pw, login: u.login });
 }));
 app.delete('/api/students/:id', requireMaster, h(async (req, res) => {
+  const st = await db.one("SELECT name, email, login, balance FROM users WHERE id = ? AND role = 'student'", [req.params.id]);
   await db.run("DELETE FROM users WHERE id = ? AND role = 'student'", [req.params.id]);
+  if (st) await audit(req, 'student_deleted', `student ${req.params.id}`, `${st.name} <${st.email || st.login}> balance ${st.balance}`);
   res.json({ ok: true });
 }));
 app.get('/api/students/:id/analytics', requireMaster, h(async (req, res) => {
@@ -528,10 +560,12 @@ app.post('/api/students/:id/subscription', requireMaster, h(async (req, res) => 
     await t.run("INSERT INTO payments (user_id, provider, plan, days, amount, currency, note, created_by) VALUES (?, 'manual', ?, ?, ?, ?, ?, ?)",
       [s.id, plan, days, amount, settings.currency, String(req.body?.note || '').slice(0, 300), req.user.id]);
   });
+  await audit(req, 'subscription_granted', `student ${s.id}`, `${plan} · ${days} days · ${amount}`);
   res.json({ sub_until: until, sub_active: true });
 }));
 app.delete('/api/students/:id/subscription', requireMaster, h(async (req, res) => {
   await db.run("UPDATE users SET sub_until = NULL WHERE id = ? AND role = 'student'", [req.params.id]);
+  await audit(req, 'subscription_cancelled', `student ${req.params.id}`);
   res.json({ ok: true });
 }));
 

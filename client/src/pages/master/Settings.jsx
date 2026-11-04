@@ -108,6 +108,7 @@ function Form({ init }) {
         </div>
       </Card>
       <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn primary lg" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save settings'}</button></div>
+      <SecurityLog />
       <TelegramCard />
       <RequestsCard />
       <PlacementCard />
@@ -249,6 +250,27 @@ function RequestsCard() {
           ))}
         </div>
       )}</Gate>
+    </Card>
+  );
+}
+
+const ACTIONS = { login: 'Teacher signed in', login_failed: 'Teacher sign-in failed', password_changed: 'Password changed', logout_all: 'Signed out everywhere',
+  settings_changed: 'Settings changed', subscription_granted: 'Plan activated', subscription_cancelled: 'Plan cancelled', balance_changed: 'Wallet changed',
+  student_deleted: 'Student deleted', student_password_reset: 'Student password reset' };
+/** Security log: every sensitive action with who, when and from which IP. */
+function SecurityLog() {
+  const st = useAsync(() => api.get('/audit'), []);
+  return (
+    <Card className="stack">
+      <h2>Security log</h2>
+      <small className="muted">Sign-ins to the teacher account, settings, plans, wallet changes and deletions. A sign-in from a new network also goes to your Telegram.</small>
+      <Gate state={st}>{(rows) => (!rows.length ? <p className="muted">Nothing yet.</p> : (
+        <div className="table-wrap"><table className="t">
+          <thead><tr><th>When</th><th>What</th><th>Who</th><th>Details</th><th>IP</th></tr></thead>
+          <tbody>{rows.slice(0, 50).map((r) => <tr key={r.id} className={r.action === 'login_failed' ? 'bad-row' : ''}><td className="nowrap">{new Date(r.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+            <td>{ACTIONS[r.action] || r.action}</td><td>{r.actor || '—'}</td><td className="muted">{[r.target, r.detail].filter(Boolean).join(' · ')}</td><td className="nowrap muted">{r.ip}</td></tr>)}</tbody>
+        </table></div>
+      ))}</Gate>
     </Card>
   );
 }
