@@ -2375,3 +2375,33 @@ mark.w-hl { background: color-mix(in srgb, var(--sun) 38%, transparent); color: 
 .v-pic { display: block; width: 100%; max-height: 180px; object-fit: cover; border-radius: 14px; margin: 8px 0 4px; background: var(--surface-2); }
 .v-gif { margin-top: 10px; }
 .v-gif .gif-slot.compact { max-width: 100%; } .v-gif .gif-slot.compact img { max-height: 160px; }
+
+/* ---------- assignments ---------- */
+.as-wrap { display: grid; gap: 22px; }
+.as-h { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 0 0 10px; }
+.as-list { display: grid; gap: 10px; }
+.as-card { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+.as-card .grow { min-width: 0; }
+.as-card h3 { margin: 2px 0 6px; font-size: 1rem; }
+.as-ic { width: 42px; height: 42px; flex: none; border-radius: 13px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); }
+.as-card.passed .as-ic { background: var(--good-soft); color: var(--good); }
+.as-card.retake .as-ic, .as-card.in_progress .as-ic { background: var(--warn-soft); color: #B7791F; }
+.as-card.locked { opacity: .62; } .as-card.locked .as-ic { background: var(--surface-2); color: var(--muted); }
+.as-card.overdue { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+.as-src { color: var(--muted); font-size: .75rem; font-weight: 600; }
+.as-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: .8125rem; color: var(--muted); }
+.as-meta > span { display: inline-flex; align-items: center; gap: 4px; }
+.as-note { margin: 6px 0 0; font-size: .84rem; }
+.as-people { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.as-person { display: grid; padding: 6px 10px; border-radius: 10px; background: var(--surface-2); font-size: .8rem; color: var(--ink); }
+.as-person span { color: var(--muted); font-size: .74rem; } .as-person.passed { background: var(--good-soft); }
+.as-pick { display: grid; gap: 8px; }
+.as-pick-list { max-height: 260px; overflow-y: auto; display: grid; gap: 4px; border: 1px solid var(--line); border-radius: 14px; padding: 6px; }
+.as-pick-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; cursor: pointer; }
+.as-pick-row:hover { background: var(--surface-2); } .as-pick-row.on { background: var(--primary-soft); }
+.as-pick-row span { display: grid; } .as-pick-row small { color: var(--muted); font-size: .76rem; }
+.as-pick-row input { width: 18px; height: 18px; }
+@media (max-width: 640px) {
+  .as-card { flex-wrap: wrap; padding: 14px; gap: 10px; } .as-card > .btn { width: 100%; justify-content: center; }
+  .as-ic { width: 36px; height: 36px; }
+}

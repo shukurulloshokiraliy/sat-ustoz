@@ -1,5 +1,6 @@
 import { setSound, soundOn } from './uiSound.js';
 import { useEffect, useState } from 'react';
+import { api } from '../api.js';
 import { useReveal } from './reveal.js';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth, useTheme } from '../context.jsx';
@@ -7,11 +8,12 @@ import { Avatar } from './ui.jsx';
 import SupportChat from './SupportChat.jsx';
 import {
   IconBookmark, IconBriefcase, IconChats, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
-  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconConsult, IconVolume, IconMute, IconWallet } from './icons.jsx';
+  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconConsult, IconVolume, IconMute, IconWallet, IconTask } from './icons.jsx';
 
 const STUDENT_NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, c: '#2A55E5' },
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad, c: '#F28B4E' },
+  { to: '/assignments', label: 'Assignments', icon: IconTask, c: '#0E9F6E' },
   { to: '/vocab', label: 'Vocabulary', icon: IconBook, c: '#E8A93C' },
   { to: '/game', label: 'Word Arena', icon: IconGame, c: '#8E5CF7' },
   { to: '/practice', label: 'Practice', icon: IconBolt, c: '#E2553D', also: ['/question-bank'] },
@@ -42,6 +44,7 @@ const MASTER_NAV = [
   { to: '/students', label: 'Students', icon: IconUsers, c: '#2A55E5' },
   { to: '/groups', label: 'Groups', icon: IconLayers, c: '#12A39A' },
   { to: '/quizzes', label: 'Quizzes', icon: IconQuiz, c: '#12A39A' },
+  { to: '/assignments', label: 'Assignments', icon: IconTask, c: '#0E9F6E' },
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad, c: '#F28B4E' },
   { to: '/question-bank/manage', label: 'Question Bank', icon: IconTarget, c: '#1E8E4E' },
   { to: '/full-mocks', label: 'Full Mocks', icon: IconDoc, c: '#C2410C' },
@@ -68,6 +71,9 @@ export default function Layout() {
   const on = (n) => !!n.also?.some((pfx) => loc.pathname.startsWith(pfx));
   useEffect(() => { setOpen(false); window.scrollTo({ top: 0 }); }, [loc.pathname]);
   const nav = user.role === 'master' ? MASTER_NAV : STUDENT_NAV;
+  // open assignments (new / in progress / retake) as a badge in the menu
+  const [todo, setTodo] = useState(0);
+  useEffect(() => { if (user.role === 'student') api.get('/assignments').then((d) => setTodo(d.open || 0)).catch(() => {}); }, [user.role, loc.pathname]);
 
   return (
     <div className="app">
@@ -81,6 +87,7 @@ export default function Layout() {
         <nav className="nav" aria-label={"Main menu"}>
           {nav.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end} style={{ '--c': n.c || '#2A55E5' }} className={({ isActive }) => (isActive || on(n) ? 'active' : '')}>{({ isActive }) => (<><span className="nav-ic"><n.icon width={19} height={19} weight={isActive || on(n) ? 'fill' : 'duotone'} /></span>{n.label}
+              {n.to === '/assignments' && todo > 0 && <span className="badge-n">{todo}</span>}
               {n.to === '/subscribe' && !user.sub_active && user.access?.subscription_required && <span className="badge-n sun">Get</span>}</>)}</NavLink>
           ))}
         </nav>

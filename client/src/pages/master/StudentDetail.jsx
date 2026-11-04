@@ -8,6 +8,7 @@ import AnalyticsView from '../../components/AnalyticsView.jsx';
 import { PortfolioView } from '../student/Portfolio.jsx';
 import { Credentials, SubscriptionModal } from './Students.jsx';
 import StudentReport from './StudentReport.jsx';
+import { AssignmentList, AssignModal } from '../student/Assignments.jsx';
 import { IconCrown, IconEdit, IconKey, IconTrash } from '../../components/icons.jsx';
 
 const PLAN_NAME = { t1: 'Plan 1', t2: 'Plan 2', t3: 'Plan 3', t4: 'Plan 4', month: 'Old plan', quarter: 'Old plan' };
@@ -76,8 +77,8 @@ export default function StudentDetail() {
               <button className="link-btn" onClick={() => setSub(true)}>{s.sub_active ? 'Extend or cancel' : 'Activate now'} →</button></Card>
             <Balance id={s.id} />
           </div>
-          <Segmented value={tab} onChange={setTab} options={[{ value: 'report', label: 'Full report' }, { value: 'analytics', label: 'Quiz analysis' }, { value: 'portfolio', label: 'Portfolio' }, { value: 'payments', label: 'Payments', count: s.payments.length }]} />
-          {tab === 'report' ? <StudentReport r={rep} /> : tab === 'analytics' ? <AnalyticsView a={a} /> : tab === 'portfolio' ? <PortfolioView data={pf} editable={false} onChange={() => {}} /> : (
+          <Segmented value={tab} onChange={setTab} options={[{ value: 'report', label: 'Full report' }, { value: 'tasks', label: 'Assignments' }, { value: 'analytics', label: 'Quiz analysis' }, { value: 'portfolio', label: 'Portfolio' }, { value: 'payments', label: 'Payments', count: s.payments.length }]} />
+          {tab === 'report' ? <StudentReport r={rep} /> : tab === 'tasks' ? <StudentTasks id={s.id} /> : tab === 'analytics' ? <AnalyticsView a={a} /> : tab === 'portfolio' ? <PortfolioView data={pf} editable={false} onChange={() => {}} /> : (
             <Card>
               {s.payments.length === 0 ? <p className="muted center">No payments yet.</p> : (
                 <div className="table-wrap"><table className="t">
@@ -116,5 +117,20 @@ function EditStudent({ s, groups, onClose, onSaved }) {
       </div>
       {err && <div className="error-box">{err}</div>}
     </Modal>
+  );
+}
+
+/** One student's assignments (roadmap + teacher), and "Assign a quiz" for just this student. */
+function StudentTasks({ id }) {
+  const st = useAsync(() => Promise.all([api.get(`/students/${id}/assignments`), api.get('/quizzes')]), [id]);
+  const [give, setGive] = useState(false);
+  return (
+    <Gate state={st}>{([d, quizzes]) => (
+      <div className="stack">
+        <div><button className="btn primary sm" onClick={() => setGive(true)}>Assign a quiz to this student</button></div>
+        <AssignmentList items={d.items} teacherView />
+        {give && <AssignModal quizzes={quizzes} studentId={id} onClose={() => setGive(false)} onDone={() => { setGive(false); st.reload(); }} />}
+      </div>
+    )}</Gate>
   );
 }

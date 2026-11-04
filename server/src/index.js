@@ -22,6 +22,7 @@ import { registerFullMocks, migrateFullMocks } from './fullmock.js';
 import { registerVideo, playUrl, isBunny } from './video.js';
 import { migrateGifs, registerGifs } from './gifs.js';
 import { migrateFinance, registerFinance } from './finance.js';
+import { migrateAssignments, registerAssignments, assignedQuizOpen } from './assignments.js';
 import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails, moveBalance } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
@@ -70,6 +71,7 @@ await migrateQbankMocks();
 await migrateFullMocks();
 await migrateGifs();
 await migrateFinance();
+await migrateAssignments();
 await migrateTiers();
 await migrateSecurity();
 await db.exec(`
@@ -279,6 +281,7 @@ registerTiers(app, { h, bad, requireStudent, requireMaster });
 registerVideo(app, { h, bad, requireMaster });
 registerGifs(app, { h, bad, requireMaster });
 registerFinance(app, { h, bad, requireMaster });
+registerAssignments(app, { h, bad, requireMaster, requireStudent, roadmapFor });
 
 app.get('/api/me', h(async (req, res) => res.json(await mepayload(req.user))));
 app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
@@ -665,12 +668,14 @@ app.post('/api/quizzes/parse', requireMaster, upload.single('file'), h(async (re
   } catch (e) { bad(res, e.message || 'Could not read the file'); }
 }));
 
-const VISIBLE = `(q.is_public OR q.kind = 'diagnostic'
-  OR q.id IN (SELECT quiz_id FROM quiz_groups WHERE group_id = ?)
-  OR q.id IN (SELECT quiz_id FROM roadmap_items WHERE quiz_id IS NOT NULL))`;
+// Quizzes page: public, diagnostic and group quizzes — never roadmap quizzes (those are assignments that open step by step)
+const VISIBLE = `((q.is_public OR q.kind = 'diagnostic'
+  OR q.id IN (SELECT quiz_id FROM quiz_groups WHERE group_id = ?))
+  AND q.id NOT IN (SELECT quiz_id FROM roadmap_items WHERE quiz_id IS NOT NULL))`;
 async function canAccess(user, quizId) {
   if (user.role === 'master') return true;
-  return !!(await db.one(`SELECT 1 AS x FROM quizzes q WHERE q.id = ? AND ${VISIBLE}`, [quizId, user.group_id ?? -1]));
+  if (await db.one(`SELECT 1 AS x FROM quizzes q WHERE q.id = ? AND ${VISIBLE}`, [quizId, user.group_id ?? -1])) return true;
+  return assignedQuizOpen(user, quizId, roadmapFor); // unlocked roadmap step, or assigned by the teacher
 }
 
 async function quizList(user) {

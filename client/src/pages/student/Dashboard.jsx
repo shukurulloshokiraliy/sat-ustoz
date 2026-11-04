@@ -8,11 +8,11 @@ import { satScoreFromCount } from '../../../../server/src/scoring.js';
 import { ActivityDots, Bars, Card, CountUp, Empty, Gate, LineChart, Progress, Ring, pctTone, useAsync } from '../../components/ui.jsx';
 import PathTrack from '../../components/PathTrack.jsx';
 import { PaywallBanner } from './Quizzes.jsx';
-import { IconArrow, IconBolt, IconCheck, IconClock, IconFlame, IconQuiz, IconTarget, IconTrophy } from '../../components/icons.jsx';
+import { IconArrow, IconBolt, IconCheck, IconClock, IconFlame, IconQuiz, IconTarget, IconTrophy, IconTask } from '../../components/icons.jsx';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const st = useAsync(() => Promise.all([api.get('/me/analytics'), api.get('/quizzes'), api.get('/placement'), api.get('/me/report'), api.get('/leaderboard?period=week').catch(() => null)]), []);
+  const st = useAsync(() => Promise.all([api.get('/me/analytics'), api.get('/quizzes'), api.get('/placement'), api.get('/me/report'), api.get('/leaderboard?period=week').catch(() => null), api.get('/assignments').catch(() => null)]), []);
   const first = user.name.split(' ')[0];
   const [pickExam, setPickExam] = useState(false);
   const examLeft = daysUntil(user.exam_date);
@@ -21,7 +21,7 @@ export default function Dashboard() {
   return (
     <div className="page">
       {(needExam || pickExam) && <ExamPicker value={user.exam_date} required={needExam} onClose={() => setPickExam(false)} />}
-      <Gate state={st}>{([a, quizzes, pl, rep, lb]) => {
+      <Gate state={st}>{([a, quizzes, pl, rep, lb, asg]) => {
         const next = quizzes.find((q) => q.status === 'in_progress') || quizzes.find((q) => q.status === 'new') || quizzes[0];
         const all = combine(a, rep);
         const points = all.trend.map((t, i) => ({ value: t.est, label: `${t.title} (${fmtDate(t.date)})`, short: i + 1 }));
@@ -89,6 +89,18 @@ export default function Dashboard() {
                 {!needExam ? <ExamCountdown date={user.exam_date} onChange={() => setPickExam(true)} /> : (
                   <Card className="row between"><b>When is your SAT?</b><button className="btn primary" onClick={() => setPickExam(true)}>Choose date</button></Card>
                 )}
+                {asg && (() => {
+                  const todo = asg.items.filter((x) => ['new', 'in_progress', 'retake'].includes(x.status));
+                  if (!todo.length) return null;
+                  const n = todo.sort((x, y) => (x.due_at ? new Date(x.due_at) : 9e15) - (y.due_at ? new Date(y.due_at) : 9e15))[0];
+                  return (
+                    <Link to="/assignments" className="card lb-mini as-mini">
+                      <span className="lb-mini-ic"><IconTask width={22} height={22} weight="duotone" /></span>
+                      <span><span><b>{todo.length}</b> {todo.length === 1 ? 'assignment' : 'assignments'} to do</span><small>Next: {n.title}{n.due_at ? ` · due ${fmtDate(n.due_at, { day: 'numeric', month: 'short' })}` : ''}</small></span>
+                      <IconArrow width={16} height={16} />
+                    </Link>
+                  );
+                })()}
                 {lb?.me && (
                   <Link to="/leaderboard" className="card lb-mini">
                     <span className="lb-mini-ic"><IconTrophy width={22} height={22} weight="duotone" /></span>

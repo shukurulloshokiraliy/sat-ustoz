@@ -3,13 +3,15 @@ import { Link } from 'react-router-dom';
 import { api, fmtDate } from '../../api.js';
 import { useToast } from '../../context.jsx';
 import { Card, Confirm, Empty, Gate, Modal, PageHeader, pctTone, useAsync } from '../../components/ui.jsx';
-import { IconDownload, IconEdit, IconLayers, IconPlus, IconQuiz, IconTrash, IconChart } from '../../components/icons.jsx';
+import { IconDownload, IconEdit, IconLayers, IconPlus, IconQuiz, IconTrash, IconChart, IconTask } from '../../components/icons.jsx';
+import { AssignModal as TaskAssign } from '../student/Assignments.jsx';
 
 export default function QuizManager() {
   const st = useAsync(() => Promise.all([api.get('/quizzes'), api.get('/groups')]), []);
   const toast = useToast();
   const [assign, setAssign] = useState(null);
   const [stats, setStats] = useState(null);
+  const [give, setGive] = useState(null);
   const [del, setDel] = useState(null);
 
   return (
@@ -43,7 +45,8 @@ export default function QuizManager() {
                 </div>
               </div>
               <div className="row wrap">
-                <button className="btn soft sm" onClick={() => setAssign(q)}><IconLayers width={16} height={16} /> {"Assign"}</button>
+                <button className="btn soft sm" onClick={() => setGive(q)}><IconTask width={16} height={16} /> Assign to…</button>
+                <button className="btn ghost sm" onClick={() => setAssign(q)} title="Who sees it on the Quizzes page"><IconLayers width={16} height={16} /> Visibility</button>
                 <button className="icon-btn" title={"Statistics"} aria-label={"Statistics"} onClick={() => setStats(q)}><IconChart width={18} height={18} /></button>
                 <Link className="icon-btn" to={`/quizzes/${q.id}/edit`} aria-label={"Edit"}><IconEdit width={18} height={18} /></Link>
                 <button className="icon-btn danger" onClick={() => setDel(q)} aria-label={"Delete"}><IconTrash width={18} height={18} /></button>
@@ -53,6 +56,7 @@ export default function QuizManager() {
         </div>
       )}</Gate>
       {assign && <AssignModal quiz={assign} groups={st.data?.[1] || []} onClose={() => setAssign(null)} onSaved={() => { setAssign(null); toast("Saved"); st.reload(); }} />}
+      {give && <TaskAssign quizzes={[]} quizId={give.id} onClose={() => setGive(null)} onDone={() => setGive(null)} />}
       {stats && <StatsModal quiz={stats} onClose={() => setStats(null)} />}
       {del && <Confirm title={"Delete quiz"} text={`“${del.title}” and all results that belong to it will be deleted.`} onClose={() => setDel(null)} onConfirm={async () => { await api.del('/quizzes/' + del.id); setDel(null); toast("Deleted"); st.reload(); }} />}
     </div>

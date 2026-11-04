@@ -47,6 +47,8 @@ const setKey = (k, v) => db.run('INSERT INTO settings (key, value) VALUES (?, ?)
 const admins = async () => { try { return JSON.parse((await getKey('_tg_admins')) || '[]'); } catch { return []; } };
 /** Security alerts to the teacher's Telegram (never throws). */
 export async function notifyAdmins(text) { try { for (const a of await admins()) await send(a, text); } catch { /* bot not connected */ } }
+/** A message to one student's Telegram, when they linked the bot (never throws). */
+export async function notifyUser(userId, text) { try { const u = await db.one('SELECT tg_chat_id FROM users WHERE id = ?', [userId]); if (u?.tg_chat_id) await send(u.tg_chat_id, text); } catch { /* not linked */ } }
 
 async function tg(method, body, token) {
   token ||= await getKey('_tg_token');
