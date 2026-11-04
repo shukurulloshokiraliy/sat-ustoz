@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, fmtDate } from '../../api.js';
 import { useToast } from '../../context.jsx';
 import { Avatar, Card, Confirm, Empty, Field, Gate, Modal, PageHeader, Segmented, copyText, pctTone, useAsync } from '../../components/ui.jsx';
+import { WalletEdit } from './Finance.jsx';
 import { IconCopy, IconCrown, IconGoogle, IconKey, IconPlus, IconSearch, IconTrash, IconUsers } from '../../components/icons.jsx';
 
 export default function Students() {
@@ -13,6 +14,7 @@ export default function Students() {
   const [cred, setCred] = useState(null);
   const [del, setDel] = useState(null);
   const [sub, setSub] = useState(null);
+  const [wallet, setWallet] = useState(null);
   const [filter, setFilter] = useState('all');
   const nav = useNavigate();
   const toast = useToast();
@@ -61,7 +63,11 @@ export default function Students() {
                               ? <button className="chip good chip-btn" style={{ borderColor: 'transparent' }} onClick={() => setSub(s)} title="Extend or cancel">Until {fmtDate(s.sub_until, { day: 'numeric', month: 'short' })}</button>
                               : <button className="btn soft sm" onClick={() => setSub(s)}><IconCrown width={15} height={15} /> Activate</button>}
                           </td>
-                          <td className="nowrap">{Number(s.balance) ? <b className="fin-pos">{Number(s.balance).toLocaleString('en-US').replace(/,/g, ' ')} so'm</b> : <span className="muted">0</span>}</td>
+                          <td className="nowrap" onClick={(e) => e.stopPropagation()}>
+                            <button className={`wallet-chip ${Number(s.balance) ? 'has' : ''}`} onClick={() => setWallet({ id: s.id, name: s.name, balance: Number(s.balance || 0) })} title="Add, subtract or set the wallet">
+                              {Number(s.balance || 0).toLocaleString('en-US').replace(/,/g, ' ')} so'm <IconPlus width={13} height={13} />
+                            </button>
+                          </td>
                           <td>{s.cefr ? <span className="row" style={{ gap: 6 }}><span className={`chip ${s.admitted ? 'good' : 'warn'}`}>{s.cefr}</span><b>{s.diagnostic_score}</b></span> : s.diagnostic_score != null ? <b>{s.diagnostic_score}</b> : <span className="muted">Not taken</span>}</td>
                           <td><b>{s.estimates.english ?? '—'}</b></td>
                           <td>{s.attempts ? <span className={`chip ${pctTone(s.accuracy)}`}>{s.accuracy}%</span> : <span className="muted">—</span>}</td>
@@ -81,6 +87,7 @@ export default function Students() {
             {add && <AddStudents groups={groups} defaultGroup={gid} onClose={() => setAdd(false)} onDone={(rows) => { setAdd(false); setCred({ title: rows.length > 1 ? `${rows.length} accounts created` : "Account created", rows }); st.reload(); }} />}
             {del && <Confirm title={"Delete student"} text={`${del.name} and all of their results will be deleted. This cannot be undone.`} onClose={() => setDel(null)} onConfirm={async () => { await api.del('/students/' + del.id); setDel(null); toast("Deleted"); st.reload(); }} />}
             {cred && <Credentials {...cred} onClose={() => setCred(null)} />}
+            {wallet && <WalletEdit s={wallet} onClose={() => setWallet(null)} onSaved={() => { setWallet(null); st.reload(); }} />}
             {sub && <SubscriptionModal student={sub} onClose={() => setSub(null)} onDone={() => { setSub(null); st.reload(); }} />}
           </>
         );

@@ -120,7 +120,7 @@ function Wallets({ students, reload }) {
   );
 }
 
-function WalletEdit({ s, onClose, onSaved }) {
+export function WalletEdit({ s, onClose, onSaved }) {
   const toast = useToast();
   const [mode, setMode] = useState('add');
   const [amount, setAmount] = useState('');

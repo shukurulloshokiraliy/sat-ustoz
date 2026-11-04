@@ -2319,3 +2319,7 @@ body.menu-open .sc-fab, body.menu-open .sc-panel { display: none; }
 :root[data-theme='dark'] .ab-top::before { background: radial-gradient(50% 60% at 80% 40%, rgba(99,120,255,.3), transparent 70%), radial-gradient(30% 40% at 10% 90%, rgba(255,203,61,.1), transparent 70%); -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent); mask-image: linear-gradient(180deg, #000 55%, transparent); }
 :root[data-theme='dark'] .pub-teaser, :root[data-theme='dark'] .pub-final, :root[data-theme='dark'] .pt-start { background: radial-gradient(120% 140% at 100% 0%, #3A3FA8 0%, #262A6B 45%, #1A1C40 100%); border: 1px solid rgba(255,255,255,.08); }
 .fin-kpi b { font-size: clamp(1.05rem, .85rem + .8vw, 1.35rem); white-space: nowrap; }
+.wallet-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1px dashed var(--line); background: transparent; color: var(--muted); font: inherit; font-weight: 700; font-size: .84rem; cursor: pointer; white-space: nowrap; transition: border-color .15s, background .15s, color .15s; }
+.wallet-chip.has { border-style: solid; border-color: rgba(34,176,125,.35); background: rgba(34,176,125,.1); color: #1A9A6C; }
+.wallet-chip:hover { border-color: var(--primary); color: var(--primary); }
+:root[data-theme='dark'] .wallet-chip.has { color: #4FD18A; }
