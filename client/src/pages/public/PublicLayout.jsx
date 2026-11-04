@@ -15,6 +15,8 @@ export default function PublicLayout() {
   const loc = useLocation();
   const [open, setOpen] = useState(false);
   useEffect(() => { setOpen(false); window.scrollTo({ top: 0 }); }, [loc.pathname]);
+  // while the phone menu is open: no page scroll behind it and no chat button over the menu
+  useEffect(() => { document.body.classList.toggle('menu-open', open); return () => document.body.classList.remove('menu-open'); }, [open]);
 
   const sections = site?.sections || [];
   const pagesOf = (id) => (site?.pages || []).filter((p) => p.section === id);
