@@ -7,6 +7,7 @@ import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
 import AskTeacher from '../../components/AskTeacher.jsx';
 import ReportMistake from '../../components/ReportMistake.jsx';
+import { FocusLine } from '../../components/Proctor.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
 
@@ -50,6 +51,7 @@ function Result({ a }) {
         <div className="mr-group"><span>Module 2{r.route ? ` · ${r.route === 'hard' ? 'harder' : 'easier'}` : ''}</span><b>{r.m2}/{r.m2_total}</b><i><em style={{ width: `${(r.m2 / (r.m2_total || 1)) * 100}%` }} className={r.m2 / (r.m2_total || 1) >= 0.67 ? 'hi' : 'mid'} /></i></div>
       </div>
 
+      {a.focus && <FocusLine f={a.focus} seconds={a.report?.time?.total ?? null} />}
       {a.report && <ScoreReport rep={a.report} />}
 
       <div className="row wrap" style={{ gap: 10 }}>

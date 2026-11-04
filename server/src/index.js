@@ -27,6 +27,7 @@ import { migrateAssignments, registerAssignments, assignedQuizOpen } from './ass
 import { migrateReserved, registerReserved, scanReserved, scanSoon } from './reserved.js';
 import { registerProgress } from './progress.js';
 import { migrateMistakes, registerMistakes } from './mistakes.js';
+import { migrateFocus, registerFocus, penaltyOf, focusSummary } from './focus.js';
 import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails, moveBalance } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
@@ -80,6 +81,7 @@ await migrateFinance();
 await migrateAssignments();
 await migrateReserved();
 await migrateMistakes();
+await migrateFocus();
 // roadmap history starts with today's roadmap, so even the first change can be undone
 if (!(await db.one('SELECT 1 AS x FROM roadmap_versions LIMIT 1'))) setTimeout(() => rmVersion({ user: { id: null, name: 'System' } }, 'Starting point'), 0);
 // keep exam questions out of practice: the first start scans every quiz and lesson check once
@@ -301,6 +303,7 @@ registerAssignments(app, { h, bad, requireMaster, requireStudent, roadmapFor });
 registerReserved(app, { h, bad, requireMaster });
 registerProgress(app, { h, bad, requireMaster, roadmapFor, userAnalytics });
 registerMistakes(app, { h, bad, requireStudent, requireMaster });
+registerFocus(app, { h, bad, requireStudent });
 
 app.get('/api/me', h(async (req, res) => res.json(await mepayload(req.user))));
 app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
@@ -446,6 +449,7 @@ app.put('/api/settings', requireMaster, h(async (req, res) => {
   if ('pay_holder' in b) patch.pay_holder = String(b.pay_holder || '').trim().slice(0, 60);
   if ('tiers' in b) patch.tiers = cleanTiers(b.tiers);
   if ('fm_extra_price' in b) patch.fm_extra_price = digits(b.fm_extra_price) || '0';
+  if ('focus_penalty' in b) patch.focus_penalty = String(Math.max(0, Math.min(600, Number(digits(b.focus_penalty)) || 0)));
   if ('quiz_extra_price' in b) patch.quiz_extra_price = digits(b.quiz_extra_price) || '0';
   if ('free_q_day' in b) patch.free_q_day = String(Math.max(0, Math.min(999, Math.round(+b.free_q_day || 0))));
   if ('bunny_library_id' in b) patch.bunny_library_id = String(b.bunny_library_id || '').replace(/\D/g, '').slice(0, 12);
@@ -796,10 +800,11 @@ app.get('/api/quizzes/:id/stats', requireMaster, h(async (req, res) => {
 }));
 
 // ---------- attempts (student) ----------
-function timing(quiz, attempt) {
+function timing(quiz, attempt, penalty = 0) {
   const total = quiz.duration_min * 60;
   const elapsed = Math.floor((Date.now() - new Date(attempt.started_at).getTime()) / 1000);
-  return { total_seconds: total, remaining: total ? Math.max(0, total - elapsed) : null, elapsed };
+  // exam mode: leaving the test takes time off the clock
+  return { total_seconds: total, remaining: total ? Math.max(0, total - elapsed - penalty) : null, elapsed, penalty };
 }
 /** Small seeded shuffle: the same attempt always gets the same order (resume after reload). */
 function seedRnd(seed) { let x = seed >>> 0 || 1; return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296; }; }
@@ -827,7 +832,7 @@ async function attemptPayload(attempt, quiz) {
     quiz: { id: quiz.id, title: quiz.title, section: quiz.section, kind: quiz.kind, duration_min: quiz.duration_min },
     questions: qs,
     progress,
-    ...timing(quiz, attempt),
+    ...timing(quiz, attempt, await penaltyOf('quiz', attempt.id)),
   };
 }
 app.post('/api/quizzes/:id/start', requireStudent, h(async (req, res) => {
@@ -928,6 +933,7 @@ app.get('/api/attempts/:id/result', h(async (req, res) => {
       estimate: estimateScore(a.score, a.total) },
     quiz: { id: quiz.id, title: quiz.title, section: quiz.section, kind: quiz.kind }, student, items,
     topics: Object.values(topicMap).map((t) => ({ ...t, pct: Math.round((t.correct / t.total) * 100) })),
+    focus: await focusSummary('quiz', a.id),
   });
 }));
 

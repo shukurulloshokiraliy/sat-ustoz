@@ -69,12 +69,15 @@ function Module({ a, onNext }) {
       onNext(d);
     } catch (e) { sent.current = false; toast(e.message, 'bad'); }
   }, [ans, a.id, key, onNext, toast]);
+  const endRef = useRef(null);
   useEffect(() => {
     if (intro) return undefined;
-    const end = Date.now() + left * 1000;
-    const t = setInterval(() => setLeft(Math.max(0, Math.round((end - Date.now()) / 1000))), 500);
+    endRef.current = Date.now() + left * 1000;
+    const t = setInterval(() => setLeft(Math.max(0, Math.round((endRef.current - Date.now()) / 1000))), 500);
     return () => clearInterval(t);
   }, [intro]); // eslint-disable-line react-hooks/exhaustive-deps
+  // exam mode: each exit from full screen takes time off this module's clock (the server keeps the same count)
+  const proctor = { kind: 'fullmock', id: a.id, stage: a.stage, onPenalty: (s) => { if (endRef.current) endRef.current -= s * 1000; } };
   const finishRef = useRef(finish); finishRef.current = finish;
   useEffect(() => { if (left === 0 && !intro) { toast('Time is up for this module'); finishRef.current(); } }, [left, intro, toast]);
 
@@ -107,7 +110,7 @@ function Module({ a, onNext }) {
   const nextLabel = a.stage === 'm1' ? 'Submit Module 1' : 'Submit test';
   return (
     <>
-      <BBShell title={`${a.mock.title} · ${a.stage === 'm1' ? 'Module 1' : 'Module 2'}`} directions={DIRECTIONS} seconds={left} onExit={() => setExit(true)} exitLabel="Exit"
+      <BBShell proctor={intro ? null : proctor} title={`${a.mock.title} · ${a.stage === 'm1' ? 'Module 1' : 'Module 2'}`} directions={DIRECTIONS} seconds={left} onExit={() => setExit(true)} exitLabel="Exit"
         highlight={!pdf && hl} onHighlight={!pdf && view === 'q' && (q?.passage || q?.table) ? () => setHl((x) => !x) : null}
         footer={pdf ? (
           <footer className="bb-foot"><span className="muted">{qs.length - unanswered} of {qs.length} answered</span><button className="bb-btn" onClick={() => setConfirm(true)}>{nextLabel}</button></footer>

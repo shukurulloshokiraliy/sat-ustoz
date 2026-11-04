@@ -8,6 +8,7 @@ import { satScore } from './scoring.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { penaltyOf, focusSummary } from './focus.js';
 import { db, getSettings } from './db.js';
 import { moveBalance } from './tiers.js';
 
@@ -242,13 +243,15 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const by = new Map(rows.map((q) => [q.id, q]));
     const qs = ids.map((id) => by.get(id)).filter(Boolean);
     const mins = m.minutes || MOCK_MINUTES;
-    const remaining = Math.max(0, Math.round((new Date(m.started_at).getTime() + mins * 60e3 - Date.now()) / 1000));
+    const pen = await penaltyOf('mock', m.id);
+    const remaining = Math.max(0, Math.round((new Date(m.started_at).getTime() + mins * 60e3 - Date.now()) / 1000) - pen);
     const given = JSON.parse(m.answers || '{}');
     const sat = m.finished_at ? satScore(qs.map((q) => ({ correct: given[q.id] === q.answer, difficulty: q.difficulty }))) : null;
     return {
       sat,
       id: m.id, minutes: mins, remaining, item_id: m.item_id || null, finished: !!m.finished_at, score: m.score, total: m.total, started_at: m.started_at, finished_at: m.finished_at,
       answers: JSON.parse(m.answers || '{}'),
+      focus: m.finished_at ? await focusSummary('mock', m.id) : undefined,
       questions: qs.map((q) => (withKey ? { ...pub(q), answer: q.answer, explanation: q.explanation, tip: q.tip } : pub(q))),
     };
   };

@@ -8,6 +8,7 @@ import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
 import ReportMistake from '../../components/ReportMistake.jsx';
 import { IconBookmark, IconBookmarkFill, IconFlag } from '../../components/icons.jsx';
+import { FocusLine } from '../../components/Proctor.jsx';
 
 export function QuestionReview({ item, showSave = true }) {
   const toast = useToast();
@@ -91,6 +92,7 @@ export default function Result() {
                   <div><b>~{est}</b><span>{"Estimated score"}</span></div>
                 </div>
               </div>
+              {r.focus && <FocusLine f={r.focus} seconds={a.seconds} />}
             </Card>
 
             {r.quiz.kind === 'diagnostic' && user.role === 'student' && (() => {

@@ -175,6 +175,7 @@ function ExamTaker({ initial }) {
   return (
     <>
       <BBShell title={data.quiz.title} seconds={left} countdown onExit={() => setConfirmExit(true)} exitLabel="Exit"
+        proctor={data.mode === 'exam' ? { kind: 'quiz', id: data.attempt.id, onPenalty: (s) => { if (endAt.current) endAt.current -= s * 1000; } } : null}
         directions={DIRECTIONS}
         highlight={hl} onHighlight={view === 'question' && q.passage ? () => setHl((x) => !x) : null}
         tools={<span className={`bb-sync ${sync}`} title="Your answers are saved as you go">{sync === 'synced' ? 'Saved' : sync === 'saving' ? 'Saving…' : 'Offline'}</span>}

@@ -86,11 +86,13 @@ function Runner({ m, exam }) {
       nav(`/mock/${m.id}`, { replace: true });
     } catch (e) { sent.current = false; toast(e.message, 'bad'); }
   }, [ans, m.id, key, nav, toast]);
+  const endRef = useRef(null);
   useEffect(() => {
-    const end = Date.now() + m.remaining * 1000;
-    const t = setInterval(() => setLeft(Math.max(0, Math.round((end - Date.now()) / 1000))), 500);
+    endRef.current = Date.now() + m.remaining * 1000;
+    const t = setInterval(() => setLeft(Math.max(0, Math.round((endRef.current - Date.now()) / 1000))), 500);
     return () => clearInterval(t);
   }, [m.remaining]);
+  const proctor = { kind: 'mock', id: m.id, onPenalty: (s) => { if (endRef.current) endRef.current -= s * 1000; } };
   const submitRef = useRef(submit); submitRef.current = submit;
   useEffect(() => { if (left === 0) { toast('Time is up — here is your result'); submitRef.current(); } }, [left, toast]);
 
@@ -112,7 +114,7 @@ function Runner({ m, exam }) {
   const unanswered = items.filter((x) => !x.answered).length;
   return (
     <>
-      <BBShell title={title} directions={DIRECTIONS} seconds={left} onExit={() => setExit(true)} exitLabel="Exit"
+      <BBShell proctor={proctor} title={title} directions={DIRECTIONS} seconds={left} onExit={() => setExit(true)} exitLabel="Exit"
         highlight={hl} onHighlight={view === 'q' && (q.passage || q.table) ? () => setHl((x) => !x) : null}
         footer={(
           <BBFooter cur={cur} total={qs.length} onOpenNav={() => setNav2(true)}>

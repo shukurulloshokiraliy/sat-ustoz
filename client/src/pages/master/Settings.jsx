@@ -54,6 +54,7 @@ function Form({ init }) {
         </div>
         <div className="grid g3">
           <Field label="Extra quiz (from balance)" hint="after the plan's free quizzes a day"><input inputMode="numeric" value={f.quiz_extra_price ?? ''} onChange={set('quiz_extra_price')} /></Field>
+          <Field label="Exam mode: seconds lost per exit" hint="leaving full screen, switching tab or app during a test (0 = only recorded)"><input type="number" min="0" max="600" value={f.focus_penalty ?? 30} onChange={set('focus_penalty')} /></Field>
         </div>
         <div className="grid g3">
           <Field label="Currency"><input maxLength={3} value={f.currency} onChange={set('currency')} /></Field>

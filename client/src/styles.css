@@ -2514,3 +2514,16 @@ tr.pf-idle td:first-child b { color: var(--bad); }
 /* speed: keep the footer below the fold while the page loads (no layout shift) */
 .pub-main { min-height: calc(100vh - 64px); min-height: calc(100dvh - 64px); }
 .pt-loading { min-height: 520px; display: grid; place-items: center; }
+
+/* ---------- Exam mode: full screen, exits cost time ---------- */
+.exam-gate { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 20px; background: rgba(10, 13, 38, .86); backdrop-filter: blur(6px); }
+.exam-gate-card { max-width: 480px; width: 100%; display: grid; gap: 14px; padding: 26px; border-radius: 20px; background: var(--surface); color: var(--ink); box-shadow: 0 24px 60px rgba(0,0,0,.35); text-align: left; }
+.exam-gate-card h2 { font-size: 1.3rem; }
+.exam-gate-card p { margin: 0; color: var(--muted); line-height: 1.55; }
+.exam-gate-card .btn { justify-self: start; }
+.exam-gate-stat { color: var(--bad) !important; font-weight: 700; }
+.exam-flash { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 9998; padding: 10px 18px; border-radius: 99px; background: var(--bad); color: #fff; font: 700 .9rem var(--font); box-shadow: 0 8px 24px rgba(0,0,0,.2); animation: bbwarn .3s ease-out; }
+.exam-lock .bb-prompt, .exam-lock .bb-opts { -webkit-user-select: none; user-select: none; }
+.focus-line { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 0; padding: 10px 14px; border-radius: 12px; font-size: .9rem; background: var(--good-soft); }
+.focus-line.warn { background: var(--warn-soft); }
+.focus-line b { font-weight: 700; }

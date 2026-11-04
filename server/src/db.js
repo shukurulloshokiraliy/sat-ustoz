@@ -352,6 +352,7 @@ const DEFAULT_SETTINGS = {
   lb_prizes: '',           // leaderboard prizes for places 1–3 (JSON: [{ text, bonus }])
   lb_prize_note: '',
   quiz_extra_price: '3000', // one quiz beyond the plan's daily quizzes, paid from the balance
+  focus_penalty: '30', // exam mode: seconds taken off the clock for each exit from the test
   fm_extra_price: '20000', // one full mock beyond the weekly limit, paid from the balance
   free_q_day: '20', // Question Bank answers per day without a subscription
   live_link: '',    // live online lessons (plan 4): meeting link

@@ -7,6 +7,7 @@ import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
 import AskTeacher from '../../components/AskTeacher.jsx';
 import ReportMistake from '../../components/ReportMistake.jsx';
+import { FocusLine } from '../../components/Proctor.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
 const GROUP = { 'Words in Context': 'Words in Context', 'Text Structure and Purpose': 'Reading', 'Cross-Text Connections': 'Reading', 'Central Ideas and Details': 'Reading',
@@ -46,6 +47,7 @@ function Result({ m }) {
         </div>
       </section>
 
+      {m.focus && <FocusLine f={m.focus} seconds={m.finished_at ? Math.round((new Date(m.finished_at) - new Date(m.started_at)) / 1000) : null} />}
       <div className="mr-groups">
         {Object.entries(by).map(([g, v]) => {
           const p = Math.round((v.ok / v.n) * 100);

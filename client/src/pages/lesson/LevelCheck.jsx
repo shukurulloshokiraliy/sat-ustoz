@@ -8,6 +8,7 @@ import { BBExam } from '../../components/Bluebook.jsx';
 import { rich } from '../../components/Rich.jsx';
 import ReportMistake from '../../components/ReportMistake.jsx';
 import { sendWhenOnline, useOnReconnect } from '../../offline.js';
+import { FocusLine } from '../../components/Proctor.jsx';
 
 const L = ['A', 'B', 'C', 'D', 'E'];
 
@@ -97,6 +98,7 @@ function Runner({ c }) {
         title={isSession ? 'Session check' : `Level check · ${c.lesson.title.replace(/^Lesson (\d+):.*/, 'Lesson $1')}`}
         directions={<p>Answer every question, then check your answers at the end. You need {c.pass_percent}% to pass. Version {c.version}.</p>}
         seconds={left} onExit={() => setExit(true)} exitLabel="Save & exit"
+        proctor={{ kind: 'check', id: c.id, onPenalty: (s) => { if (endAt.current) endAt.current -= s * 1000; } }}
         qid={q.id} n={cur + 1} total={c.questions.length}
         passage={q.kind === 'sat' && q.passage ? rich(q.passage) : null}
         before={<div className="bb-meta">{q.kind === 'sat' ? <span className="chip domain">SAT question</span> : q.kind === 'vocab' ? <span className="chip sun">Vocabulary</span> : null}</div>}
@@ -144,6 +146,7 @@ export function LevelCheckResult() {
                 <Link className="btn ghost lg on-dark" to={`/lesson/${r.lesson.id}`}>Back to the lesson</Link>
               </div>
             </section>
+            {r.focus && <FocusLine f={r.focus} seconds={r.seconds} />}
             <div className="row between wrap">
               <h2>Review</h2>
               <Segmented value={tab} onChange={setTab} options={[{ value: 'wrong', label: 'Mistakes', count: wrong.length }, { value: 'all', label: 'All', count: r.review.length }]} />

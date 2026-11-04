@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useAuth, useTheme } from '../context.jsx';
 import { Modal } from './ui.jsx';
+import { ProctorLayer, useProctor } from './Proctor.jsx';
 import { IconBookmark, IconBookmarkFill, IconChevron, IconCheck, IconEye, IconEyeOff, IconFlag, IconMoon, IconSun, IconX } from './icons.jsx';
 
 /*
@@ -14,8 +15,9 @@ import { IconBookmark, IconBookmarkFill, IconChevron, IconCheck, IconEye, IconEy
 const pad = (n) => String(n).padStart(2, '0');
 export const fmtClock = (s) => (s >= 3600 ? `${Math.floor(s / 3600)}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}` : `${Math.floor(s / 60)}:${pad(s % 60)}`);
 
-export function BBShell({ title, directions, seconds, countdown = true, tools, onExit, exitLabel = 'Exit', footer, children, highlight, onHighlight }) {
+export function BBShell({ title, directions, seconds, countdown = true, tools, onExit, exitLabel = 'Exit', footer, children, highlight, onHighlight, proctor }) {
   const { theme, toggle } = useTheme();
+  const pr = useProctor(proctor); // exam mode: full screen, exits cost time
   const [hide, setHide] = useState(false);
   const [dir, setDir] = useState(false);
   // test day: a "5 minutes left" message (once), and a hidden clock comes back
@@ -61,6 +63,7 @@ export function BBShell({ title, directions, seconds, countdown = true, tools, o
       {warn && <div className="bb-warn" role="alert"><b>5 minutes remaining</b><span>Answer every question: there is no penalty for guessing.</span><button onClick={() => setWarn(false)} aria-label="Close"><IconX width={16} height={16} /></button></div>}
       <main className="bb-main">{children}</main>
       {footer}
+ <ProctorLayer pr={pr} />
       {dir && (
         <Modal title="Directions" onClose={() => setDir(false)} footer={<button className="btn primary" onClick={() => setDir(false)}>Close</button>}>
           <div className="bb-directions">{directions}</div>
@@ -406,13 +409,13 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E'];
  * options: array of nodes (chosen by index) — or pass `input` for a typed answer.
  * items: [{ answered, marked }] for the navigator.
  */
-export function BBExam({ title, directions, seconds, countdown = true, onExit, exitLabel = 'Exit', qid, n, total, passage, prompt, before, options, input, choice, onChoose, marked, onMark, items, onGo, onBack, onNext, nextLabel = 'Next', tools }) {
+export function BBExam({ title, directions, seconds, countdown = true, onExit, exitLabel = 'Exit', qid, n, total, passage, prompt, before, options, input, choice, onChoose, marked, onMark, items, onGo, onBack, onNext, nextLabel = 'Next', tools, proctor }) {
   const [hl, setHl] = useState(false);
   const [nav, setNav] = useState(false);
   const el = useElimination();
   const opts = options?.map((text, i) => ({ key: LETTERS[i], text }));
   return (
-    <BBShell title={title} directions={directions} seconds={seconds} countdown={countdown} onExit={onExit} exitLabel={exitLabel} tools={tools}
+    <BBShell title={title} directions={directions} seconds={seconds} countdown={countdown} onExit={onExit} exitLabel={exitLabel} tools={tools} proctor={proctor}
       highlight={hl} onHighlight={passage ? () => setHl((x) => !x) : null}
       footer={(
         <BBFooter cur={n - 1} total={total} onOpenNav={() => setNav(true)}>

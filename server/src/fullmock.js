@@ -14,6 +14,7 @@ import { tierOf, moveBalance } from './tiers.js';
 import { parseUpload } from './parse.js';
 import { ROUTE_CUT, satScore } from './scoring.js';
 import { MOCK_BLUEPRINT, DOMAINS } from './qbank.js';
+import { penaltyOf, focusSummary } from './focus.js';
 
 export async function migrateFullMocks() {
   await db.exec(`
@@ -182,7 +183,8 @@ function grade(sets, a, answers) {
 
 export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, upload }) {
   const state = async (a, mock, sets) => {
-    const remaining = Math.max(0, Math.round((new Date(a.stage_started_at).getTime() + mock.minutes * 60e3 - Date.now()) / 1000));
+    const pen = a.stage === 'done' ? 0 : await penaltyOf('fullmock', a.id, a.stage);
+    const remaining = Math.max(0, Math.round((new Date(a.stage_started_at).getTime() + mock.minutes * 60e3 - Date.now()) / 1000) - pen);
     const answers = parseJSON(a.answers, {});
     const done = a.stage === 'done';
     const mod = a.stage === 'm1' ? '1' : a.stage === 'm2' ? a.m2 : null;
@@ -197,6 +199,7 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
       out.review = [['1', sets['1'] || []], [a.m2, sets[a.m2] || []]].map(([m, qs]) => ({ module: m, label: MODULES[m],
         questions: qs.map((q) => ({ ...pubQ(q, true), domain: domainOf(q.skill || q.topic) || undefined, seconds: times[q.id] ?? null })) }));
       out.report = await scoreReport(out.review, answers, times);
+      out.focus = await focusSummary('fullmock', a.id);
     }
     return out;
   };
@@ -305,7 +308,7 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
 
   // time over for a module → move on automatically (module 1 → module 2, module 2 → finish)
   async function advanceIfExpired(a, mock, sets) {
-    const over = a.stage !== 'done' && Date.now() > new Date(a.stage_started_at).getTime() + mock.minutes * 60e3 + 30e3;
+    const over = a.stage !== 'done' && Date.now() > new Date(a.stage_started_at).getTime() + mock.minutes * 60e3 + 30e3 - (await penaltyOf('fullmock', a.id, a.stage)) * 1000;
     if (over) a = await advance(a, mock, sets, parseJSON(a.answers, {}));
     return state(a, mock, sets);
   }

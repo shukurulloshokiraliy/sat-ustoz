@@ -1,4 +1,5 @@
 import { db } from '../db.js';
+import { penaltyOf, focusSummary } from '../focus.js';
 import { playUrl } from '../video.js';
 import { scanSoon } from '../reserved.js';
 import { getSettings } from '../db.js';
@@ -10,7 +11,7 @@ const GRACE = 20; // seconds of network slack for timed checks
 async function overTime(c) {
   const item = await db.one('SELECT content FROM roadmap_items WHERE id = ?', [c.item_id]);
   const min = JSON.parse(item?.content || '{}').time_minutes || 0;
-  return !!min && Date.now() - new Date(c.started_at).getTime() > (min * 60 + GRACE) * 1000;
+  return !!min && Date.now() - new Date(c.started_at).getTime() > (min * 60 + GRACE - await penaltyOf('check', c.id)) * 1000;
 }
 
 /**
@@ -98,7 +99,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     const elapsed = Math.floor((Date.now() - new Date(c.started_at).getTime()) / 1000);
     res.json({
       id: c.id, version: c.version, pass_percent: L.content.pass_percent ?? 80, type: L.content.type || 'section',
-      time_limit: limit || null, remaining: limit ? Math.max(0, limit - elapsed) : null,
+      time_limit: limit || null, remaining: limit ? Math.max(0, limit - elapsed - await penaltyOf('check', c.id)) : null,
       lesson: { id: L.item.id, title: L.item.title, module: L.step?.title },
       questions: qs.map(publicQ), answers: JSON.parse(c.answers || '{}'),
     });
@@ -134,7 +135,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
       const qs = content.checks?.[c.version] || [];
       const answers = { ...JSON.parse(c.answers || '{}') };
       // answers sent after a timed check's deadline are ignored (what was saved in time counts)
-      if (!(content.time_minutes && Date.now() - new Date(c.started_at).getTime() > (content.time_minutes * 60 + GRACE) * 1000)) {
+      if (!(content.time_minutes && Date.now() - new Date(c.started_at).getTime() > (content.time_minutes * 60 + GRACE - await penaltyOf('check', c.id)) * 1000)) {
         for (const [k, v] of Object.entries(req.body?.answers || {})) if (Number.isInteger(v)) answers[k] = v;
       }
       const score = qs.filter((q) => answers[q.id] === q.answer).length;
@@ -157,7 +158,8 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     res.json({
       id: c.id, type: content.type || 'section', version: c.version, score: c.score, total: c.total, passed: c.passed, finished_at: c.finished_at,
       pass_percent: content.pass_percent ?? 80, next_version: versions[n % (versions.length || 1)] || null,
-      lesson: { id: item.id, title: item.title }, next_lesson: nextLesson || null,
+      lesson: { id: item.id, title: item.title }, next_lesson: nextLesson || null, focus: await focusSummary('check', c.id),
+      seconds: Math.round((new Date(c.finished_at) - new Date(c.started_at)) / 1000),
       review: (content.checks?.[c.version] || []).map((q) => ({ ...publicQ(q), answer: q.answer, given: answers[q.id] ?? null, explanation: q.explanation || '', source: q.source || '' })),
     });
   }));
