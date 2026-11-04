@@ -5,7 +5,7 @@ import { useReveal } from './reveal.js';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth, useTheme } from '../context.jsx';
 import { Avatar, Spinner } from './ui.jsx';
-import SupportChat from './SupportChat.jsx';
+import SupportChat from './ChatLater.jsx';
 import {
   IconBookmark, IconBriefcase, IconChats, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
   IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconConsult, IconVolume, IconMute, IconWallet, IconTask, IconFlag } from './icons.jsx';

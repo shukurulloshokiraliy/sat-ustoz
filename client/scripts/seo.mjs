@@ -111,7 +111,23 @@ function faqLd() { return { '@type': 'FAQPage', mainEntity: FAQ.map(([q, a]) => 
 function crumbs(list) { return { '@type': 'BreadcrumbList', itemListElement: [['Home', '/'], ...list].map(([name, p], i) => ({ '@type': 'ListItem', position: i + 1, name, item: SITE + p })) }; }
 function article(headline, p) { return { '@type': 'Article', headline, url: SITE + p, author: { '@type': 'Person', name: 'Axror Alimjon' }, publisher: { '@id': `${SITE}/#org` }, dateModified: TODAY, image: `${SITE}/og.png` }; }
 
-const template = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
+// speed: the page's own code is fetched together with the main bundle (no waterfall), and the two
+// brand fonts start downloading before the CSS is parsed
+const MANIFEST = (() => { try { return JSON.parse(fs.readFileSync(path.join(DIST, '.vite', 'manifest.json'), 'utf8')); } catch { return {}; } })();
+function chunkFiles(src, seen = new Set()) {
+  const e = MANIFEST[src];
+  if (!e || seen.has(src)) return [];
+  seen.add(src);
+  return [...(e.isEntry ? [] : [e.file]), ...(e.imports || []).flatMap((i) => chunkFiles(i, seen))];
+}
+const PAGE_SRC = (p) => (p === '/' ? ['src/pages/public/PublicLayout.jsx', 'src/pages/public/Landing.jsx']
+  : p === '/practice' ? ['src/pages/public/PublicLayout.jsx', 'src/pages/public/Practice.jsx']
+  : p === '/login' || p === '/signup' ? ['src/pages/Login.jsx']
+  : ['src/pages/public/PublicLayout.jsx', 'src/pages/public/Pages.jsx']);
+const FONTS = fs.readdirSync(path.join(DIST, 'assets')).filter((f) => /^(manrope|unbounded)-latin-wght-normal-.*\.woff2$/.test(f))
+  .map((f) => `<link rel="preload" href="/assets/${f}" as="font" type="font/woff2" crossorigin />`);
+const preloads = (p) => [...new Set(PAGE_SRC(p).flatMap((s) => chunkFiles(s)))].filter((f) => f.endsWith('.js')).map((f) => `<link rel="modulepreload" href="/${f}" />`);
+const template = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8').replace('</head>', `    ${FONTS.join('\n    ')}\n  </head>`);
 const STYLE = `<style>.seo{max-width:760px;margin:0 auto;padding:40px 20px 60px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6;color:#161B3D}.seo h1{font-size:2rem;line-height:1.15}.seo a{color:#2A55E5}.seo nav a{margin-right:14px}.seo details{margin:8px 0}</style>`;
 
 function render(pg) {
@@ -129,6 +145,7 @@ function render(pg) {
     `<meta property="og:image:width" content="1200" />`, `<meta property="og:image:height" content="630" />`, `<meta property="og:locale" content="en_US" />`, `<meta property="og:locale:alternate" content="uz_UZ" />`,
     `<meta name="twitter:card" content="summary_large_image" />`, `<meta name="twitter:title" content="${esc(pg.title)}" />`,
     `<meta name="twitter:description" content="${esc(pg.desc)}" />`, `<meta name="twitter:image" content="${SITE}/og.png" />`,
+    ...preloads(pg.path),
     ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : '',
     STYLE,
   ].join('\n    ');
@@ -224,3 +241,4 @@ fs.writeFileSync(path.join(DIST, 'site.webmanifest'), JSON.stringify({
   shortcuts: [{ name: 'My mistakes', url: '/mistakes' }, { name: 'Vocabulary', url: '/vocab' }, { name: 'Roadmap', url: '/roadmap' }],
 }, null, 2));
 console.log(`[seo] ${PAGES.length} pages, sitemap, robots, llms.txt → ${DIST} (site ${SITE})`);
+fs.rmSync(path.join(DIST, '.vite'), { recursive: true, force: true }); // the build manifest is only needed above

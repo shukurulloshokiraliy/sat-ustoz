@@ -92,7 +92,7 @@ export default function Practice() {
       </section>
 
       {err && <div className="error-box">{err}</div>}
-      {!meta ? <Spinner label="Shuffling the question bank…" /> : (
+      {!meta ? <div className="pt-loading"><Spinner label="Shuffling the question bank…" /></div> : (
         <div className="pt-grid">
           <div className="stack">
             <div className="pt-box">

@@ -2511,3 +2511,6 @@ tr.pf-idle td:first-child b { color: var(--bad); }
   .bb-split.folded .bb-divider { display: none; }
 }
 .offline-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; box-shadow: 0 4px 16px rgba(10,13,38,.15); padding: 8px 14px; text-align: center; font: 600 .85rem var(--font); background: var(--warn-soft); color: var(--ink); border-bottom: 1px solid var(--line); }
+/* speed: keep the footer below the fold while the page loads (no layout shift) */
+.pub-main { min-height: calc(100vh - 64px); min-height: calc(100dvh - 64px); }
+.pt-loading { min-height: 520px; display: grid; place-items: center; }
