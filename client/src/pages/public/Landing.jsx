@@ -110,7 +110,20 @@ export default function Landing() {
 /** Plans: free + 4 paid plans. On phones the cards are a swipeable slider with dots. */
 function Pricing({ cfg, trial }) {
   const [at, setAt] = useState(0);
+  const [hold, setHold] = useState(false);
   const rail = useRef(null);
+  const count = (cfg?.tiers?.length || 0) + 1;
+  // auto-play: one card every 3.5 s, back to the start at the end; pauses while the visitor hovers or touches
+  useEffect(() => {
+    if (!cfg?.tiers || hold || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const t = setInterval(() => {
+      const el = rail.current; if (!el) return;
+      const end = el.scrollLeft + el.clientWidth >= el.scrollWidth - 8;
+      if (end) el.scrollTo({ left: 0, behavior: 'smooth' });
+      else { const c = el.children[Math.min(count - 1, at + 1)]; if (c) el.scrollTo({ left: c.offsetLeft - el.offsetLeft, behavior: 'smooth' }); }
+    }, 3500);
+    return () => clearInterval(t);
+  }, [cfg, hold, at, count]);
   if (!cfg?.tiers) return null;
   const cur = cfg.prices?.currency || 'UZS';
   const cards = [
@@ -120,12 +133,14 @@ function Pricing({ cfg, trial }) {
   const onScroll = () => {
     const el = rail.current; if (!el) return;
     const w = el.firstElementChild?.getBoundingClientRect().width || 1;
-    setAt(Math.round(el.scrollLeft / (w + 12)));
+    setAt(Math.min(count - 1, Math.round(el.scrollLeft / (w + 16))));
   };
   const go = (i) => { const el = rail.current; const c = el?.children[i]; if (c) el.scrollTo({ left: c.offsetLeft - el.offsetLeft, behavior: 'smooth' }); };
   return (
     <section className="pub-wrap" id="pricing">
       <h2 className="pub-h2">Simple pricing</h2>
+      <div className="pp-wrap" onMouseEnter={() => setHold(true)} onMouseLeave={() => setHold(false)} onTouchStart={() => setHold(true)} onTouchEnd={() => setTimeout(() => setHold(false), 4000)}>
+      <button className="pp-arrow l" aria-label="Previous plan" onClick={() => go(Math.max(0, at - 1))}>‹</button>
       <div className="pub-prices tiers5" ref={rail} onScroll={onScroll}>
         {cards.map((t, i) => (
           <div key={t.id} className={`pub-price ${i === 3 ? 'hot' : ''}`}>
@@ -138,8 +153,10 @@ function Pricing({ cfg, trial }) {
           </div>
         ))}
       </div>
+      <button className="pp-arrow r" aria-label="Next plan" onClick={() => go(Math.min(count - 1, at + 1))}>›</button>
+      </div>
       <div className="pp-dots" aria-hidden="true">{cards.map((c, i) => <button key={c.id} className={at === i ? 'on' : ''} onClick={() => go(i)} tabIndex={-1} />)}</div>
-      <p className="muted center pp-note">Swipe to see every plan · extra full mock {money(cfg.fm_extra_price)} {cur} from your wallet</p>
+      <p className="muted center pp-note">Swipe or wait — the plans move by themselves · extra full mock {money(cfg.fm_extra_price)} {cur} from your wallet</p>
     </section>
   );
 }
