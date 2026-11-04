@@ -24,9 +24,10 @@ export function playUrl(url, s, hours = 4) {
   const { lib, token } = cfg(s);
   const id = url.slice(6);
   if (!lib) return '';
-  if (!token) return `https://player.mediadelivery.net/embed/${lib}/${id}`;
+  if (!token) return `https://player.mediadelivery.net/embed/${lib}/${id}?rememberPosition=true&preload=true`;
   const exp = Math.floor(Date.now() / 1000) + hours * 3600;
-  return `https://player.mediadelivery.net/embed/${lib}/${id}?token=${sha(token + id + exp)}&expires=${exp}`;
+  // rememberPosition: a student who leaves comes back where they stopped (Bunny keeps it per browser)
+  return `https://player.mediadelivery.net/embed/${lib}/${id}?token=${sha(token + id + exp)}&expires=${exp}&rememberPosition=true&preload=true`;
 }
 
 export function registerVideo(app, { h, bad, requireMaster }) {

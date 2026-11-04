@@ -13,7 +13,14 @@ async function fetchPdf(stepId) {
     const j = await res.json().catch(() => ({}));
     throw Object.assign(new Error(j.error || 'Could not open the rules sheet'), { status: res.status });
   }
-  return URL.createObjectURL(await res.blob());
+  const parts = Number(res.headers.get('X-Parts') || 1);
+  const blobs = [await res.blob()];
+  for (let p = 1; p < parts; p++) {
+    const r = await fetch(`/api/roadmap/steps/${stepId}/handout?part=${p}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+    if (!r.ok) throw new Error('Could not open the rules sheet');
+    blobs.push(await r.blob());
+  }
+  return URL.createObjectURL(new Blob(blobs, { type: 'application/pdf' }));
 }
 
 /** Rules sheet (PDF) of a roadmap step: open in a new tab or download. */
@@ -55,12 +62,28 @@ export function HandoutEditor({ stepId, h, onChange }) {
   const toast = useToast();
   const ref = useRef(null);
   const [busy, setBusy] = useState(false);
+  const [pct, setPct] = useState(null);
   const upload = async (file) => {
     if (!file) return;
-    const form = new FormData(); form.append('file', file);
+    if (file.type && file.type !== 'application/pdf') { toast('Choose a PDF file', 'bad'); return; }
+    if (file.size > 25 * 1024 * 1024) { toast(`This PDF is ${(file.size / 1048576).toFixed(1)} MB — the limit is 25 MB. Compress it first (e.g. ilovepdf.com → Compress PDF).`, 'bad'); if (ref.current) ref.current.value = ''; return; }
     setBusy(true);
-    try { const s = await api.upload(`/roadmap/steps/${stepId}/handout`, form); onChange(s.handout); toast('Rules sheet saved'); }
-    catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); if (ref.current) ref.current.value = ''; }
+    try {
+      // sent in 3 MB pieces with a progress bar, so big PDFs never hit the hosting request limit
+      const CH = 3 * 1024 * 1024; const n = Math.ceil(file.size / CH) || 1;
+      const id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      let s;
+      for (let i = 0; i < n; i++) {
+        setPct(Math.round((i / n) * 100));
+        const r = await fetch(`/api/roadmap/steps/${stepId}/handout/chunk?upload=${id}&i=${i}&n=${n}&name=${encodeURIComponent(file.name)}`,
+          { method: 'POST', headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/octet-stream' }, body: file.slice(i * CH, (i + 1) * CH) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || `Upload failed (${r.status})`);
+        s = d;
+      }
+      setPct(null);
+      onChange(s.handout); toast('Rules sheet saved');
+    } catch (e) { setPct(null); toast(e.message, 'bad'); } finally { setBusy(false); if (ref.current) ref.current.value = ''; }
   };
   const remove = async () => {
     setBusy(true);
@@ -72,7 +95,8 @@ export function HandoutEditor({ stepId, h, onChange }) {
       <span className="handout-ic"><IconDoc /></span>
       <div className="grow" style={{ minWidth: 0 }}>
         <b>{h ? h.title : 'Rules sheet (PDF)'}</b>
-        <small>{h ? `${meta(h)} · ${h.src === 'bundled' ? 'bundled with the course' : 'uploaded by you'}` : 'Optional. Students can open or download it from this step and its lessons.'}</small>
+        <small>{pct != null ? `Uploading… ${pct}%` : h ? `${meta(h)} · ${h.src === 'bundled' ? 'bundled with the course' : 'uploaded by you'}` : 'Optional, up to 25 MB. Students can open or download it from this step and its lessons.'}</small>
+        {pct != null && <div className="vup-bar"><i style={{ width: `${pct}%` }} /></div>}
       </div>
       <input ref={ref} type="file" accept="application/pdf,.pdf" hidden onChange={(e) => upload(e.target.files?.[0])} />
       <div className="row" style={{ gap: 6 }}>

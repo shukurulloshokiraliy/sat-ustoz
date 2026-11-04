@@ -1139,8 +1139,18 @@ app.get('/api/roadmap/steps/:id/handout', h(async (req, res) => {
     const free = (await db.all("SELECT content FROM roadmap_items WHERE step_id = ? AND kind = 'lesson'", [req.params.id])).some((i) => { try { return JSON.parse(i.content || '{}').free; } catch { return false; } });
     if (!free) return bad(res, 'An active subscription is required', 402, { code: 'subscription_required' });
   }
-  res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${encodeURIComponent(row.name)}"`, 'Cache-Control': 'private, max-age=300' });
-  res.send(Buffer.from(row.data));
+  const buf = Buffer.from(row.data);
+  // big files go out in 3 MB parts (?part=0,1,…): one hosting response carries at most ~4.5 MB
+  const PART = 3 * 1024 * 1024; const parts = Math.ceil(buf.length / PART) || 1;
+  res.set({ 'X-Parts': String(parts), 'Access-Control-Expose-Headers': 'X-Parts', 'Cache-Control': 'private, max-age=300' });
+  if (req.query.part != null) {
+    const p = Math.max(0, Math.min(parts - 1, Number(req.query.part) || 0));
+    res.set({ 'Content-Type': 'application/octet-stream' });
+    return res.send(buf.subarray(p * PART, (p + 1) * PART));
+  }
+  if (parts > 1) { res.set({ 'Content-Type': 'application/octet-stream' }); return res.send(buf.subarray(0, PART)); }
+  res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${encodeURIComponent(row.name)}"` });
+  res.send(buf);
 }));
 app.post('/api/roadmap/steps/:id/handout', requireMaster, upload.single('file'), h(async (req, res) => {
   const f = req.file;
@@ -1153,6 +1163,30 @@ app.post('/api/roadmap/steps/:id/handout', requireMaster, upload.single('file'),
   await db.run(`INSERT INTO step_handouts (step_id, name, title, pages, size, src, data) VALUES (?,?,?,?,?,'upload',?)
     ON CONFLICT (step_id) DO UPDATE SET name = EXCLUDED.name, title = EXCLUDED.title, pages = EXCLUDED.pages, size = EXCLUDED.size, src = 'upload', data = EXCLUDED.data, updated_at = now()`,
     [step.id, f.originalname.slice(0, 160), title, pages, f.size, f.buffer]);
+  res.json((await loadSteps('WHERE id = ?', [step.id]))[0]);
+}));
+// big PDFs (up to 25 MB) arrive in ~3 MB pieces: one request on Vercel carries at most ~4.5 MB
+app.post('/api/roadmap/steps/:id/handout/chunk', requireMaster, express.raw({ type: 'application/octet-stream', limit: '4mb' }), h(async (req, res) => {
+  const up = String(req.query.upload || '').replace(/[^\w-]/g, '').slice(0, 40);
+  const i = Number(req.query.i); const n = Number(req.query.n);
+  if (!up || !Number.isInteger(i) || !Number.isInteger(n) || n < 1 || n > 10 || i < 0 || i >= n || !Buffer.isBuffer(req.body) || !req.body.length) return bad(res, 'Bad upload piece');
+  const step = await db.one('SELECT id, title FROM roadmap_steps WHERE id = ?', [req.params.id]);
+  if (!step) return bad(res, 'Not found', 404);
+  await db.exec('CREATE TABLE IF NOT EXISTS upload_chunks (upload TEXT NOT NULL, i INTEGER NOT NULL, data BYTEA NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (upload, i)); ALTER TABLE upload_chunks ENABLE ROW LEVEL SECURITY;');
+  await db.run("DELETE FROM upload_chunks WHERE created_at < now() - interval '1 day'");
+  await db.run('INSERT INTO upload_chunks (upload, i, data) VALUES (?,?,?) ON CONFLICT (upload, i) DO UPDATE SET data = EXCLUDED.data', [up, i, req.body]);
+  const parts = await db.all('SELECT i, data FROM upload_chunks WHERE upload = ? ORDER BY i', [up]);
+  if (parts.length < n) return res.json({ ok: true, received: parts.length, of: n });
+  const buf = Buffer.concat(parts.map((p) => Buffer.from(p.data)));
+  await db.run('DELETE FROM upload_chunks WHERE upload = ?', [up]);
+  if (buf.length > 25 * 1024 * 1024) return bad(res, 'The PDF is larger than 25 MB — compress it (e.g. ilovepdf.com → Compress) and try again');
+  if (buf.subarray(0, 4).toString() !== '%PDF') return bad(res, 'Only PDF files can be used as a rules sheet');
+  const name = String(req.query.name || 'rules.pdf').slice(0, 160);
+  const pages = (buf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length || null;
+  const title = `${step.title.split(':')[0]} · Rules sheet`;
+  await db.run(`INSERT INTO step_handouts (step_id, name, title, pages, size, src, data) VALUES (?,?,?,?,?,'upload',?)
+    ON CONFLICT (step_id) DO UPDATE SET name = EXCLUDED.name, title = EXCLUDED.title, pages = EXCLUDED.pages, size = EXCLUDED.size, src = 'upload', data = EXCLUDED.data, updated_at = now()`,
+    [step.id, name, title, pages, buf.length, buf]);
   res.json((await loadSteps('WHERE id = ?', [step.id]))[0]);
 }));
 app.delete('/api/roadmap/steps/:id/handout', requireMaster, h(async (req, res) => {
