@@ -17,7 +17,7 @@ import { seed } from './seed.js';
 import { registerPlacement } from './placement/routes.js';
 import { lessonSummary, syncBundledModules } from './course/modules.js';
 import { registerLessons } from './course/lessons.js';
-import { registerQbank, syncQbank, migrateQbankMocks } from './qbank.js';
+import { registerQbank, syncQbank, migrateQbankMocks, randomCfg } from './qbank.js';
 import { registerFullMocks, migrateFullMocks } from './fullmock.js';
 import { registerVideo, playUrl, isBunny } from './video.js';
 import { migrateGifs, registerGifs } from './gifs.js';
@@ -282,7 +282,8 @@ registerVocab(app, { h, bad, requireMaster, requireStudent, accessFor: (u) => ac
 
 registerPlacement(app, { h, bad, requireStudent, requireMaster });
 registerLessons(app, { h, bad, requireStudent, requireMaster, roadmapFor: (u) => roadmapFor(u), accessFor: (u) => accessFor(u) });
-registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor: (u) => accessFor(u), upload, usedToday });
+registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor: (u) => accessFor(u), upload, usedToday,
+  itemOpen: async (user, itemId) => (await roadmapFor(user)).steps.some((st) => st.status !== 'locked' && st.items.some((i) => i.id === Number(itemId))) });
 registerFullMocks(app, { h, bad, requireStudent, requireMaster, upload });
 registerTiers(app, { h, bad, requireStudent, requireMaster });
 registerVideo(app, { h, bad, requireMaster });
@@ -930,7 +931,7 @@ app.get('/api/me/analytics', requireStudent, h(async (req, res) => res.json(awai
 // ---------- roadmap ----------
 // A roadmap is a list of steps (topics). Each step holds items: video lessons, reading notes and quizzes.
 const STEP_COLORS = ['signal', 'sky', 'sun', 'night', 'white'];
-const ITEM_KINDS = ['video', 'quiz', 'reading', 'lesson'];
+const ITEM_KINDS = ['video', 'quiz', 'reading', 'lesson', 'random'];
 
 async function loadSteps(where = '', params = []) {
   const steps = await db.all(`SELECT * FROM roadmap_steps ${where} ORDER BY position, id`, params);
@@ -962,6 +963,8 @@ async function roadmapFor(user) {
   const best = new Map((await db.all(`SELECT quiz_id, MAX(ROUND(100.0 * score / NULLIF(total, 0))) AS best FROM attempts
     WHERE user_id = ? AND finished_at IS NOT NULL GROUP BY quiz_id`, [user.id])).map((r) => [r.quiz_id, r.best || 0]));
   const done = new Set((await db.all('SELECT item_id FROM roadmap_done WHERE user_id = ?', [user.id])).map((r) => r.item_id));
+  const exams = new Map((await db.all(`SELECT item_id, MAX(ROUND(100.0 * score / NULLIF(total, 0))) AS best, COUNT(*) AS tries
+    FROM qbank_mocks WHERE user_id = ? AND item_id IS NOT NULL AND finished_at IS NOT NULL GROUP BY item_id`, [user.id])).map((r) => [r.item_id, r]));
   const checks = new Map((await db.all(`SELECT item_id, bool_or(passed) AS passed, MAX(ROUND(100.0 * score / NULLIF(total, 0))) AS best,
     COUNT(finished_at) AS tries FROM lesson_checks WHERE user_id = ? GROUP BY item_id`, [user.id])).map((r) => [r.item_id, r]));
   const a = await userAnalytics(user.id);
@@ -971,6 +974,12 @@ async function roadmapFor(user) {
     // lessons open one after another; vocabulary is open with the step; the session check opens after every lesson
     let prevLessonsPassed = true;
     const items = s.items.map((it) => {
+      if (it.kind === 'random') {
+        const cfg = randomCfg(it.body);
+        const e = exams.get(it.id);
+        const b = e?.best == null ? null : Number(e.best);
+        return { ...it, exam: cfg, best: b, tries: Number(e?.tries || 0), done: b != null && b >= cfg.pass_pct };
+      }
       if (it.kind === 'quiz') {
         const b = it.quiz_id ? best.get(it.quiz_id) ?? null : null;
         return { ...it, best: b, done: b != null && b >= s.pass_pct };
@@ -1032,14 +1041,14 @@ function stepBody(b) {
       title: String(it?.title || '').trim().slice(0, 160),
       quiz_id: kind === 'quiz' && it?.quiz_id ? Number(it.quiz_id) : null,
       url: kind === 'video' || kind === 'lesson' ? url : '',
-      body: kind === 'reading' ? String(it?.body || '').slice(0, 10000) : '',
+      body: kind === 'reading' ? String(it?.body || '').slice(0, 10000) : kind === 'random' ? JSON.stringify(randomCfg(typeof it?.body === 'string' ? it.body : JSON.stringify(it?.body || {}))) : '',
     };
     if (kind === 'quiz' && !out.quiz_id) throw new HttpError(`Item ${i + 1}: choose a quiz`);
     if (kind === 'video' && !/^https?:\/\//i.test(out.url) && !isBunny(out.url)) throw new HttpError(`Item ${i + 1}: paste a video link (https://…)`);
     if (kind === 'lesson' && out.url && !/^https?:\/\//i.test(out.url) && !isBunny(out.url)) throw new HttpError(`Item ${i + 1}: the video link must start with https://`);
     if (kind === 'lesson' && !out.id) throw new HttpError(`Item ${i + 1}: lessons are added by importing a course module`);
     if (kind === 'reading' && !out.body.trim() && !out.title) throw new HttpError(`Item ${i + 1}: write the notes`);
-    if (!out.title) out.title = kind === 'video' ? 'Video lesson' : kind === 'quiz' ? 'Practice quiz' : 'Study notes';
+    if (!out.title) out.title = kind === 'video' ? 'Video lesson' : kind === 'quiz' ? 'Practice quiz' : kind === 'random' ? 'Final exam' : 'Study notes';
     return out;
   });
   return {

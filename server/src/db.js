@@ -247,7 +247,7 @@ ALTER TABLE roadmap_steps ADD COLUMN IF NOT EXISTS module_src TEXT NOT NULL DEFA
 ALTER TABLE roadmap_items ADD COLUMN IF NOT EXISTS content TEXT NOT NULL DEFAULT '';
 ALTER TABLE roadmap_items ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'ready';
 ALTER TABLE roadmap_items DROP CONSTRAINT IF EXISTS roadmap_items_kind_check;
-ALTER TABLE roadmap_items ADD CONSTRAINT roadmap_items_kind_check CHECK (kind IN ('video','quiz','reading','lesson'));
+ALTER TABLE roadmap_items ADD CONSTRAINT roadmap_items_kind_check CHECK (kind IN ('video','quiz','reading','lesson','random'));
 CREATE TABLE IF NOT EXISTS lesson_checks (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

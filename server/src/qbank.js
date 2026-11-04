@@ -89,6 +89,56 @@ export const MOCK_BLUEPRINT = [
   ['transitions', 3], ['rhetorical-synthesis', 3],
 ];
 const MOCK_MINUTES = 32;
+
+/** Settings of a roadmap "Random SAT module" item (stored as JSON in roadmap_items.body). */
+export function randomCfg(body) {
+  let c = {};
+  try { c = JSON.parse(body || '{}'); } catch { /* defaults */ }
+  const int = (v, d, lo, hi) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, Math.round(+v))) : d);
+  const mix = { easy: int(c.mix?.easy, 0, 0, 100), medium: int(c.mix?.medium, 30, 0, 100), hard: int(c.mix?.hard, 70, 0, 100) };
+  if (!mix.easy && !mix.medium && !mix.hard) mix.medium = 100;
+  const skills = (Array.isArray(c.skills) ? c.skills : []).filter((s) => MOCK_BLUEPRINT.some(([id]) => id === s));
+  return { count: int(c.count, 27, 5, 54), minutes: int(c.minutes, 32, 5, 120), pass_pct: int(c.pass_pct, 80, 10, 100), mix, skills: skills.length ? skills : MOCK_BLUEPRINT.map(([id]) => id) };
+}
+
+/** Split n into parts proportional to weights (largest remainders), so the parts add up to n. */
+function spread(n, weights) {
+  const total = weights.reduce((a, b) => a + b, 0) || 1;
+  const raw = weights.map((w) => (n * w) / total);
+  const out = raw.map(Math.floor);
+  let left = n - out.reduce((a, b) => a + b, 0);
+  raw.map((x, i) => [x - Math.floor(x), i]).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (left > 0) { out[i]++; left--; } });
+  return out;
+}
+
+/** One student's exam: the SAT blueprint scaled to `count`, the difficulty mix per skill, unseen and unreserved questions first. */
+export async function randomSet(userId, cfg) {
+  const plan = MOCK_BLUEPRINT.filter(([id]) => cfg.skills.includes(id));
+  const perSkill = spread(cfg.count, plan.map(([, n]) => n));
+  const ids = [];
+  for (let i = 0; i < plan.length; i++) {
+    const [skill] = plan[i];
+    const byLevel = spread(perSkill[i], [cfg.mix.easy, cfg.mix.medium, cfg.mix.hard]);
+    const picked = [];
+    for (const [k, level] of LEVELS.entries()) {
+      if (!byLevel[k]) continue;
+      const rows = await db.all(`SELECT q.id FROM qbank_questions q LEFT JOIN qbank_answers a ON a.question_id = q.id AND a.user_id = ?
+        WHERE q.active AND q.reserved_for IS NULL AND q.skill_id = ? AND q.difficulty = ? AND NOT (q.id = ANY(?::text[]))
+        ORDER BY (a.question_id IS NOT NULL), random() LIMIT ?`, [userId, skill, level, ids.concat(picked), byLevel[k]]);
+      picked.push(...rows.map((r) => r.id));
+    }
+    // not enough at that level: fill from the skill's other levels
+    if (picked.length < perSkill[i]) {
+      const more = await db.all(`SELECT q.id FROM qbank_questions q LEFT JOIN qbank_answers a ON a.question_id = q.id AND a.user_id = ?
+        WHERE q.active AND q.reserved_for IS NULL AND q.skill_id = ? AND NOT (q.id = ANY(?::text[])) ORDER BY (a.question_id IS NOT NULL), random() LIMIT ?`,
+      [userId, skill, ids.concat(picked), perSkill[i] - picked.length]);
+      picked.push(...more.map((r) => r.id));
+    }
+    const lv = new Map((await db.all('SELECT id, difficulty FROM qbank_questions WHERE id = ANY(?::text[])', [picked])).map((r) => [r.id, r.difficulty]));
+    ids.push(...picked.sort((a, b) => LV[lv.get(a)] - LV[lv.get(b)]));
+  }
+  return ids;
+}
 const LV = { easy: 0, medium: 1, hard: 2 };
 
 export async function migrateQbankMocks() {
@@ -104,10 +154,12 @@ CREATE INDEX IF NOT EXISTS idx_qbank_mocks_user ON qbank_mocks(user_id, started_
 ALTER TABLE qbank_mocks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE qbank_mocks ADD COLUMN IF NOT EXISTS estimate INTEGER;
 ALTER TABLE qbank_mocks ADD COLUMN IF NOT EXISTS paid BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE qbank_mocks ADD COLUMN IF NOT EXISTS item_id INTEGER;
+ALTER TABLE qbank_mocks ADD COLUMN IF NOT EXISTS minutes INTEGER;
 `);
 }
 
-export function registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor, upload, usedToday }) {
+export function registerQbank(app, { h, bad, requireStudent, requireMaster, accessFor, upload, usedToday, itemOpen }) {
   // Take a quiz: the plan's free quizzes a day, then a small price per extra quiz from the wallet
   const quizQuota = async (user) => {
     if (user.role === 'master') return { limit: 0, used: 0, left: 0, extra_price: 0, balance: 0 };
@@ -187,27 +239,28 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const rows = await db.all('SELECT * FROM qbank_questions WHERE id = ANY(?::text[])', [ids]);
     const by = new Map(rows.map((q) => [q.id, q]));
     const qs = ids.map((id) => by.get(id)).filter(Boolean);
-    const remaining = Math.max(0, Math.round((new Date(m.started_at).getTime() + MOCK_MINUTES * 60e3 - Date.now()) / 1000));
+    const mins = m.minutes || MOCK_MINUTES;
+    const remaining = Math.max(0, Math.round((new Date(m.started_at).getTime() + mins * 60e3 - Date.now()) / 1000));
     const given = JSON.parse(m.answers || '{}');
     const sat = m.finished_at ? satScore(qs.map((q) => ({ correct: given[q.id] === q.answer, difficulty: q.difficulty }))) : null;
     return {
       sat,
-      id: m.id, minutes: MOCK_MINUTES, remaining, finished: !!m.finished_at, score: m.score, total: m.total, started_at: m.started_at, finished_at: m.finished_at,
+      id: m.id, minutes: mins, remaining, item_id: m.item_id || null, finished: !!m.finished_at, score: m.score, total: m.total, started_at: m.started_at, finished_at: m.finished_at,
       answers: JSON.parse(m.answers || '{}'),
       questions: qs.map((q) => (withKey ? { ...pub(q), answer: q.answer, explanation: q.explanation, tip: q.tip } : pub(q))),
     };
   };
 
   app.get('/api/qbank/mocks', requireStudent, h(async (req, res) => {
-    const list = await db.all('SELECT id, score, total, estimate, started_at, finished_at FROM qbank_mocks WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 10', [req.user.id]);
-    const open = await db.one(`SELECT id FROM qbank_mocks WHERE user_id = ? AND finished_at IS NULL AND started_at > now() - interval '${MOCK_MINUTES} minutes' ORDER BY id DESC LIMIT 1`, [req.user.id]);
+    const list = await db.all('SELECT id, score, total, estimate, started_at, finished_at FROM qbank_mocks WHERE user_id = ? AND item_id IS NULL AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 10', [req.user.id]);
+    const open = await db.one(`SELECT id FROM qbank_mocks WHERE user_id = ? AND item_id IS NULL AND finished_at IS NULL AND started_at > now() - interval '${MOCK_MINUTES} minutes' ORDER BY id DESC LIMIT 1`, [req.user.id]);
     const mockAcc = list.length ? Math.round((list.reduce((s, m) => s + m.score, 0) / list.reduce((s, m) => s + m.total, 0)) * 100) : null;
     res.json({ quota: await quizQuota(req.user), mocks: list, open: open?.id || null, accuracy: await accuracy(req.user.id), mock_accuracy: mockAcc, questions: MOCK_BLUEPRINT.reduce((s, [, n]) => s + n, 0), minutes: MOCK_MINUTES });
   }));
 
   // start a new module (or resume the one still running)
   app.post('/api/qbank/mock', requireStudent, h(async (req, res) => {
-    const open = await db.one(`SELECT * FROM qbank_mocks WHERE user_id = ? AND finished_at IS NULL AND started_at > now() - interval '${MOCK_MINUTES} minutes' ORDER BY id DESC LIMIT 1`, [req.user.id]);
+    const open = await db.one(`SELECT * FROM qbank_mocks WHERE user_id = ? AND item_id IS NULL AND finished_at IS NULL AND started_at > now() - interval '${MOCK_MINUTES} minutes' ORDER BY id DESC LIMIT 1`, [req.user.id]);
     if (open && !req.body?.fresh) return res.json(await mockState(open, false));
     const quota = await quizQuota(req.user);
     const paid = quota.limit > 0 && quota.left <= 0;
@@ -259,10 +312,27 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     res.json(await mockState(await db.one('SELECT * FROM qbank_mocks WHERE id = ?', [m.id]), true));
   }));
 
-  app.get('/api/qbank/mock/:id', requireStudent, h(async (req, res) => {
-    const m = await db.one('SELECT * FROM qbank_mocks WHERE id = ? AND user_id = ?', [Number(req.params.id), req.user.id]);
+  app.get('/api/qbank/mock/:id', h(async (req, res) => {
+    const m = req.user.role === 'master'
+      ? await db.one('SELECT * FROM qbank_mocks WHERE id = ?', [Number(req.params.id)])
+      : await db.one('SELECT * FROM qbank_mocks WHERE id = ? AND user_id = ?', [Number(req.params.id), req.user.id]);
     if (!m) return bad(res, 'Quiz not found', 404);
     res.json(await mockState(m, !!m.finished_at));
+  }));
+
+  // ---------- roadmap "Random SAT module": a final exam generated for each student ----------
+  app.post('/api/roadmap/items/:id/exam', requireStudent, h(async (req, res) => {
+    const it = await db.one("SELECT * FROM roadmap_items WHERE id = ? AND kind = 'random'", [Number(req.params.id)]);
+    if (!it) return bad(res, 'Exam not found', 404);
+    if (!(await itemOpen(req.user, it.id))) return bad(res, 'Finish the previous roadmap step first', 403);
+    const cfg = randomCfg(it.body);
+    const open = await db.one(`SELECT * FROM qbank_mocks WHERE user_id = ? AND item_id = ? AND finished_at IS NULL
+      AND started_at > now() - (COALESCE(minutes, ${MOCK_MINUTES}) || ' minutes')::interval ORDER BY id DESC LIMIT 1`, [req.user.id, it.id]);
+    if (open && !req.body?.fresh) return res.json(await mockState(open, false));
+    const ids = await randomSet(req.user.id, cfg);
+    if (ids.length < Math.min(5, cfg.count)) return bad(res, 'The Question Bank does not have enough questions for this exam yet');
+    const m = await db.one('INSERT INTO qbank_mocks (user_id, question_ids, total, item_id, minutes) VALUES (?,?,?,?,?) RETURNING *', [req.user.id, JSON.stringify(ids), ids.length, it.id, cfg.minutes]);
+    res.json({ ...(await mockState(m, false)), exam: { title: it.title, pass_pct: cfg.pass_pct } });
   }));
 
   // teacher: browse every question with the key and class statistics

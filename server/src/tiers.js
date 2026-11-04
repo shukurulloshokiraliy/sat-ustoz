@@ -62,7 +62,7 @@ const TODAY = "date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZON
 /** Question Bank answers and Take a quiz starts used today. */
 export async function usedToday(userId) {
   const q = await db.one(`SELECT COUNT(*) AS n FROM qbank_answers WHERE user_id = ? AND answered_at >= ${TODAY}`, [userId]);
-  const m = await db.one(`SELECT COUNT(*) AS n FROM qbank_mocks WHERE user_id = ? AND started_at >= ${TODAY} AND NOT paid`, [userId]).catch(() => ({ n: 0 }));
+  const m = await db.one(`SELECT COUNT(*) AS n FROM qbank_mocks WHERE user_id = ? AND started_at >= ${TODAY} AND NOT paid AND item_id IS NULL`, [userId]).catch(() => ({ n: 0 }));
   return { questions: Number(q.n), quizzes: Number(m.n) };
 }
 

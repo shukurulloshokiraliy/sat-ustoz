@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useToast } from '../../context.jsx';
 import { Confirm, ErrorBox, Spinner } from '../../components/ui.jsx';
@@ -20,9 +20,10 @@ const DIRECTIONS = (
 /** A timed random module from the Question Bank in the Bluebook layout. */
 export default function MockTaker() {
   const nav = useNavigate();
+  const { itemId } = useParams(); // /exam/:itemId = roadmap final exam (Random SAT module)
   const [st, setSt] = useState({ data: null, err: null });
   const [paying, setPaying] = useState(false);
-  const begin = (pay = false) => { setPaying(pay); setSt({ data: null, err: null }); api.post('/qbank/mock', pay ? { pay: true } : {}).then((data) => setSt({ data })).catch((err) => setSt({ err })); };
+  const begin = (pay = false) => { setPaying(pay); setSt({ data: null, err: null }); api.post(itemId ? `/roadmap/items/${itemId}/exam` : '/qbank/mock', pay ? { pay: true } : {}).then((data) => setSt({ data })).catch((err) => setSt({ err })); };
   useEffect(() => { begin(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const q = st.err?.data?.quota;
   if (q && (st.err.data.code === 'daily_limit' || st.err.data.code === 'balance_low')) {
@@ -44,12 +45,14 @@ export default function MockTaker() {
       </div>
     );
   }
-  if (st.err) return <div style={{ padding: 40, maxWidth: 520, margin: '0 auto' }}><ErrorBox error={st.err} /><button className="btn ghost" style={{ marginTop: 16 }} onClick={() => nav('/quizzes')}>Back to quizzes</button></div>;
+  if (st.err) return <div style={{ padding: 40, maxWidth: 520, margin: '0 auto' }}><ErrorBox error={st.err} /><button className="btn ghost" style={{ marginTop: 16 }} onClick={() => nav(itemId ? '/roadmap' : '/quizzes')}>Back</button></div>;
   if (!st.data) return <div style={{ height: '100vh', display: 'grid', placeItems: 'center' }}><Spinner label="Building your quiz…" /></div>;
-  return <Runner m={st.data} />;
+  return <Runner m={st.data} exam={!!itemId} />;
 }
 
-function Runner({ m }) {
+function Runner({ m, exam }) {
+  const title = exam ? `Reading and Writing · ${m.exam?.title || 'Final exam'}` : 'Reading and Writing · Random module';
+  const back = exam ? '/roadmap' : '/quizzes';
   const nav = useNavigate();
   const toast = useToast();
   const qs = m.questions;
@@ -104,7 +107,7 @@ function Runner({ m }) {
   const unanswered = items.filter((x) => !x.answered).length;
   return (
     <>
-      <BBShell title="Reading and Writing · Random module" directions={DIRECTIONS} seconds={left} onExit={() => setExit(true)} exitLabel="Exit"
+      <BBShell title={title} directions={DIRECTIONS} seconds={left} onExit={() => setExit(true)} exitLabel="Exit"
         highlight={hl} onHighlight={view === 'q' && (q.passage || q.table) ? () => setHl((x) => !x) : null}
         footer={(
           <BBFooter cur={cur} total={qs.length} onOpenNav={() => setNav2(true)}>
@@ -128,12 +131,12 @@ function Runner({ m }) {
               </div>
             )}
           />
-        ) : <BBReview title="Reading and Writing · Random module" items={items} onGo={go} onBack={() => go(qs.length - 1)} onSubmit={() => setConfirm(true)} submitLabel="Submit" />}
+        ) : <BBReview title={title} items={items} onGo={go} onBack={() => go(qs.length - 1)} onSubmit={() => setConfirm(true)} submitLabel="Submit" />}
       </BBShell>
-      {nav2 && <BBNavigator title="Reading and Writing · Random module" items={items} cur={view === 'q' ? cur : -1} onGo={go} onClose={() => setNav2(false)} onReview={() => { setNav2(false); setView('review'); }} />}
+      {nav2 && <BBNavigator title={title} items={items} cur={view === 'q' ? cur : -1} onGo={go} onClose={() => setNav2(false)} onReview={() => { setNav2(false); setView('review'); }} />}
       {confirm && <Confirm danger={false} title="Submit your answers?" confirmLabel="Yes, submit" onClose={() => setConfirm(false)} onConfirm={submit}
         text={unanswered ? `${unanswered} question${unanswered === 1 ? ' is' : 's are'} unanswered and will count as wrong.` : 'All questions are answered. Ready to see your result?'} />}
-      {exit && <Confirm danger={false} title="Leave the quiz?" confirmLabel="Leave" onClose={() => setExit(false)} onConfirm={() => nav('/quizzes')}
+      {exit && <Confirm danger={false} title="Leave the quiz?" confirmLabel="Leave" onClose={() => setExit(false)} onConfirm={() => nav(back)}
         text="Your answers are saved. The timer keeps running; come back before it ends to finish." />}
     </>
   );

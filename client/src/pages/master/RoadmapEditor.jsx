@@ -7,7 +7,7 @@ import RoadmapMap, { StepDisc, STEP_COLORS } from '../../components/RoadmapMap.j
 import { HandoutEditor } from '../../components/Handout.jsx';
 import { IconDoc, IconDown, IconEdit, IconPlay, IconPlus, IconQuiz, IconTrash, IconUp } from '../../components/icons.jsx';
 
-const countLabel = (items) => [['lesson', 'lesson', 'lessons'], ['video', 'video', 'videos'], ['quiz', 'quiz', 'quizzes'], ['reading', 'note', 'notes']]
+const countLabel = (items) => [['lesson', 'lesson', 'lessons'], ['video', 'video', 'videos'], ['quiz', 'quiz', 'quizzes'], ['random', 'final exam', 'final exams'], ['reading', 'note', 'notes']]
   .map(([k, one, many]) => { const n = items.filter((x) => x.kind === k).length; return n ? `${n} ${n === 1 ? one : many}` : null; })
   .filter(Boolean).join(' · ');
 const BLANK = { title: '', subtitle: '', badge: '', color: 'signal', score_from: 200, score_to: 300, pass_pct: 70, description: '', focus: '', items: [] };
@@ -146,6 +146,7 @@ function StepModal({ init, insertAt, quizzes, onClose, onSaved, onChanged }) {
           <button className="btn soft sm" type="button" onClick={() => addItem('video')}><IconPlay width={16} height={16} /> Video</button>
           <button className="btn soft sm" type="button" onClick={() => addItem('quiz')} disabled={!quizzes.length}><IconQuiz width={16} height={16} /> Quiz</button>
           <button className="btn soft sm" type="button" onClick={() => addItem('reading')}><IconDoc width={16} height={16} /> Notes</button>
+          <button className="btn soft sm" type="button" onClick={() => addItem('random')}><IconQuiz width={16} height={16} /> Random SAT module</button>
         </div>
       </div>
       {!f.items.length && <p className="muted" style={{ fontSize: '.86rem' }}>No lessons — the step then completes when the student's estimated score reaches “Score to”.</p>}
@@ -155,7 +156,7 @@ function StepModal({ init, insertAt, quizzes, onClose, onSaved, onChanged }) {
             {it.kind === 'lesson'
               ? <span className="row" style={{ gap: 6 }}><span className="chip primary">{it.lesson?.type === 'vocab' ? `Vocabulary · ${it.lesson.words} words` : it.lesson?.type === 'session' ? `Session check · ${it.lesson.time_minutes} min` : `Lesson ${it.lesson?.order} · from module`}</span>{it.status !== 'ready' && <span className="chip warn">Coming soon</span>}{it.lesson?.check_count > 0 && <span className="chip">Level check {it.lesson.versions.join('/')} × {it.lesson.check_count}</span>}</span>
               : <Segmented value={it.kind} onChange={(kind) => setItem(it._k, { kind, quiz_id: kind === 'quiz' ? it.quiz_id || quizzes[0]?.id : null })}
-                  options={[{ value: 'video', label: 'Video' }, { value: 'quiz', label: 'Quiz' }, { value: 'reading', label: 'Notes' }]} />}
+                  options={[{ value: 'video', label: 'Video' }, { value: 'quiz', label: 'Quiz' }, { value: 'reading', label: 'Notes' }, { value: 'random', label: 'Random SAT module' }]} />}
             <span className="grow" />
             <button className="icon-sm" type="button" aria-label="Move up" disabled={i === 0} onClick={() => moveItem(i, -1)}><IconUp width={15} height={15} /></button>
             <button className="icon-sm" type="button" aria-label="Move down" disabled={i === f.items.length - 1} onClick={() => moveItem(i, 1)}><IconDown width={15} height={15} /></button>
@@ -171,9 +172,41 @@ function StepModal({ init, insertAt, quizzes, onClose, onSaved, onChanged }) {
               {quizzes.map((q) => <option key={q.id} value={q.id}>{q.title} · {q.questions} questions{q.kind !== 'practice' ? ` (${q.kind})` : ''}</option>)}
             </select>
           )}
+          {it.kind === 'random' && <RandomExamFields value={it.body} onChange={(body) => setItem(it._k, { body })} />}
           {it.kind === 'reading' && <textarea rows={4} value={it.body} onChange={(e) => setItem(it._k, { body: e.target.value })} placeholder="Rules, examples, tips…" aria-label="Notes" />}
         </div>
       ))}
     </Modal>
+  );
+}
+
+const EXAM_SKILLS = [['words-in-context', 'Words in Context'], ['text-structure', 'Text Structure'], ['cross-text', 'Cross-Text'], ['central-ideas', 'Central Ideas'],
+  ['command-of-evidence', 'Command of Evidence'], ['inferences', 'Inferences'], ['boundaries', 'Boundaries'], ['form-structure-sense', 'Form, Structure, Sense'],
+  ['transitions', 'Transitions'], ['rhetorical-synthesis', 'Rhetorical Synthesis']];
+
+/** Settings of a "Random SAT module" final exam: every student gets their own set from the Question Bank. */
+function RandomExamFields({ value, onChange }) {
+  let c = {};
+  try { c = typeof value === 'string' ? JSON.parse(value || '{}') : value || {}; } catch { c = {}; }
+  const cfg = { count: c.count ?? 27, minutes: c.minutes ?? 32, pass_pct: c.pass_pct ?? 80, mix: { easy: c.mix?.easy ?? 0, medium: c.mix?.medium ?? 30, hard: c.mix?.hard ?? 70 }, skills: c.skills?.length ? c.skills : EXAM_SKILLS.map(([id]) => id) };
+  const put = (patch) => onChange(JSON.stringify({ ...cfg, ...patch }));
+  const num = (k) => (e) => put({ [k]: e.target.value === '' ? '' : Number(e.target.value) });
+  const mix = (k) => (e) => put({ mix: { ...cfg.mix, [k]: Number(e.target.value) || 0 } });
+  const tog = (id) => put({ skills: cfg.skills.includes(id) ? cfg.skills.filter((x) => x !== id) : [...cfg.skills, id] });
+  return (
+    <div className="rx">
+      <div className="grid g3">
+        <label className="field"><span>Questions</span><input type="number" min="5" max="54" value={cfg.count} onChange={num('count')} /></label>
+        <label className="field"><span>Time, min</span><input type="number" min="5" max="120" value={cfg.minutes} onChange={num('minutes')} /></label>
+        <label className="field"><span>Pass mark, %</span><input type="number" min="10" max="100" value={cfg.pass_pct} onChange={num('pass_pct')} /></label>
+      </div>
+      <div className="grid g3">
+        <label className="field"><span>Easy, %</span><input type="number" min="0" max="100" value={cfg.mix.easy} onChange={mix('easy')} /></label>
+        <label className="field"><span>Medium, %</span><input type="number" min="0" max="100" value={cfg.mix.medium} onChange={mix('medium')} /></label>
+        <label className="field"><span>Hard, %</span><input type="number" min="0" max="100" value={cfg.mix.hard} onChange={mix('hard')} /></label>
+      </div>
+      <div className="rx-skills">{EXAM_SKILLS.map(([id, name]) => <button key={id} type="button" className={`chip ${cfg.skills.includes(id) ? 'primary' : ''}`} onClick={() => tog(id)}>{name}</button>)}</div>
+      <small className="muted">Skills follow the real SAT module order and blueprint, scaled to the number of questions. Each student gets a new set (questions they have not answered first, never reserved exam or lesson questions); a retry builds a new set.</small>
+    </div>
   );
 }

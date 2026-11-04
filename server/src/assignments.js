@@ -51,6 +51,13 @@ export async function assignmentsFor(user, roadmapFor) {
   const out = [];
   steps.forEach((s, i) => {
     for (const it of s.items || []) {
+      if (it.kind === 'random') {
+        out.push({ key: `e${it.id}`, source: 'roadmap', type: 'exam', item_id: it.id, title: it.title, quiz_id: null,
+          step: { id: s.id, title: s.title, index: i + 1 }, pass_pct: it.exam?.pass_pct ?? 80, attempts_allowed: 0, due_at: null,
+          minutes: it.exam?.minutes, questions: it.exam?.count, best: it.best ?? null, tries: it.tries || 0,
+          locked: s.status === 'locked', lock_reason: s.status === 'locked' ? `Finish “${steps[i - 1]?.title || 'the previous step'}” to unlock` : null });
+        continue;
+      }
       if (it.kind !== 'quiz' || !it.quiz_id) continue;
       out.push({ key: `r${it.id}`, source: 'roadmap', type: 'quiz', title: it.title || it.quiz_title, quiz_id: it.quiz_id,
         step: { id: s.id, title: s.title, index: i + 1 }, pass_pct: s.pass_pct, attempts_allowed: 0, due_at: null,
@@ -62,8 +69,14 @@ export async function assignmentsFor(user, roadmapFor) {
     out.push({ key: `t${a.id}`, id: a.id, source: a.group_id ? 'group' : 'teacher', type: a.type, title: a.title, quiz_id: a.quiz_id, step: null,
       pass_pct: a.pass_pct, attempts_allowed: a.attempts_allowed, due_at: a.due_at, note: a.note, minutes: a.duration_min, questions: Number(a.questions || 0), locked: false });
   }
-  const res = await quizResults(user.id, [...new Set(out.map((a) => a.quiz_id))]);
+  const res = await quizResults(user.id, [...new Set(out.map((a) => a.quiz_id).filter(Boolean))]);
+  const openExams = new Set((await db.all("SELECT item_id FROM qbank_mocks WHERE user_id = ? AND item_id IS NOT NULL AND finished_at IS NULL AND started_at > now() - (COALESCE(minutes, 32) || ' minutes')::interval", [user.id])).map((r) => r.item_id));
   for (const a of out) {
+    if (a.type === 'exam') {
+      a.open_attempt = openExams.has(a.item_id) || null;
+      a.status = a.locked ? 'locked' : a.open_attempt ? 'in_progress' : a.best != null && a.best >= a.pass_pct ? 'passed' : a.tries ? 'retake' : 'new';
+      continue;
+    }
     const r = res.get(a.quiz_id);
     a.best = r?.best ?? null; a.tries = r?.tries || 0; a.open_attempt = r?.open_id || null;
     a.status = a.locked ? 'locked' : statusOf(r, a.pass_pct, a.attempts_allowed);

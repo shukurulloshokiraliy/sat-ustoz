@@ -52,6 +52,7 @@ function AssignmentCard({ a, teacherView }) {
         <h3>{a.title}</h3>
         <div className="as-meta">
           <span className={`chip ${tone}`}>{label}</span>
+          {a.type === 'exam' && <span>Random SAT module</span>}
           {a.questions > 0 && <span>{a.questions} questions{a.minutes ? ` · ${a.minutes} min` : ''}</span>}
           <span>Pass {a.pass_pct}%</span>
           {a.best != null && <span>Best <b>{a.best}%</b>{a.tries ? ` · ${a.tries} ${a.tries === 1 ? 'try' : 'tries'}` : ''}{a.attempts_allowed ? ` of ${a.attempts_allowed}` : ''}</span>}
@@ -60,7 +61,7 @@ function AssignmentCard({ a, teacherView }) {
         {a.note && <p className="muted as-note">{a.note}</p>}
         {a.locked && <p className="muted as-note">{a.lock_reason}</p>}
       </div>
-      {!teacherView && !a.locked && a.status !== 'failed' && <Link className={`btn ${a.status === 'passed' ? 'ghost' : 'primary'} sm`} to={`/quiz/${a.quiz_id}`}>{btn} <IconArrow width={15} height={15} /></Link>}
+      {!teacherView && !a.locked && a.status !== 'failed' && <Link className={`btn ${a.status === 'passed' ? 'ghost' : 'primary'} sm`} to={a.type === 'exam' ? `/exam/${a.item_id}` : `/quiz/${a.quiz_id}`}>{btn} <IconArrow width={15} height={15} /></Link>}
     </article>
   );
 }

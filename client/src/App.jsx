@@ -83,6 +83,7 @@ export default function App() {
       {user.role === 'student' && <Route path="/lesson/:id/check" element={<LevelCheck />} />}
       {user.role === 'student' && <Route path="/question-bank/practice" element={<QbankPractice />} />}
       {user.role === 'student' && <Route path="/mock" element={<MockTaker />} />}
+      {user.role === 'student' && <Route path="/exam/:itemId" element={<MockTaker />} />}
       {user.role === 'student' && <Route path="/full-mock/:aid" element={<FullMockTaker />} />}
       <Route path="/site" element={<PublicLayout />}>
         <Route index element={<Landing />} />

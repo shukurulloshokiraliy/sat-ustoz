@@ -141,6 +141,23 @@ function StepDrawer({ step, index, prev, onClose, onChanged }) {
                   </div>
                 );
               }
+              if (it.kind === 'random') {
+                const ex = it.exam || {};
+                return (
+                  <div key={it.id} className={`item-row ${it.done ? 'done' : ''}`}>
+                    <span className="item-ic quiz">{it.done ? <IconCheck /> : <IconQuiz />}</span>
+                    <div style={{ minWidth: 0 }}>
+                      <b>{it.title}</b>
+                      <small>Final exam · {ex.count} random SAT questions · {ex.minutes} min · pass {ex.pass_pct}%{it.best != null ? ` · best ${it.best}%` : ''}</small>
+                    </div>
+                    <div className="item-act row" style={{ gap: 6 }}>
+                      {!canRoadmap && user.role === 'student'
+                        ? <Link className="btn soft sm" to="/subscribe"><IconLock width={15} height={15} /> Subscribe</Link>
+                        : user.role === 'student' && <button className={`btn sm ${it.done ? 'ghost' : 'primary'}`} disabled={locked} onClick={() => nav(`/exam/${it.id}`)}>{it.tries ? 'New attempt' : 'Start'} <IconArrow width={15} height={15} /></button>}
+                    </div>
+                  </div>
+                );
+              }
               const isOpen = expanded.has(it.id);
               const needsSub = it.kind === 'quiz' && it.quiz_kind !== 'diagnostic' && !canPractice;
               return (
