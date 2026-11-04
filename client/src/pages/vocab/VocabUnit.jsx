@@ -10,6 +10,8 @@ import Flashcards, { highlight, speak } from './Flashcards.jsx';
 import VocabTest from './VocabTest.jsx';
 import GifSlot from '../../components/GifSlot.jsx';
 import ImportWords from './ImportWords.jsx';
+import { pictureOf, useWordPictures } from './usePictures.js';
+import PicturePicker from './PicturePicker.jsx';
 
 const STATE = { new: 'New', learning: 'Learning', review: 'Learned' };
 
@@ -33,6 +35,7 @@ export function VocabReview() {
 }
 
 function Unit({ u, reload }) {
+  const pics = useWordPictures(u.words);
   const { user } = useAuth();
   const teacher = user.role === 'master';
   const [tab, setTab] = useState('words');
@@ -105,7 +108,7 @@ function Unit({ u, reload }) {
               {u.words.map((w) => (
                 <article key={w.id} className="v-word">
                   <div className="row between"><h3>{w.word} <button className="fc-say sm" onClick={() => speak(w.word)} aria-label={`Listen to ${w.word}`}><IconVolume width={16} height={16} /></button></h3><span className={`v-state ${w.state}`}>{STATE[w.state]}</span></div>
-                  {w.image_url && <img className="v-pic" src={w.image_url} alt={w.word} loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                  {pictureOf(w, pics) && <img className="v-pic" src={pictureOf(w, pics).url} alt={w.word} loading="lazy" referrerPolicy="no-referrer" title={pictureOf(w, pics).credit || undefined} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
                   <p>{w.definition}</p>
                   {w.example && <p className="v-ex">{highlight(w.example, w.word)}</p>}
                 </article>
@@ -132,6 +135,8 @@ function Unit({ u, reload }) {
 const BLANK = { word: '', definition: '', uz: '', ru: '', example: '', image_url: '' };
 /** Teacher: edit, add or remove the words of a unit. */
 function WordEditor({ u, reload }) {
+  const pics = useWordPictures(u.words);
+  const [pick, setPick] = useState(null);
   const toast = useToast();
   const [edit, setEdit] = useState(null);
   const [del, setDel] = useState(null);
@@ -152,10 +157,15 @@ function WordEditor({ u, reload }) {
             </div>
             <p>{w.definition}</p>
             {w.example && <p className="v-ex">{highlight(w.example, w.word)}</p>}
-            <div className="v-gif"><GifSlot kind="word" refId={w.id} gif={w.image_url ? { url: w.image_url } : null} query={w.word} label="Add picture / GIF" compact /></div>
+            {!w.image_url && pics[w.id] && <img className="v-pic" src={pics[w.id].url} alt={w.word} loading="lazy" referrerPolicy="no-referrer" title={pics[w.id].credit} />}
+            <div className="row wrap" style={{ gap: 8 }}>
+              {!w.image_url && <button className="btn ghost sm" onClick={() => setPick(w)}>{pics[w.id] ? 'Change picture' : 'Choose picture'}</button>}
+              <div className="v-gif"><GifSlot kind="word" refId={w.id} gif={w.image_url ? { url: w.image_url } : null} query={w.word} label="Add GIF" compact /></div>
+            </div>
           </article>
         ))}
       </div>
+      {pick && <PicturePicker w={pick} onClose={() => setPick(null)} onSaved={() => { setPick(null); window.location.reload(); }} />}
       {edit && <WordModal unitId={u.id} w={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); }} />}
       {imp && <ImportWords unitId={u.id} onClose={() => setImp(false)} onSaved={() => { setImp(false); reload(); }} />}
       {bulk && <BulkModal unitId={u.id} onClose={() => setBulk(false)} onSaved={() => { setBulk(false); reload(); }} />}
