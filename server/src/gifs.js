@@ -1,5 +1,5 @@
 /**
- * GIFs and memes on roadmap topics, lessons and vocabulary units.
+ * GIFs and memes for vocabulary only: one per vocabulary unit, and one per word (picture or GIF on the flashcard).
  *
  * The teacher picks a GIF from GIPHY (search goes through our server, so the API key never reaches the browser)
  * or pastes a link (GIPHY page, Tenor or any https image). One GIF per topic / lesson / unit, stored here
@@ -7,7 +7,7 @@
  */
 import { db, getSettings } from './db.js';
 
-export const GIF_KINDS = ['step', 'item', 'unit'];
+export const GIF_KINDS = ['unit', 'word']; // the roadmap has no GIFs
 
 export async function migrateGifs() {
   await db.exec(`CREATE TABLE IF NOT EXISTS media_gifs (
@@ -84,20 +84,26 @@ export function registerGifs(app, { h, bad, requireMaster }) {
     const { kind } = req.params;
     const ref = Number(req.params.ref);
     if (!GIF_KINDS.includes(kind) || !Number.isInteger(ref) || ref <= 0) return bad(res, 'Not found', 404);
-    const table = { step: 'roadmap_steps', item: 'roadmap_items', unit: 'vocab_units' }[kind];
+    const table = { unit: 'vocab_units', word: 'vocab_words' }[kind];
     if (!(await db.one(`SELECT 1 AS x FROM ${table} WHERE id = ?`, [ref]))) return bad(res, 'Not found', 404);
     const c = cleanGifUrl(req.body?.url);
     if (!c) return bad(res, 'The link must start with https://');
     if (c.error) return bad(res, c.error);
     const title = String(req.body?.title || '').trim().slice(0, 120);
     const source = req.body?.from === 'giphy' ? 'giphy' : c.source;
+    // a word keeps its picture in vocab_words.image_url (shown on the flashcard); src = teacher keeps it across content updates
+    if (kind === 'word') {
+      await db.run("UPDATE vocab_words SET image_url = ?, src = 'teacher' WHERE id = ?", [c.url, ref]);
+      return res.json({ url: c.url, title, source });
+    }
     await db.run(`INSERT INTO media_gifs (kind, ref, url, title, source) VALUES (?,?,?,?,?)
       ON CONFLICT (kind, ref) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.title, source = EXCLUDED.source, updated_at = now()`, [kind, ref, c.url, title, source]);
     res.json({ url: c.url, title, source });
   }));
 
   app.delete('/api/gifs/:kind/:ref', requireMaster, h(async (req, res) => {
-    await db.run('DELETE FROM media_gifs WHERE kind = ? AND ref = ?', [req.params.kind, Number(req.params.ref)]);
+    if (req.params.kind === 'word') await db.run("UPDATE vocab_words SET image_url = '', src = 'teacher' WHERE id = ?", [Number(req.params.ref)]);
+    else await db.run('DELETE FROM media_gifs WHERE kind = ? AND ref = ?', [req.params.kind, Number(req.params.ref)]);
     res.json({ ok: true });
   }));
 }

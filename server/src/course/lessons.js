@@ -1,6 +1,5 @@
 import { db } from '../db.js';
 import { playUrl } from '../video.js';
-import { gifMap } from '../gifs.js';
 import { getSettings } from '../db.js';
 import { upsertModule, validateModule } from './modules.js';
 
@@ -49,9 +48,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     const nextVersion = open?.version || versions[history.length % (versions.length || 1)] || null;
     const showContent = !locked;
     const sections = lessons.filter((i) => (i.lesson?.type || 'section') === 'section');
-    const gif = (await gifMap('item', [item.id])).get(item.id) || null;
     res.json({
-      gif,
       type: content.type || 'section',
       words: content.type === 'vocab' && showContent ? content.words || [] : undefined,
       tested_in: content.tested_in || undefined,

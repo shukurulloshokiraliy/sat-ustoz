@@ -122,7 +122,7 @@ export default function Flashcards({ words, onDone, title }) {
             </div>
           ) : (
             <div className="fc-backside">
-              {card.image_url && <img src={card.image_url} alt="" className="fc-img" />}
+              {card.image_url && <img key={card.id} src={card.image_url} alt={card.word} className="fc-img" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
               <div>
                 <div className="fc-word sm">{card.word}<button className="fc-say" onClick={(e) => { e.stopPropagation(); speak(card.word); }} aria-label="Listen"><IconVolume /></button></div>
                 <h4>Definition</h4>

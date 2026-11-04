@@ -9,21 +9,22 @@ import { IconEdit, IconGif, IconLink, IconSearch, IconTrash } from './icons.jsx'
 const IDEAS = ['meme', 'mind blown', 'you got this', 'nailed it', 'facepalm', 'confused math lady', 'thinking', 'celebrate', 'study hard', 'plot twist', 'grammar', 'the office', 'spongebob', 'brain'];
 
 /**
- * One GIF / meme on a roadmap topic (kind="step"), lesson (kind="item") or vocabulary unit (kind="unit").
+ * One GIF / meme / picture for vocabulary: a whole unit (kind="unit") or one word (kind="word", shown on its flashcard).
  * Students only see it when the teacher has set one; the teacher gets Add / Change / Remove in place.
+ * `query` starts the GIPHY search with that text (the word itself).
  */
-export default function GifSlot({ kind, refId, gif: initial, compact }) {
+export default function GifSlot({ kind, refId, gif: initial, compact, query = '', label = 'Add a GIF or meme', onChange }) {
   const { user } = useAuth();
   const toast = useToast();
   const teacher = user?.role === 'master';
   const [gif, setGif] = useState(initial || null);
   const [pick, setPick] = useState(false);
   const [broken, setBroken] = useState(false);
-  useEffect(() => { setGif(initial || null); setBroken(false); }, [initial, refId]);
+  useEffect(() => { setGif(initial || null); setBroken(false); }, [initial?.url, refId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if ((!gif || broken) && !teacher) return null;
   const remove = async () => {
-    try { await api.del(`/gifs/${kind}/${refId}`); setGif(null); toast('GIF removed'); } catch (e) { toast(e.message, 'bad'); }
+    try { await api.del(`/gifs/${kind}/${refId}`); setGif(null); onChange?.(null); toast('GIF removed'); } catch (e) { toast(e.message, 'bad'); }
   };
   return (
     <>
@@ -40,18 +41,18 @@ export default function GifSlot({ kind, refId, gif: initial, compact }) {
         </figure>
       ) : (
         <button type="button" className={`gif-add ${compact ? 'compact' : ''}`} onClick={() => setPick(true)}>
-          <IconGif width={22} height={22} /> Add a GIF or meme
+          <IconGif width={22} height={22} /> {label}
         </button>
       )}
-      {pick && <GifPicker kind={kind} refId={refId} onClose={() => setPick(false)} onPicked={(g) => { setBroken(false); setGif(g); setPick(false); toast('GIF saved'); }} />}
+      {pick && <GifPicker kind={kind} refId={refId} query={query} onClose={() => setPick(false)} onPicked={(g) => { setBroken(false); setGif(g); setPick(false); onChange?.(g); toast('GIF saved'); }} />}
     </>
   );
 }
 
-function GifPicker({ kind, refId, onClose, onPicked }) {
+function GifPicker({ kind, refId, query = '', onClose, onPicked }) {
   const toast = useToast();
   const [tab, setTab] = useState('search');
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(query);
   const [res, setRes] = useState({ items: [], next: null, loading: true, err: null, code: null });
   const [link, setLink] = useState('');
   const [busy, setBusy] = useState(false);

@@ -105,6 +105,7 @@ function Unit({ u, reload }) {
               {u.words.map((w) => (
                 <article key={w.id} className="v-word">
                   <div className="row between"><h3>{w.word} <button className="fc-say sm" onClick={() => speak(w.word)} aria-label={`Listen to ${w.word}`}><IconVolume width={16} height={16} /></button></h3><span className={`v-state ${w.state}`}>{STATE[w.state]}</span></div>
+                  {w.image_url && <img className="v-pic" src={w.image_url} alt={w.word} loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
                   <p>{w.definition}</p>
                   {w.example && <p className="v-ex">{highlight(w.example, w.word)}</p>}
                 </article>
@@ -151,6 +152,7 @@ function WordEditor({ u, reload }) {
             </div>
             <p>{w.definition}</p>
             {w.example && <p className="v-ex">{highlight(w.example, w.word)}</p>}
+            <div className="v-gif"><GifSlot kind="word" refId={w.id} gif={w.image_url ? { url: w.image_url } : null} query={w.word} label="Add picture / GIF" compact /></div>
           </article>
         ))}
       </div>
@@ -177,7 +179,7 @@ function WordModal({ unitId, w, onClose, onSaved }) {
       <Field label="Definition"><textarea rows={2} value={f.definition} onChange={set('definition')} /></Field>
       <div className="grid g2"><Field label="Uzbek"><input value={f.uz} onChange={set('uz')} /></Field><Field label="Russian"><input value={f.ru} onChange={set('ru')} /></Field></div>
       <Field label="Example sentence"><textarea rows={2} value={f.example} onChange={set('example')} /></Field>
-      <Field label="Picture link" hint="optional — shown on the back of the card"><input value={f.image_url} onChange={set('image_url')} placeholder="https://…" /></Field>
+      <Field label="Picture or GIF link" hint="optional — helps remember the word; shown on the flashcard"><input value={f.image_url} onChange={set('image_url')} placeholder="https://…" /></Field>
     </Modal>
   );
 }

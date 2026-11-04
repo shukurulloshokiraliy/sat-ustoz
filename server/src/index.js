@@ -20,7 +20,7 @@ import { registerLessons } from './course/lessons.js';
 import { registerQbank, syncQbank, migrateQbankMocks } from './qbank.js';
 import { registerFullMocks, migrateFullMocks } from './fullmock.js';
 import { registerVideo, playUrl, isBunny } from './video.js';
-import { migrateGifs, registerGifs, gifMap } from './gifs.js';
+import { migrateGifs, registerGifs } from './gifs.js';
 import { migrateFinance, registerFinance } from './finance.js';
 import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails, moveBalance } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
@@ -924,17 +924,14 @@ async function loadSteps(where = '', params = []) {
     FROM roadmap_items i LEFT JOIN quizzes q ON q.id = i.quiz_id
     WHERE i.step_id = ANY(?::int[]) ORDER BY i.position, i.id`, [steps.map((s) => s.id)]);
   const sheets = new Map((await db.all('SELECT step_id, name, title, pages, size, src, updated_at FROM step_handouts WHERE step_id = ANY(?::int[])', [steps.map((s) => s.id)])).map((h) => [h.step_id, h]));
-  const stepGifs = await gifMap('step', steps.map((s) => s.id));
-  const itemGifs = await gifMap('item', items.map((i) => i.id));
   const by = {};
   for (const it of items) {
-    it.gif = itemGifs.get(it.id) || null;
     const { content, ...rest } = it; // lesson content (incl. answers) never leaves through the roadmap
     (by[it.step_id] ||= []).push(it.kind === 'lesson' ? { ...rest, lesson: lessonSummary(it) } : rest);
   }
   return steps.map((s) => {
     const h = sheets.get(s.id);
-    return { ...s, gif: stepGifs.get(s.id) || null, items: by[s.id] || [], handout: h ? { name: h.name, title: h.title || h.name, pages: h.pages, size: h.size, src: h.src, updated_at: h.updated_at } : null };
+    return { ...s, items: by[s.id] || [], handout: h ? { name: h.name, title: h.title || h.name, pages: h.pages, size: h.size, src: h.src, updated_at: h.updated_at } : null };
   });
 }
 

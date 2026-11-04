@@ -5,7 +5,6 @@ import { useToast } from '../../context.jsx';
 import { Card, Confirm, Field, Gate, Modal, PageHeader, Segmented, useAsync } from '../../components/ui.jsx';
 import RoadmapMap, { StepDisc, STEP_COLORS } from '../../components/RoadmapMap.jsx';
 import { HandoutEditor } from '../../components/Handout.jsx';
-import GifSlot from '../../components/GifSlot.jsx';
 import { IconDoc, IconDown, IconEdit, IconPlay, IconPlus, IconQuiz, IconTrash, IconUp } from '../../components/icons.jsx';
 
 const countLabel = (items) => [['lesson', 'lesson', 'lessons'], ['video', 'video', 'videos'], ['quiz', 'quiz', 'quizzes'], ['reading', 'note', 'notes']]
@@ -138,13 +137,6 @@ function StepModal({ init, insertAt, quizzes, onClose, onSaved, onChanged }) {
         <Field label="Quiz pass mark, %"><input type="number" min="10" max="100" step="5" value={f.pass_pct} onChange={set('pass_pct')} /></Field>
       </div>
       <Field label="Description"><textarea rows={3} value={f.description} onChange={set('description')} placeholder="What students learn in this step" /></Field>
-      {init.id ? (
-        <div className="stack" style={{ gap: 6 }}>
-          <b style={{ fontSize: '.875rem' }}>GIF or meme for this topic</b>
-          <GifSlot kind="step" refId={init.id} gif={init.gif} compact />
-          <small className="muted">Saved right away. Lessons and vocabulary units get their own GIF on their page.</small>
-        </div>
-      ) : null}
       <Field label="Focus topics" hint="comma separated"><input value={f.focus} onChange={set('focus')} placeholder="Commas, Semicolons, Colons" /></Field>
       {init.id && <HandoutEditor stepId={init.id} h={f.handout} onChange={(handout) => { setF((s) => ({ ...s, handout })); onChanged?.(); }} />}
 

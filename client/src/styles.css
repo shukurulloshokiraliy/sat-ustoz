@@ -2370,3 +2370,8 @@ body.menu-open .sc-fab, body.menu-open .sc-panel { display: none; }
 /* the studied word inside an example sentence */
 mark.w-hl { background: color-mix(in srgb, var(--sun) 38%, transparent); color: inherit; font-weight: 700; padding: 0 .18em; margin: 0 -.06em; border-radius: .3em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 :root[data-theme='dark'] mark.w-hl { background: rgba(255, 203, 61, .24); color: #FFE08A; }
+
+/* a picture / GIF per vocabulary word */
+.v-pic { display: block; width: 100%; max-height: 180px; object-fit: cover; border-radius: 14px; margin: 8px 0 4px; background: var(--surface-2); }
+.v-gif { margin-top: 10px; }
+.v-gif .gif-slot.compact { max-width: 100%; } .v-gif .gif-slot.compact img { max-height: 160px; }

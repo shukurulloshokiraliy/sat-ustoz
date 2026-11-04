@@ -6,7 +6,6 @@ import { Card, Gate, useAsync } from '../../components/ui.jsx';
 import { IconArrow, IconCheck, IconCrown, IconLock, IconPlay } from '../../components/icons.jsx';
 import { Rich, rich } from '../../components/Rich.jsx';
 import { VideoLocked, VideoPlayer } from '../student/Roadmap.jsx';
-import GifSlot from '../../components/GifSlot.jsx';
 import { HandoutRow } from '../../components/Handout.jsx';
 
 const shortTitle = (t) => t.replace(/^Lesson (\d+):.*/, 'Lesson $1').replace(/^(Vocabulary|Session check):.*/, '$1');
@@ -31,7 +30,6 @@ function LessonView({ l, reload }) {
         <small className="eyebrow-ink">{eyebrow}{l.free ? ' · FREE PREVIEW' : ''}</small>
         <h1>{lessonName}</h1>
         {l.module.subtitle && <span className="chip domain">{l.module.subtitle}</span>}
-        <GifSlot kind="item" refId={l.id} gif={l.gif} />
       </header>
 
       {l.locked && l.locked !== 'subscription' && (
