@@ -1,3 +1,4 @@
+import { setSound, soundOn } from './uiSound.js';
 import { useEffect, useState } from 'react';
 import { useReveal } from './reveal.js';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
@@ -6,7 +7,7 @@ import { Avatar } from './ui.jsx';
 import SupportChat from './SupportChat.jsx';
 import {
   IconBookmark, IconBriefcase, IconChats, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
-  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconConsult } from './icons.jsx';
+  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconConsult, IconVolume, IconMute } from './icons.jsx';
 
 const STUDENT_NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, c: '#2A55E5' },
@@ -51,6 +52,11 @@ const MASTER_NAV = [
   { to: '/settings', label: 'Settings', icon: IconSettings, c: '#5B6380' },
 ];
 
+function SoundToggle() {
+  const [on, setOn] = useState(soundOn());
+  return <button className="btn ghost sm sound-toggle" onClick={() => { setSound(!on); setOn(!on); }} aria-pressed={on} aria-label={on ? 'Turn button sounds off' : 'Turn button sounds on'} title={on ? 'Sounds on' : 'Sounds off'}>{on ? <IconVolume /> : <IconMute />}</button>;
+}
+
 export default function Layout() {
   useReveal('.main');
   const { user, logout } = useAuth();
@@ -78,9 +84,12 @@ export default function Layout() {
         </nav>
         <div className="side-foot">
           
-          <button className="btn ghost sm block" onClick={toggle} aria-label={"Toggle theme"}>
-            {theme === 'dark' ? <IconSun /> : <IconMoon />} {theme === 'dark' ? "Light mode" : "Dark mode"}
-          </button>
+          <div className="side-tools">
+            <button className="btn ghost sm" onClick={toggle} aria-label={"Toggle theme"}>
+              {theme === 'dark' ? <IconSun /> : <IconMoon />} {theme === 'dark' ? "Light mode" : "Dark mode"}
+            </button>
+            <SoundToggle />
+          </div>
           <NavLink to="/profile" className="user-chip">
             <Avatar name={user.name} src={user.avatar_url} />
             <div className="grow"><b>{user.name}</b><small>{user.role === 'master' ? 'Teacher' : user.group?.name || (user.sub_active ? 'Subscriber' : 'Student')}</small></div>

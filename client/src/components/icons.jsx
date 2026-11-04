@@ -1,6 +1,6 @@
 // Icons: Phosphor (https://phosphoricons.com), wrapped so the app keeps one naming scheme.
 // <IconX width={18} /> sets the size; pass weight="duotone" | "bold" | "fill" where a heavier mark fits.
-import { House, MapTrifold, ChatsCircle, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowsClockwise, BookOpenText, BookmarkSimple, Briefcase, Cards, CaretDown, ChartLineUp, Check, Clock, Copy, Crown, DotsThree, DownloadSimple, Eye, EyeSlash, FileText, Fire, Flag, GameController, GearSix, Globe, InstagramLogo, Key, Lightning, Link, List, ListChecks, Lock, MagnifyingGlass, Medal, Moon, PaperPlaneRight, Path, PencilSimple, Play, Plus, Printer, Prohibit, SignOut, SpeakerHigh, SquaresFour, Stack, Sun, Target, TelegramLogo, Trophy, Calculator, CalendarCheck, Trash, UploadSimple, User, UsersThree, X } from '@phosphor-icons/react';
+import { House, MapTrifold, ChatsCircle, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowsClockwise, BookOpenText, BookmarkSimple, Briefcase, Cards, CaretDown, ChartLineUp, Check, Clock, Copy, Crown, DotsThree, DownloadSimple, Eye, EyeSlash, FileText, Fire, Flag, GameController, GearSix, Globe, InstagramLogo, Key, Lightning, Link, List, ListChecks, Lock, MagnifyingGlass, Medal, Moon, PaperPlaneRight, Path, PencilSimple, Play, Plus, Printer, Prohibit, SignOut, SpeakerHigh, SpeakerSlash, SquaresFour, Stack, Sun, Target, TelegramLogo, Trophy, Calculator, CalendarCheck, Trash, UploadSimple, User, UsersThree, X } from '@phosphor-icons/react';
 
 const ph = (C, base = 'regular') => function Icon({ width, height, size, weight, strokeWidth, ...rest }) {
   return <C size={size || width || height || 20} weight={weight || base} aria-hidden="true" {...rest} />;
@@ -8,6 +8,7 @@ const ph = (C, base = 'regular') => function Icon({ width, height, size, weight,
 
 export const IconDashboard = ph(House);
 export const IconTrophy = ph(Trophy);
+export const IconMute = ph(SpeakerSlash);
 export const IconConsult = ph(CalendarCheck);
 export const IconCalc = ph(Calculator);
 export const IconRoad = ph(MapTrifold);

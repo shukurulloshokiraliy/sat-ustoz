@@ -2098,3 +2098,20 @@ body.menu-open .sc-fab, body.menu-open .sc-panel { display: none; }
   .pp-arrow { display: none; }
 }
 @media (max-width: 760px) { .pub-prices.tiers5 { align-items: flex-start; } }
+.side-tools { display: flex; gap: 8px; } .side-tools .btn:first-child { flex: 1; } .sound-toggle { width: 40px; padding: 0; justify-content: center; }
+
+/* ---- pricing cards: one colour per plan, a tilted colour card behind each white card ---- */
+.pub-prices.tiers5 { padding-top: 26px; padding-bottom: 22px; }
+.pub-price.pp-c { position: relative; isolation: isolate; border: 1.5px solid color-mix(in srgb, var(--tc) 35%, var(--line)); margin: 10px 12px; }
+.pub-price.pp-c::before { content: ''; position: absolute; inset: -6px; z-index: -1; border-radius: 28px; background: var(--tc); transform: rotate(var(--tilt)); opacity: .9; transition: transform .35s; }
+.pub-price.pp-c::after { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--surface); }
+.pub-price.pp-c:hover::before { transform: rotate(calc(var(--tilt) * -1.4)) scale(1.02); }
+.pp-tag { display: inline-block; justify-self: start; padding: 4px 10px; border-radius: 99px; background: color-mix(in srgb, var(--tc) 16%, transparent); color: color-mix(in srgb, var(--tc) 70%, var(--ink)) !important; }
+.pub-price.pp-c > b { color: color-mix(in srgb, var(--tc) 55%, var(--ink)); }
+.pub-price.pp-c li svg { color: var(--tc) !important; }
+.pub-price.pp-c .btn.ghost { border-color: color-mix(in srgb, var(--tc) 50%, var(--line)); }
+.pub-price.pp-c .btn.ghost:hover { background: var(--tc); border-color: var(--tc); color: #fff; }
+.pub-price.pp-c.hot { box-shadow: 0 18px 40px -20px color-mix(in srgb, var(--tc) 70%, transparent); }
+.pub-prices.tiers5 .pub-price.pp-c { flex-basis: calc((100% - 32px) / 3 - 24px); }
+@media (max-width: 1100px) { .pub-prices.tiers5 .pub-price.pp-c { flex-basis: calc((100% - 16px) / 2 - 24px); } }
+@media (max-width: 760px) { .pub-prices.tiers5 .pub-price.pp-c { flex-basis: 68%; margin: 10px 8px; } .pub-price.pp-c::before { inset: -4px; } }

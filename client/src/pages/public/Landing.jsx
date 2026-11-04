@@ -107,6 +107,8 @@ export default function Landing() {
   );
 }
 
+const PP_COLORS = ['#22B07D', '#3B82F6', '#F07A55', '#F5B82E', '#8E5CF7'];
+
 /** Plans: free + 4 paid plans. On phones the cards are a swipeable slider with dots. */
 function Pricing({ cfg, trial }) {
   const [at, setAt] = useState(0);
@@ -143,9 +145,9 @@ function Pricing({ cfg, trial }) {
       <button className="pp-arrow l" aria-label="Previous plan" onClick={() => go(Math.max(0, at - 1))}>‹</button>
       <div className="pub-prices tiers5" ref={rail} onScroll={onScroll}>
         {cards.map((t, i) => (
-          <div key={t.id} className={`pub-price ${i === 3 ? 'hot' : ''}`}>
+          <div key={t.id} className={`pub-price pp-c ${i === 3 ? 'hot' : ''}`} style={{ '--tc': PP_COLORS[i % PP_COLORS.length], '--tilt': `${i % 2 ? 3 : -3}deg` }}>
             {i === 3 && <span className="ribbon">Most popular</span>}
-            <small>{i === 0 ? 'Start' : `Plan ${i}`}</small>
+            <small className="pp-tag">{i === 0 ? 'Start' : `Plan ${i}`}</small>
             <h3 className="pp-name">{t.name}</h3>
             <b>{t.price ? money(t.price) : '0'}</b><span>{t.price ? `${cur} / month` : 'forever'}</span>
             <ul>{t.perks.map(([, x]) => <li key={x}><IconCheck /> {x}</li>)}</ul>
