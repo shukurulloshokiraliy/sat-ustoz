@@ -1925,3 +1925,11 @@ em.hi, .sr-bars i.hi { background: #1E8E4E; } em.mid, .sr-bars i.mid { backgroun
 .bad-row td { color: var(--bad); }
 .fm-tq { background: linear-gradient(135deg, #1B2350 0%, #161B3D 60%); }
 .fm-left { display: block; margin-top: 10px; color: #C9CFE6; font-weight: 600; }
+.consult-lock { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.consult-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.consult-plan { display: flex; gap: 14px; align-items: center; } .consult-plan .item-ic { background: #DDF5EA; color: #0E9F6E; }
+.consult-next { display: grid; gap: 6px; border-left: 4px solid var(--warn); } .consult-next.scheduled { border-left-color: var(--good); }
+.consult-next small { font-weight: 800; text-transform: uppercase; letter-spacing: .06em; font-size: .7rem; color: var(--muted); } .consult-next b { font: 800 1.15rem var(--display); }
+.consult-hist { display: grid; } .consult-hist > div { display: grid; grid-template-columns: 180px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.consult-card { display: grid; gap: 8px; }
+@media (max-width: 600px) { .consult-hist > div { grid-template-columns: 1fr auto; } .consult-hist > div span:nth-child(2) { display: none; } }

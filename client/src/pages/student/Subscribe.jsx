@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth, useToast } from '../../context.jsx';
 import { api, fmtDate } from '../../api.js';
@@ -178,20 +179,8 @@ export function Extras({ access }) {
       {c && (
         <Card className="stack">
           <h3 className="sr-h">Consultation with the teacher</h3>
-          <p className="muted">{c.minutes} minutes, {c.every_days <= 7 ? 'once a week' : `once every ${Math.round(c.every_days / 7)} weeks`}.</p>
-          {c.list.filter((x) => x.status === 'scheduled' || x.status === 'requested').slice(0, 1).map((x) => (
-            <div key={x.id} className="consult-st">
-              <b>{x.status === 'scheduled' ? `Booked: ${x.scheduled_at ? new Date(x.scheduled_at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : x.preferred}` : 'Waiting for the teacher to confirm'}</b>
-              {x.link && <a className="btn soft sm" href={x.link} target="_blank" rel="noreferrer">Join</a>}
-            </div>
-          ))}
-          {c.next_at ? <small className="muted">Next request from {fmtDate(c.next_at)}.</small> : (
-            <>
-              <Field label="When suits you?"><input value={f.preferred} onChange={(e) => setF({ ...f, preferred: e.target.value })} placeholder="Saturday after 15:00" /></Field>
-              <Field label="What to discuss" hint="optional"><input value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Boundaries, my last mock…" /></Field>
-              <button className="btn primary" disabled={busy || !f.preferred.trim()} onClick={book}>Request a consultation</button>
-            </>
-          )}
+          <p className="muted">{c.minutes} minutes, {c.every_days <= 7 ? 'once a week' : `once every ${Math.round(c.every_days / 7)} weeks`}.{c.list.some((x) => x.status === 'scheduled') ? ' You have a booked call.' : ''}</p>
+          <Link className="btn soft" to="/consultations">Open Consultations</Link>
         </Card>
       )}
       {live.data && (

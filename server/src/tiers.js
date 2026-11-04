@@ -153,8 +153,8 @@ export function registerTiers(app, { h, bad, requireMaster, requireStudent }) {
   // consultations
   app.get('/api/consultations', h(async (req, res) => {
     if (req.user.role === 'master') {
-      return res.json(await db.all(`SELECT c.*, u.name, u.email, u.sub_plan FROM consultations c JOIN users u ON u.id = c.user_id
-        WHERE c.status IN ('requested','scheduled') OR c.created_at > now() - interval '30 days' ORDER BY (c.status = 'requested') DESC, c.created_at DESC LIMIT 100`));
+      return res.json(await db.all(`SELECT c.*, u.name, u.email, u.login, u.sub_plan FROM consultations c JOIN users u ON u.id = c.user_id
+        ORDER BY (c.status = 'requested') DESC, (c.status = 'scheduled') DESC, COALESCE(c.scheduled_at, c.created_at) DESC LIMIT 200`));
     }
     const tier = tierOf(req.user, await getSettings());
     const list = await db.all('SELECT * FROM consultations WHERE user_id = ? ORDER BY id DESC LIMIT 10', [req.user.id]);
@@ -173,6 +173,11 @@ export function registerTiers(app, { h, bad, requireMaster, requireStudent }) {
     const preferred = String(req.body?.preferred || '').trim().slice(0, 200);
     if (!preferred) return bad(res, 'Write when it suits you (day and time)');
     await db.run('INSERT INTO consultations (user_id, preferred, note, minutes) VALUES (?,?,?,?)', [req.user.id, preferred, String(req.body?.note || '').slice(0, 1000), tier.consult_min || 30]);
+    import('./tgbot.js').then((m) => m.notifyAdmins(`📅 Consultation request: <b>${String(req.user.name).replace(/[<>&]/g, '')}</b> (${tier.name}, ${tier.consult_min || 30} min)\nWhen: ${preferred.replace(/[<>&]/g, '')}${req.body?.note ? `\nTopic: ${String(req.body.note).slice(0, 200).replace(/[<>&]/g, '')}` : ''}\nConfirm the time on the website → Consultations.`)).catch(() => {});
+    res.json({ ok: true });
+  }));
+  app.post('/api/consultations/:id/cancel', requireStudent, h(async (req, res) => {
+    await db.run("UPDATE consultations SET status = 'cancelled' WHERE id = ? AND user_id = ? AND status IN ('requested', 'scheduled')", [Number(req.params.id), req.user.id]);
     res.json({ ok: true });
   }));
   app.put('/api/consultations/:id', requireMaster, h(async (req, res) => {

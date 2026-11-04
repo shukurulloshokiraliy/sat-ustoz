@@ -23,7 +23,6 @@ export default function Support() {
   return (
     <div className="stack">
       <PageHeader title="Support" sub="Questions, suggestions and complaints from the website chat and the Telegram bot. Answer here or in Telegram (reply to the message) — the answer goes back where the student wrote." />
-      <Consultations />
       <Segmented value={filter} onChange={(v) => { setFilter(v); setOpen(null); }} options={[
         { value: 'all', label: 'All' }, { value: 'open', label: 'New', count: c.open }, { value: 'answered', label: 'Answered', count: c.answered }, { value: 'closed', label: 'Closed', count: c.closed },
       ]} />
@@ -97,38 +96,3 @@ function Thread({ id, onChange }) {
   );
 }
 
-/** Consultation requests (plans 2–4): set the time and a meeting link, then mark done. */
-function Consultations() {
-  const toast = useToast();
-  const [list, setList] = useState(null);
-  const [edit, setEdit] = useState({});
-  const load = () => api.get('/consultations').then(setList).catch(() => setList([]));
-  useEffect(() => { load(); }, []);
-  if (!list?.length) return null;
-  const save = async (c, status) => {
-    const e = edit[c.id] || {};
-    try { await api.put(`/consultations/${c.id}`, { status, scheduled_at: e.at ? `${e.at}:00+05:00` : undefined, link: e.link ?? undefined }); toast(status === 'scheduled' ? 'Time confirmed' : status === 'done' ? 'Marked as done' : 'Cancelled'); load(); }
-    catch (err) { toast(err.message, 'bad'); }
-  };
-  const open = list.filter((c) => c.status === 'requested' || c.status === 'scheduled');
-  if (!open.length) return null;
-  return (
-    <Card>
-      <h3 className="sr-h">Consultations</h3>
-      <div className="stack sm">
-        {open.map((c) => (
-          <div key={c.id} className="consult-row">
-            <div className="grow"><b>{c.name}</b> <span className="chip">{c.minutes} min</span> <span className={`chip ${c.status === 'scheduled' ? 'good' : 'warn'}`}>{c.status}</span>
-              <div className="muted" style={{ fontSize: '.86rem' }}>Wants: {c.preferred}{c.note ? ` · ${c.note}` : ''}</div></div>
-            <input type="datetime-local" value={edit[c.id]?.at ?? (c.scheduled_at ? new Date(new Date(c.scheduled_at).getTime() + 5 * 3600e3).toISOString().slice(0, 16) : '')}
-              onChange={(e) => setEdit({ ...edit, [c.id]: { ...edit[c.id], at: e.target.value } })} aria-label="Time" />
-            <input placeholder="Meeting link" value={edit[c.id]?.link ?? c.link ?? ''} onChange={(e) => setEdit({ ...edit, [c.id]: { ...edit[c.id], link: e.target.value } })} />
-            <button className="btn primary sm" onClick={() => save(c, 'scheduled')}>Confirm</button>
-            <button className="btn ghost sm" onClick={() => save(c, 'done')}>Done</button>
-            <button className="btn danger-ghost sm" onClick={() => save(c, 'cancelled')}>Cancel</button>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-}

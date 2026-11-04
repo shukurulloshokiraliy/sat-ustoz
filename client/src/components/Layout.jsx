@@ -6,7 +6,7 @@ import { Avatar } from './ui.jsx';
 import SupportChat from './SupportChat.jsx';
 import {
   IconBookmark, IconBriefcase, IconChats, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
-  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc } from './icons.jsx';
+  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconConsult } from './icons.jsx';
 
 const STUDENT_NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, c: '#2A55E5' },
@@ -19,6 +19,7 @@ const STUDENT_NAV = [
   { to: '/full-mocks', label: 'Full Mocks', icon: IconDoc, c: '#C2410C' },
   { to: '/analytics', label: 'Results', icon: IconChart, c: '#2A55E5' },
   { to: '/leaderboard', label: 'Leaderboard', icon: IconTrophy, c: '#E8A93C' },
+  { to: '/consultations', label: 'Consultations', icon: IconConsult, c: '#0E9F6E' },
   { to: '/saved', label: 'Saved', icon: IconBookmark, c: '#E0569B' },
   { to: '/subscribe', label: 'Plans', icon: IconCrown, c: '#E8A93C' },
 ];
@@ -43,6 +44,7 @@ const MASTER_NAV = [
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad, c: '#F28B4E' },
   { to: '/question-bank/manage', label: 'Question Bank', icon: IconTarget, c: '#1E8E4E' },
   { to: '/full-mocks', label: 'Full Mocks', icon: IconDoc, c: '#C2410C' },
+  { to: '/consultations', label: 'Consultations', icon: IconConsult, c: '#0E9F6E' },
   { to: '/vocab', label: 'Vocabulary', icon: IconBook, c: '#E8A93C' },
   { to: '/game', label: 'Word Arena', icon: IconGame, c: '#8E5CF7' },
   { to: '/website', label: 'Website', icon: IconGlobe, c: '#5C88FF' },
