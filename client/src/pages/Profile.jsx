@@ -1,8 +1,11 @@
+import { Link } from 'react-router-dom';
 import { SatDateSelect } from '../components/ExamDate.jsx';
 import { useRef, useState } from 'react';
 import { api, setToken } from '../api.js';
 import { useAuth, useToast } from '../context.jsx';
-import { Avatar, Card, Field, PageHeader } from '../components/ui.jsx';
+import { Avatar, Card, Field, PageHeader, useAsync } from '../components/ui.jsx';
+import StudentCard from '../components/StudentCard.jsx';
+import { combine } from './student/Dashboard.jsx';
 
 export default function Profile() {
   const { user, refresh } = useAuth();
@@ -10,6 +13,7 @@ export default function Profile() {
   const [f, setF] = useState({ name: user.name, target_english: user.target_english, target_math: user.target_math, exam_date: user.exam_date || '' });
   const [pw, setPw] = useState({ current: '', next: '' });
   const student = user.role === 'student';
+  const st = useAsync(() => (student ? Promise.all([api.get('/me/analytics'), api.get('/me/report')]).then(([a, r]) => combine(a, r)).catch(() => null) : Promise.resolve(null)), [student]);
 
   const saveProfile = async (e) => {
     e.preventDefault();
@@ -25,7 +29,8 @@ export default function Profile() {
 
   return (
     <div className="page">
-      <PageHeader title={"Profile"} sub={student ? "Set your goals." : "Teacher account."} />
+      <PageHeader title={"Profile"} sub={student ? "Your student card and goals." : "Teacher account."} />
+      {student && <div className="profile-card-row"><StudentCard user={user} stats={st.data} edit /><p className="muted">Your card updates by itself: photo and hero, plan, score estimate against your goal, level, streak and days left to the SAT. Change the photo and goals below; pick a hero in <Link to="/game">Word Arena</Link>.</p></div>}
       <div className="grid g2">
         <Card>
           <form className="stack" onSubmit={saveProfile}>

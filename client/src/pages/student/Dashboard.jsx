@@ -6,6 +6,7 @@ import { api, daysUntil, fmtDate } from '../../api.js';
 import { useAuth } from '../../context.jsx';
 import { satScoreFromCount } from '../../../../server/src/scoring.js';
 import { ActivityDots, Bars, Card, CountUp, Empty, Gate, LineChart, Progress, Ring, pctTone, useAsync } from '../../components/ui.jsx';
+import StudentCard from '../../components/StudentCard.jsx';
 import PathTrack from '../../components/PathTrack.jsx';
 import { PaywallBanner } from './Quizzes.jsx';
 import { IconArrow, IconBolt, IconCheck, IconClock, IconFlame, IconQuiz, IconTarget, IconTrophy, IconTask } from '../../components/icons.jsx';
@@ -28,18 +29,19 @@ export default function Dashboard() {
         const est = all.estimate ?? user.diagnostic_score;
         return (
           <>
-            <div className="hello">
-              <div>
+            <div className="hello has-card">
+              <div className="hello-text">
                 <h1>Hello, <span>{first}</span></h1>
                 <p className="muted">{all.streak ? `${all.streak}-day streak: keep it going!` : 'Practise anything today to start a streak.'}</p>
               </div>
-              <div className="row wrap">
+              <div className="row wrap hello-meta">
                 <span className="streak"><IconFlame /> {all.streak} {all.streak === 1 ? 'day' : 'days'}</span>
                 <div className="xp">
                   <div className="row between"><span>Level {all.level}</span><span className="muted">{all.xp} XP</span></div>
                   <Progress value={all.levelProgress} />
                 </div>
               </div>
+              <StudentCard user={user} stats={{ ...all, estimate: est }} compact />
             </div>
 
             {goal && !goal.empty && <DailyGoal g={goal} />}
