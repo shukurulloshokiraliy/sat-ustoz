@@ -16,15 +16,18 @@ import { db, getSettings } from './db.js';
 import { subActive } from './auth.js';
 
 export const DEFAULT_TIERS = [
-  { id: 't1', name: 'Practice', price: 99000, q_day: 80, quiz_day: 2, fm_week: 2, roadmap: false, video: false, ask: false, consult_days: 0, consult_min: 0, live: false },
-  { id: 't2', name: 'Roadmap', price: 149000, q_day: 200, quiz_day: 4, fm_week: 3, roadmap: true, video: false, ask: false, consult_days: 14, consult_min: 30, live: false },
-  { id: 't3', name: 'Video', price: 249000, q_day: 0, quiz_day: 0, fm_week: 5, roadmap: true, video: true, ask: true, consult_days: 7, consult_min: 30, live: false },
-  { id: 't4', name: 'Live', price: 399000, q_day: 0, quiz_day: 0, fm_week: 7, roadmap: true, video: true, ask: true, consult_days: 7, consult_min: 30, live: true },
+  { id: 't1', name: 'Plus', price: 99000, q_day: 80, quiz_day: 2, fm_week: 2, roadmap: false, video: false, ask: false, consult_days: 0, consult_min: 0, live: false },
+  { id: 't2', name: 'Pro', price: 149000, q_day: 200, quiz_day: 4, fm_week: 3, roadmap: true, video: false, ask: false, consult_days: 14, consult_min: 30, live: false },
+  { id: 't3', name: 'Pro Max', price: 249000, q_day: 0, quiz_day: 0, fm_week: 5, roadmap: true, video: true, ask: true, consult_days: 7, consult_min: 30, live: false },
+  { id: 't4', name: 'Ultra', price: 399000, q_day: 0, quiz_day: 0, fm_week: 7, roadmap: true, video: true, ask: true, consult_days: 7, consult_min: 30, live: true },
 ];
 export const FREE_TIER = { id: 'free', name: 'Free', price: 0, q_day: 20, quiz_day: 1, fm_week: 1, roadmap: false, video: false, ask: false, consult_days: 0, consult_min: 0, live: false };
 const ALL = { id: 'master', name: 'Teacher', price: 0, q_day: 0, quiz_day: 0, fm_week: 0, roadmap: true, video: true, ask: true, consult_days: 0, consult_min: 0, live: true };
 const LEGACY = { month: 't3', quarter: 't3' }; // plans sold before tiers existed keep full course access
 
+// plan names before the 2026-11 rename: a saved old default name follows the new default (a custom name stays)
+const OLD_NAMES = { t1: 'Practice', t2: 'Roadmap', t3: 'Video', t4: 'Live' };
+const nameOf = (t, d) => (t.name && t.name !== OLD_NAMES[d.id] ? t.name : d.name);
 const int = (v, d) => (Number.isFinite(+v) ? Math.max(0, Math.min(1e7, Math.round(+v))) : d);
 export function readTiers(settings) {
   let list = [];
@@ -32,7 +35,7 @@ export function readTiers(settings) {
   return DEFAULT_TIERS.map((d) => {
     const t = list.find((x) => x.id === d.id) || {};
     return {
-      ...d, name: String(t.name || d.name).slice(0, 30), price: int(t.price, d.price),
+      ...d, name: String(nameOf(t, d)).slice(0, 30), price: int(t.price, d.price),
       q_day: int(t.q_day, d.q_day), quiz_day: int(t.quiz_day, d.quiz_day), fm_week: int(t.fm_week, d.fm_week),
       consult_days: int(t.consult_days, d.consult_days), consult_min: int(t.consult_min, d.consult_min),
     };
@@ -42,7 +45,7 @@ export function cleanTiers(input) {
   const list = Array.isArray(input) ? input : [];
   return JSON.stringify(DEFAULT_TIERS.map((d) => {
     const t = list.find((x) => x?.id === d.id) || {};
-    return { id: d.id, name: String(t.name || d.name).trim().slice(0, 30) || d.name, price: int(t.price, d.price), q_day: int(t.q_day, d.q_day), quiz_day: int(t.quiz_day, d.quiz_day),
+    return { id: d.id, name: String(nameOf(t, d)).trim().slice(0, 30) || d.name, price: int(t.price, d.price), q_day: int(t.q_day, d.q_day), quiz_day: int(t.quiz_day, d.quiz_day),
       fm_week: int(t.fm_week, d.fm_week), consult_days: int(t.consult_days, d.consult_days), consult_min: int(t.consult_min, d.consult_min) };
   }));
 }

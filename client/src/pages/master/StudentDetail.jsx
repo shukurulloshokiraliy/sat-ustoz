@@ -11,7 +11,7 @@ import StudentReport from './StudentReport.jsx';
 import { AssignmentList, AssignModal } from '../student/Assignments.jsx';
 import { IconCrown, IconEdit, IconKey, IconTrash } from '../../components/icons.jsx';
 
-const PLAN_NAME = { t1: 'Plan 1', t2: 'Plan 2', t3: 'Plan 3', t4: 'Plan 4', month: 'Old plan', quarter: 'Old plan' };
+const PLAN_NAME = { t1: 'Plus', t2: 'Pro', t3: 'Pro Max', t4: 'Ultra', month: 'Old plan', quarter: 'Old plan' };
 
 /** Student balance: the teacher adds money after a card payment (or corrects it); every change is logged. */
 function Balance({ id }) {

@@ -75,7 +75,7 @@ export function VideoLocked() {
   return (
     <div className="video-soon locked">
       <span className="vs-ic"><IconLock /></span>
-      <div><b>Video lessons come with plan 3 (Video) and higher</b><p>Your plan includes the written notes and level checks of this lesson.</p>
+      <div><b>Video lessons come with Pro Max and Ultra</b><p>Your plan includes the written notes and level checks of this lesson.</p>
         <Link className="btn soft sm" to="/subscribe">See plans</Link></div>
     </div>
   );

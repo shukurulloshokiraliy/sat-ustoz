@@ -70,6 +70,7 @@ const Login = page(() => import('./pages/Login.jsx'));
 const Overview = page(() => import('./pages/master/Overview.jsx'));
 const PublicLayout = page(() => import('./pages/public/PublicLayout.jsx'));
 const Landing = page(() => import('./pages/public/Landing.jsx'));
+const LocalPage = page(() => import('./pages/public/LocalPage.jsx'));
 const Wait = () => <div style={{ minHeight: '60vh', display: 'grid', placeItems: 'center' }}><Spinner /></div>;
 
 export default function App() {
@@ -90,6 +91,9 @@ export default function App() {
         <Route path="s/:id" element={<SectionPage />} />
         <Route path="p/:slug" element={<PageView />} />
         <Route path="about" element={<AboutPage />} />
+        <Route path="uz" element={<LocalPage />} />
+        <Route path="uz/:slug" element={<LocalPage />} />
+        <Route path="ru" element={<LocalPage />} />
         <Route path="*" element={<Landing />} />
       </Route>
     </Routes></Suspense>
@@ -113,6 +117,8 @@ export default function App() {
       <Route path="/s/:id" element={<PublicLayout />}><Route index element={<SectionPage />} /></Route>
       <Route path="/p/:slug" element={<PublicLayout />}><Route index element={<PageView />} /></Route>
       <Route path="/about" element={<PublicLayout />}><Route index element={<AboutPage />} /></Route>
+      <Route path="/uz" element={<PublicLayout />}><Route index element={<LocalPage />} /><Route path=":slug" element={<LocalPage />} /></Route>
+      <Route path="/ru" element={<PublicLayout />}><Route index element={<LocalPage />} /></Route>
       <Route path="/play/:code" element={<Play />} />
       <Route element={<Layout />}>
         <Route path="practice" element={<Practice />} />

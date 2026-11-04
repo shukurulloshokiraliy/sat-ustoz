@@ -104,6 +104,8 @@ export default function PublicLayout() {
             <Link to="/login">Log in</Link>
             <Link to="/signup">Create account</Link>
             <Link to="/about">About us</Link>
+            <Link to="/uz" lang="uz">SAT online platforma (O‘zbekcha)</Link>
+            <Link to="/ru" lang="ru">Подготовка к SAT (Русский)</Link>
             <Link to="/#pricing">Pricing</Link>
             {site?.about?.instagram && <a href={site.about.instagram} target="_blank" rel="noreferrer">Instagram</a>}
             {site?.about?.telegram && <a href={site.about.telegram} target="_blank" rel="noreferrer">Telegram</a>}

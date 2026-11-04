@@ -6,6 +6,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { LOCAL_PAGES } from '../src/pages/public/localContent.js';
 
 const DIST = path.resolve(process.argv[2] || 'dist');
 const SITE = (process.env.SITE_URL || 'https://www.ustozsat.uz').replace(/\/$/, '');
@@ -35,7 +36,7 @@ const FAQ = [
 
 const PAGES = [
   {
-    path: '/', title: 'SAT Ustoz — Online SAT Reading & Writing Prep Platform (200 to 800)',
+    path: '/', title: 'SAT Ustoz — Online SAT Platform (SAT online platforma) · Reading & Writing 200 → 800', alt: { uz: '/uz', ru: '/ru' }, lang: 'en',
     desc: 'Online SAT prep for the digital SAT Reading & Writing section: free practice tests, a 200 to 800 roadmap with video lessons, an SAT Question Bank, Bluebook-style mocks and vocabulary. Onlayn SAT tayyorlov platformasi.',
     h1: 'Online SAT Reading & Writing prep platform',
     body: `
@@ -107,6 +108,24 @@ const PAGES = [
   { path: '/signup', title: 'Create a free account | SAT Ustoz', desc: 'Create a free SAT Ustoz account: save your results and start the first lessons.', h1: 'Create a free account', body: '<p><a href="/practice">Or take a free practice test first</a></p>', noindex: true },
 ];
 
+// Uzbek and Russian pages (SAT online platforma, onlayn SAT tayyorlov, онлайн подготовка к SAT)
+const localBody = (lp) => `<p>${esc(lp.lead)}</p>${(lp.cta || []).map(([to, label]) => `<p><a href="${to}">${esc(label)}</a></p>`).join('')}`
+  + lp.sections.map((x) => `<h2>${esc(x.h2)}</h2>${x.html}`).join('')
+  + (lp.faq ? `<h2>${lp.lang === 'ru' ? 'Частые вопросы' : 'Ko‘p beriladigan savollar'}</h2>${lp.faq.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}` : '');
+for (const lp of LOCAL_PAGES) {
+  const home = lp.lang === 'ru' ? '/ru' : '/uz';
+  PAGES.push({
+    path: lp.path, lang: lp.lang, alt: lp.alt, title: lp.title, desc: lp.desc, h1: lp.h1, body: localBody(lp), ownFaq: true,
+    ld: () => [
+      ...(lp.article ? [{ '@type': 'Article', headline: lp.h1, description: lp.desc, inLanguage: lp.lang, url: SITE + lp.path, author: { '@type': 'Person', name: 'Axror Alimjon' }, publisher: { '@id': `${SITE}/#org` }, dateModified: TODAY, image: `${SITE}/og.png` }]
+        : [ORG, { '@type': 'WebPage', name: lp.title, description: lp.desc, inLanguage: lp.lang, url: SITE + lp.path, isPartOf: { '@id': `${SITE}/#site` }, about: { '@id': `${SITE}/#org` } },
+          { '@type': 'Course', name: lp.h1, description: lp.desc, inLanguage: lp.lang, provider: { '@id': `${SITE}/#org` }, hasCourseInstance: { '@type': 'CourseInstance', courseMode: 'online', courseWorkload: 'PT1H' }, offers: { '@type': 'Offer', category: 'Subscription', availability: 'https://schema.org/InStock', url: `${SITE}/signup` } }]),
+      ...(lp.faq ? [{ '@type': 'FAQPage', inLanguage: lp.lang, mainEntity: lp.faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }] : []),
+      crumbs(lp.article ? [['SAT Ustoz', home], [lp.h1, lp.path]] : [[lp.h1, lp.path]]),
+    ],
+  });
+}
+
 function faqLd() { return { '@type': 'FAQPage', mainEntity: FAQ.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }; }
 function crumbs(list) { return { '@type': 'BreadcrumbList', itemListElement: [['Home', '/'], ...list].map(([name, p], i) => ({ '@type': 'ListItem', position: i + 1, name, item: SITE + p })) }; }
 function article(headline, p) { return { '@type': 'Article', headline, url: SITE + p, author: { '@type': 'Person', name: 'Axror Alimjon' }, publisher: { '@id': `${SITE}/#org` }, dateModified: TODAY, image: `${SITE}/og.png` }; }
@@ -123,10 +142,14 @@ function chunkFiles(src, seen = new Set()) {
 const PAGE_SRC = (p) => (p === '/' ? ['src/pages/public/PublicLayout.jsx', 'src/pages/public/Landing.jsx']
   : p === '/practice' ? ['src/pages/public/PublicLayout.jsx', 'src/pages/public/Practice.jsx']
   : p === '/login' || p === '/signup' ? ['src/pages/Login.jsx']
+  : p === '/uz' || p === '/ru' || p.startsWith('/uz/') ? ['src/pages/public/PublicLayout.jsx', 'src/pages/public/LocalPage.jsx']
   : ['src/pages/public/PublicLayout.jsx', 'src/pages/public/Pages.jsx']);
 const FONTS = fs.readdirSync(path.join(DIST, 'assets')).filter((f) => /^(manrope|unbounded)-latin-wght-normal-.*\.woff2$/.test(f))
   .map((f) => `<link rel="preload" href="/assets/${f}" as="font" type="font/woff2" crossorigin />`);
 const preloads = (p) => [...new Set(PAGE_SRC(p).flatMap((s) => chunkFiles(s)))].filter((f) => f.endsWith('.js')).map((f) => `<link rel="modulepreload" href="/${f}" />`);
+// search console ownership: set the codes as Vercel environment variables (no rebuild of the code needed)
+const VERIFY = [['google-site-verification', process.env.GOOGLE_SITE_VERIFICATION], ['yandex-verification', process.env.YANDEX_VERIFICATION], ['msvalidate.01', process.env.BING_VERIFICATION]]
+  .filter(([, v]) => v).map(([n, v]) => `<meta name="${n}" content="${esc(v)}" />`);
 const template = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8').replace('</head>', `    ${FONTS.join('\n    ')}\n  </head>`);
 const STYLE = `<style>.seo{max-width:760px;margin:0 auto;padding:40px 20px 60px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6;color:#161B3D}.seo h1{font-size:2rem;line-height:1.15}.seo a{color:#2A55E5}.seo nav a{margin-right:14px}.seo details{margin:8px 0}</style>`;
 
@@ -139,10 +162,12 @@ function render(pg) {
     `<meta name="keywords" content="${esc(KEYWORDS)}" />`,
     `<meta name="robots" content="${pg.noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1'}" />`,
     `<link rel="canonical" href="${url}" />`,
+    ...(pg.alt ? [[pg.lang || 'en', pg.path], ...Object.entries(pg.alt)].map(([l, p]) => `<link rel="alternate" hreflang="${l}" href="${SITE}${p === '/' ? '/' : p}" />`).concat(`<link rel="alternate" hreflang="x-default" href="${SITE}/" />`) : []),
+    ...VERIFY,
     `<meta property="og:type" content="website" />`, `<meta property="og:site_name" content="${BRAND}" />`,
     `<meta property="og:title" content="${esc(pg.title)}" />`, `<meta property="og:description" content="${esc(pg.desc)}" />`,
     `<meta property="og:url" content="${url}" />`, `<meta property="og:image" content="${SITE}/og.png" />`,
-    `<meta property="og:image:width" content="1200" />`, `<meta property="og:image:height" content="630" />`, `<meta property="og:locale" content="en_US" />`, `<meta property="og:locale:alternate" content="uz_UZ" />`,
+    `<meta property="og:image:width" content="1200" />`, `<meta property="og:image:height" content="630" />`, `<meta property="og:locale" content="${{ uz: 'uz_UZ', ru: 'ru_RU' }[pg.lang] || 'en_US'}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`, `<meta name="twitter:title" content="${esc(pg.title)}" />`,
     `<meta name="twitter:description" content="${esc(pg.desc)}" />`, `<meta name="twitter:image" content="${SITE}/og.png" />`,
     ...preloads(pg.path),
@@ -150,12 +175,13 @@ function render(pg) {
     STYLE,
   ].join('\n    ');
   const faq = pg.faq ? `<h2>Frequently asked questions</h2>${FAQ.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}` : '';
-  const nav = '<nav><a href="/">Home</a><a href="/practice">Free practice test</a><a href="/s/guides">Guides</a><a href="/s/courses">Courses</a><a href="/about">About</a><a href="/login">Log in</a></nav>';
+  const nav = '<nav><a href="/">Home</a><a href="/practice">Free practice test</a><a href="/s/guides">Guides</a><a href="/s/courses">Courses</a><a href="/about">About</a><a href="/uz" hreflang="uz">O‘zbekcha</a><a href="/ru" hreflang="ru">Русский</a><a href="/login">Log in</a></nav>';
   const content = `<div class="seo">${nav}<h1>${esc(pg.h1)}</h1>${pg.body}${faq}<p><small>© ${new Date().getFullYear()} SAT Ustoz · ustozsat.uz · SAT is a trademark of the College Board, which does not endorse this site.</small></p></div>`;
   return template
     .replace(/<title>[\s\S]*?<\/title>\s*/, '')
     .replace(/<meta name="description"[^>]*>\s*/, '')
     .replace('</head>', `    ${head}\n  </head>`)
+    .replace('<html lang="en">', `<html lang="${pg.lang || 'en'}">`)
     .replace('<div id="root"></div>', `<div id="root">${content}</div>`);
 }
 
@@ -170,8 +196,8 @@ fs.writeFileSync(path.join(DIST, 'app.html'), template.replace('</head>', `    <
 
 const urls = PAGES.filter((p) => !p.noindex);
 fs.writeFileSync(path.join(DIST, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map((p) => `  <url><loc>${SITE}${p.path}</loc><lastmod>${TODAY}</lastmod><changefreq>${p.path === '/' || p.path === '/practice' ? 'daily' : 'weekly'}</changefreq><priority>${p.path === '/' ? '1.0' : p.path === '/practice' ? '0.9' : '0.7'}</priority></url>`).join('\n')}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+${urls.map((p) => `  <url><loc>${SITE}${p.path}</loc>${p.alt ? [[p.lang || 'en', p.path], ...Object.entries(p.alt)].map(([l, a]) => `<xhtml:link rel="alternate" hreflang="${l}" href="${SITE}${a}"/>`).join('') : ''}<lastmod>${TODAY}</lastmod><changefreq>${['/', '/practice', '/uz', '/ru'].includes(p.path) ? 'daily' : 'weekly'}</changefreq><priority>${p.path === '/' ? '1.0' : ['/practice', '/uz', '/ru'].includes(p.path) ? '0.9' : '0.7'}</priority></url>`).join('\n')}
 </urlset>
 `);
 fs.writeFileSync(path.join(DIST, 'robots.txt'), `# SAT Ustoz — search engines and AI assistants are welcome to read the public pages
@@ -218,6 +244,9 @@ SAT Ustoz (also written SATUstoz, Ustoz SAT; Uzbek: "SAT tayyorlov onlayn platfo
 - Teacher analytics: time on the platform, accuracy by skill, progress of every student.
 - Founder and teacher: Axror Alimjon (Instagram: ahroralimjon, Telegram: ahroralimjon_life).
 - Languages: English platform, Uzbek tips and support.
+
+## Pages in Uzbek and Russian
+${LOCAL_PAGES.map((l) => `- [${l.h1}](${SITE}${l.path}) (${l.lang})`).join('\n')}
 
 ## Pages
 - [Home](${SITE}/): overview of the platform

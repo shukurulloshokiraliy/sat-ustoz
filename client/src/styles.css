@@ -2591,3 +2591,10 @@ tr.pf-idle td:first-child b { color: var(--bad); }
 :root[data-theme='dark'] .exam-gate-card, :root[data-theme='dark'] .bb-notepop { background: #1B1C21; border: 1px solid rgba(255, 255, 255, .08); }
 /* small fixes */
 .goal-card .ring-in strong { font-size: .85rem; }
+/* Uzbek / Russian pages */
+.lp-langs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.lp-langs a { padding: 5px 12px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); font-size: .85rem; font-weight: 600; text-decoration: none; }
+.lp-langs a.on { background: var(--primary-soft); color: var(--primary); border-color: transparent; }
+.lp section { margin-top: 26px; } .lp section h2 { margin-bottom: 10px; }
+.lp ul, .lp ol { padding-left: 1.2em; display: grid; gap: 8px; line-height: 1.65; }
+.lp-faq { border-top: 1px solid var(--line); padding: 12px 0; } .lp-faq summary { font-weight: 700; cursor: pointer; } .lp-faq p { margin-top: 8px; color: var(--muted); line-height: 1.6; }

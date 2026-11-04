@@ -6,7 +6,7 @@ import { Card, Empty, Gate, PageHeader, Segmented, useAsync } from '../../compon
 import { IconConsult } from '../../components/icons.jsx';
 import { when } from '../student/Consultations.jsx';
 
-const PLAN = { t1: 'Plan 1', t2: 'Plan 2', t3: 'Plan 3', t4: 'Plan 4' };
+const PLAN = { t1: 'Plus', t2: 'Pro', t3: 'Pro Max', t4: 'Ultra' };
 
 /** Teacher: consultation requests → set the time and a meeting link → mark done. */
 export default function ConsultationsAdmin() {
