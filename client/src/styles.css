@@ -2986,3 +2986,33 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .pf-actions { gap: 8px; align-items: center; padding-top: 4px; border-top: 1px solid var(--line); margin-top: 4px; padding-top: 14px; }
 @media (max-width: 1000px) { .pf-grid { grid-template-columns: 1fr; } .pf-wallet { max-width: 460px; } }
 @media (max-width: 560px) { .pf-goals { grid-template-columns: 1fr 1fr; } .pf-goals > :last-child { grid-column: 1 / -1; } .pf-actions .grow { display: none; } .pf-actions > .btn.primary { flex: 1 0 100%; } }
+
+/* ---------- Finance: All payments journal ---------- */
+.fin-top { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
+.fin-kpi.wait { --k: #F5B82E; text-align: left; font: inherit; cursor: pointer; }
+.fin-kpi.wait.on { background: color-mix(in srgb, #F5B82E 12%, var(--surface)); border-color: color-mix(in srgb, #F5B82E 45%, var(--line)); }
+.fin-filters { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 8px; align-items: center; margin-bottom: 10px; }
+.fin-filters .fin-search input { border: 0; background: none; padding: 10px 0; width: 100%; box-shadow: none; outline: none; }
+.fin-filters select { padding: 9px 12px; border-radius: 12px; }
+.fin-paytable td { vertical-align: top; }
+.fin-paytable tr.wait td { background: color-mix(in srgb, #F5B82E 7%, transparent); }
+.fin-paytable .fin-pos { color: var(--good); } .fin-paytable .fin-neg { color: var(--ink); }
+.fin-acts { white-space: nowrap; } .fin-acts .btn + .btn { margin-left: 6px; }
+.fin-receipt { display: block; max-width: 100%; max-height: 70vh; margin: 0 auto; border-radius: 12px; border: 1px solid var(--line); }
+@media (max-width: 760px) {
+  .fin-filters { grid-template-columns: 1fr 1fr; } .fin-filters .fin-search, .fin-filters .btn { grid-column: 1 / -1; }
+  /* table → one card per payment */
+  .fin-paytable thead { display: none; }
+  .fin-paytable, .fin-paytable tbody { display: block; width: 100%; min-width: 0 !important; }
+  .fin-paytable td { display: block; width: auto !important; min-width: 0; }
+  .fin-paytable tr { box-sizing: border-box; width: 100%; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; }
+  .fin-paytable td { padding: 0 !important; border: 0 !important; text-align: left !important; }
+  .fin-paytable td[data-l="Date"] { grid-column: 1; order: 1; font-size: .78rem; color: var(--muted); }
+  .fin-paytable td[data-l="Amount"] { grid-column: 2; order: 2; text-align: right !important; }
+  .fin-paytable td[data-l="Student"] { grid-column: 1 / -1; order: 3; }
+  .fin-paytable td[data-l="What"] { grid-column: 1; order: 4; }
+  .fin-paytable td[data-l="Status"] { grid-column: 2; order: 5; text-align: right !important; }
+  .fin-paytable td.fin-acts { grid-column: 1 / -1; order: 6; }
+  .fin-paytable td.fin-acts:empty { display: none; }
+  .fin-paytable tr.wait { border-color: color-mix(in srgb, #F5B82E 55%, var(--line)); }
+}

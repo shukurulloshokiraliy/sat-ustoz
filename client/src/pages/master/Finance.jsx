@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, fmtDate } from '../../api.js';
 import { useToast } from '../../context.jsx';
 import { Card, Field, Gate, Modal, PageHeader, Segmented, useAsync } from '../../components/ui.jsx';
-import { IconEdit, IconPlus, IconSearch, IconTrash } from '../../components/icons.jsx';
+import { IconDownload, IconEdit, IconPlus, IconSearch, IconTrash } from '../../components/icons.jsx';
 
 const som = (n) => `${Math.round(Number(n || 0)).toLocaleString('en-US').replace(/,/g, ' ')} so'm`;
 const REASON = { top_up: 'Top-up', subscription: 'Plan', full_mock: 'Extra full mock', quiz: 'Extra quiz', prize: 'Leaderboard prize', correction: 'Correction', direct: 'Direct payment' };
@@ -12,13 +12,126 @@ const PERIODS = [{ value: 'month', label: 'This month' }, { value: 'last', label
 /** Teacher finance: money in, revenue, prizes, expenses, profit and every student's wallet. */
 export default function Finance() {
   const [period, setPeriod] = useState('month');
-  const st = useAsync(() => api.get('/finance?period=' + period), [period]);
+  const [tab, setTab] = useState(() => (window.location.hash === '#payments' ? 'payments' : 'overview'));
+  const st = useAsync(() => (tab === 'overview' ? api.get('/finance?period=' + period) : Promise.resolve(null)), [period, tab]);
+  const go = (t) => { setTab(t); try { window.history.replaceState(null, '', t === 'payments' ? '#payments' : window.location.pathname); } catch { /* ignore */ } };
   return (
     <div className="page fin">
-      <PageHeader title="Finance" sub="Money in, what students spent it on, your expenses and profit. Every wallet change is logged." />
-      <Segmented value={period} onChange={setPeriod} options={PERIODS} />
-      <Gate state={st}>{(d) => <FinanceView d={d} reload={st.reload} />}</Gate>
+      <PageHeader title="Finance" sub="Every payment is saved here for good: bot receipts, top-ups, plans, extra mocks and quizzes, prizes and your expenses." />
+      <div className="fin-top">
+        <Segmented value={tab} onChange={go} options={[{ value: 'overview', label: 'Overview' }, { value: 'payments', label: 'All payments' }]} />
+        <Segmented value={period} onChange={setPeriod} options={PERIODS} />
+      </div>
+      {tab === 'payments' ? <Payments period={period} /> : <Gate state={st}>{(d) => d && <FinanceView d={d} reload={st.reload} />}</Gate>}
     </div>
+  );
+}
+
+const KIND = { top_up: 'Top-up', plan: 'Plan', subscription: 'Plan · wallet', full_mock: 'Extra full mock', quiz: 'Extra quiz', prize: 'Prize', correction: 'Correction' };
+const VIA = { receipt: 'Bot receipt', wallet: 'Wallet', teacher: 'Teacher', prize: 'Leaderboard', telegram: 'Telegram Pay', card: 'Card', click: 'Click', payme: 'Payme' };
+const STATUS = { pending: ['Waiting', 'warn'], approved: ['Approved', 'good'], rejected: ['Rejected', 'bad'], done: ['Done', ''] };
+const TYPES = [['', 'All types'], ['top_up', 'Top-ups'], ['plan', 'Plans'], ['mock', 'Extra full mocks'], ['quiz', 'Extra quizzes'], ['prize', 'Prizes'], ['correction', 'Corrections']];
+const STATES = [['', 'Any status'], ['pending', 'Waiting'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['done', 'Done']];
+const authed = (url) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+
+/** Every payment, one row each: bot receipts (waiting / approved / rejected), wallet moves, direct plan payments. */
+function Payments({ period }) {
+  const toast = useToast();
+  const [f, setF] = useState({ q: '', kind: '', status: '' });
+  const [q, setQ] = useState('');
+  const [rows, setRows] = useState([]);
+  const [more, setMore] = useState(0);
+  const [busy, setBusy] = useState(0);
+  const [view, setView] = useState(null);
+  const qs = (o = 0) => new URLSearchParams({ period, q, kind: f.kind, status: f.status, offset: String(o), limit: '50' }).toString();
+  const st = useAsync(() => api.get('/finance/payments?' + qs()).then((d) => { setRows(d.rows); setMore(d.total - d.rows.length); return d; }), [period, q, f.kind, f.status]);
+  useEffect(() => { const t = setTimeout(() => setQ(f.q.trim()), 300); return () => clearTimeout(t); }, [f.q]);
+  const loadMore = async () => { try { const d = await api.get('/finance/payments?' + qs(rows.length)); setRows((r) => [...r, ...d.rows]); setMore(d.total - rows.length - d.rows.length); } catch (e) { toast(e.message, 'bad'); } };
+  const exportCsv = async () => {
+    try {
+      const r = await authed('/api/finance/payments?' + qs() + '&format=csv');
+      if (!r.ok) throw new Error('Could not export');
+      const url = URL.createObjectURL(await r.blob());
+      const a = document.createElement('a'); a.href = url; a.download = `sat-ustoz-payments-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (e) { toast(e.message, 'bad'); }
+  };
+  const decide = async (r, act) => {
+    setBusy(r.receipt_id);
+    try { await api.post(`/telegram/requests/${r.receipt_id}/${act}`); toast(act === 'approve' ? 'Approved: the money is on the student\'s card' : 'Rejected: the student was told in Telegram'); st.reload(); }
+    catch (e) { toast(e.message, 'bad'); } finally { setBusy(0); }
+  };
+  const t = st.data?.totals;
+  return (
+    <>
+      {t && (
+        <div className="fin-kpis">
+          <div className="fin-kpi in"><small>Money in</small><b>{som(t.money_in)}</b><span>approved receipts, teacher top-ups, direct plans</span></div>
+          <div className="fin-kpi rev"><small>Spent from wallets</small><b>{som(t.spent)}</b><span>plans, extra mocks and quizzes</span></div>
+          <button type="button" className={`fin-kpi wait ${t.pending ? 'on' : ''}`} onClick={() => setF({ ...f, status: f.status === 'pending' ? '' : 'pending' })}><small>Waiting receipts</small><b>{t.pending}</b><span>{t.pending ? `${som(t.pending_sum)} to check` : 'nothing to check'}</span></button>
+          <div className="fin-kpi held"><small>Payments found</small><b>{st.data.total}</b><span>{t.rejected ? `${t.rejected} rejected receipts` : 'in this period'}</span></div>
+        </div>
+      )}
+      <Card className="fin-pay">
+        <div className="fin-filters">
+          <label className="fin-search"><IconSearch width={16} height={16} /><input value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} placeholder="Student, note, receipt # or wallet no." /></label>
+          <select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })} aria-label="Type">{TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+          <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} aria-label="Status">{STATES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+          <button className="btn ghost sm" onClick={exportCsv}><IconDownload width={15} height={15} /> Export (Excel)</button>
+        </div>
+        {st.loading && !rows.length ? <p className="muted" style={{ padding: 12 }}>Loading…</p> : rows.length === 0 ? <p className="muted" style={{ padding: 12 }}>No payments match these filters.</p> : (
+          <div className="table-wrap">
+            <table className="t fin-table fin-paytable">
+              <thead><tr><th>Date</th><th>Student</th><th>What</th><th className="num">Amount</th><th>Status</th><th /></tr></thead>
+              <tbody>
+                {rows.map((r) => {
+                  const [label, tone] = STATUS[r.status] || [r.status, ''];
+                  const [name, contact] = String(r.who || '').split(' · ');
+                  return (
+                    <tr key={r.key} className={r.status === 'pending' ? 'wait' : ''}>
+                      <td className="nowrap" data-l="Date">{fmtDate(r.at, { day: 'numeric', month: 'short', year: 'numeric' })}<small className="muted" style={{ display: 'block' }}>{new Date(r.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' })}</small></td>
+                      <td data-l="Student">{r.user_id ? <Link to={`/students/${r.user_id}`}><b>{name || 'Student'}</b></Link> : <b>{name || 'Deleted student'}</b>}<small className="muted" style={{ display: 'block' }}>{r.user_id ? contact : 'account deleted · record kept'}</small></td>
+                      <td data-l="What"><b>{KIND[r.kind] || r.kind}</b>{r.plan ? <span className="muted"> · {r.plan}</span> : null}<small className="muted" style={{ display: 'block' }}>{VIA[r.via] || r.via}{r.note ? ` · ${r.note}` : ''}</small></td>
+                      <td className="num" data-l="Amount"><b className={r.amount < 0 ? 'fin-neg' : r.status === 'rejected' ? 'muted' : 'fin-pos'}>{r.amount > 0 ? '+' : r.amount < 0 ? '−' : ''}{som(Math.abs(r.amount))}</b></td>
+                      <td data-l="Status"><span className={`chip ${tone}`}>{label}</span>{r.decided_by && r.status !== 'pending' ? <small className="muted" style={{ display: 'block' }}>by {r.decided_by}</small> : null}</td>
+                      <td className="num fin-acts">
+                        {r.receipt_id && <button className="btn ghost sm" onClick={() => setView(r)}>Receipt</button>}
+                        {r.status === 'pending' && <>
+                          <button className="btn primary sm" disabled={busy === r.receipt_id} onClick={() => decide(r, 'approve')}>Approve</button>
+                          <button className="btn danger-ghost sm" disabled={busy === r.receipt_id} onClick={() => decide(r, 'reject')}>Reject</button>
+                        </>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {more > 0 && <div className="center" style={{ padding: 12 }}><button className="btn soft" onClick={loadMore}>Show {Math.min(50, more)} more ({more} left)</button></div>}
+      </Card>
+      {view && <ReceiptView r={view} onClose={() => setView(null)} />}
+    </>
+  );
+}
+
+function ReceiptView({ r, onClose }) {
+  const [src, setSrc] = useState(null);
+  const [err, setErr] = useState('');
+  const [pdf, setPdf] = useState(false);
+  useEffect(() => {
+    let url = null;
+    authed(`/api/telegram/requests/${r.receipt_id}/file`).then(async (x) => {
+      if (!x.ok) throw new Error((await x.json().catch(() => ({}))).error || 'Could not open the receipt');
+      const b = await x.blob(); setPdf(b.type === 'application/pdf'); url = URL.createObjectURL(b); setSrc(url);
+    }).catch((e) => setErr(e.message));
+    return () => { if (url) URL.revokeObjectURL(url); };
+  }, [r.receipt_id]);
+  return (
+    <Modal title={`${r.note} · ${som(r.amount)}`} onClose={onClose}>
+      <p className="muted" style={{ marginTop: 0 }}>{r.who} · {fmtDate(r.at)}</p>
+      {err ? <p className="error-box">{err}</p> : !src ? <p className="muted">Loading…</p> : pdf ? <a className="btn soft" href={src} target="_blank" rel="noreferrer">Open PDF</a> : <img src={src} alt="Payment receipt" className="fin-receipt" />}
+    </Modal>
   );
 }
 

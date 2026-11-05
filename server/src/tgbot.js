@@ -233,7 +233,22 @@ async function receipt(chat, user, msg) {
     } catch (e) { console.error('[tg] admin', e.message); }
   }
   await db.run('UPDATE tg_requests SET admin_msgs = ? WHERE id = ?', [JSON.stringify(sent), r.id]);
+  saveReceiptFile(r.id, file_id).catch((e) => console.error('[tg] receipt copy', e.message));
   if (!sent.length) console.warn('[tg] no teacher connected — the request is waiting in Settings');
+}
+
+/** Keep our own copy of a receipt photo / PDF (max 10 MB), so it stays viewable forever. */
+async function saveReceiptFile(id, fileId) {
+  if (!fileId) return null;
+  const f = await tg('getFile', { file_id: fileId });
+  const token = await getKey('_tg_token');
+  const r = await fetch(`https://api.telegram.org/file/bot${token}/${f.file_path}`);
+  if (!r.ok) return null;
+  const data = Buffer.from(await r.arrayBuffer());
+  if (data.length > 10 * 1024 * 1024) return null;
+  const type = r.headers.get('content-type') && r.headers.get('content-type') !== 'application/octet-stream' ? r.headers.get('content-type') : /\.pdf$/i.test(f.file_path) ? 'application/pdf' : 'image/jpeg';
+  await db.run('INSERT INTO tg_receipt_files (request_id, type, data) VALUES (?, ?, ?) ON CONFLICT (request_id) DO NOTHING', [id, type, data]);
+  return { type, data };
 }
 
 /** Approve or reject a card receipt (from Telegram buttons or from the website). */
@@ -505,14 +520,17 @@ export function registerBotAdmin(app, { h, bad, requireMaster, requireStudent })
       ORDER BY (r.status = 'pending') DESC, r.created_at DESC LIMIT 50`));
   }));
   app.get('/api/telegram/requests/:id/file', requireMaster, h(async (req, res) => {
-    const r = await db.one('SELECT file_id FROM tg_requests WHERE id = ?', [Number(req.params.id)]);
-    if (!r?.file_id) return bad(res, 'Not found', 404);
-    const f = await tg('getFile', { file_id: r.file_id });
-    const token = await getKey('_tg_token');
-    const img = await fetch(`https://api.telegram.org/file/bot${token}/${f.file_path}`);
-    res.setHeader('Content-Type', img.headers.get('content-type') || 'image/jpeg');
+    const id = Number(req.params.id);
+    let f = await db.one('SELECT type, data FROM tg_receipt_files WHERE request_id = ?', [id]);
+    if (!f) {
+      const r = await db.one('SELECT file_id FROM tg_requests WHERE id = ?', [id]);
+      if (!r?.file_id) return bad(res, 'Not found', 404);
+      f = await saveReceiptFile(id, r.file_id); // older receipts are copied the first time they are opened
+    }
+    if (!f) return bad(res, 'The receipt file is no longer available in Telegram', 404);
+    res.setHeader('Content-Type', f.type || 'image/jpeg');
     res.setHeader('Cache-Control', 'private, max-age=3600');
-    res.send(Buffer.from(await img.arrayBuffer()));
+    res.send(Buffer.from(f.data));
   }));
   app.post('/api/telegram/requests/:id/:act', requireMaster, h(async (req, res) => {
     const ok = req.params.act === 'approve';

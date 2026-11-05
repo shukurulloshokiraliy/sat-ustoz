@@ -22,7 +22,7 @@ import { registerQbank, syncQbank, migrateQbankMocks, randomCfg } from './qbank.
 import { registerFullMocks, migrateFullMocks } from './fullmock.js';
 import { registerVideo, playUrl, isBunny } from './video.js';
 import { migrateGifs, registerGifs } from './gifs.js';
-import { migrateFinance, registerFinance } from './finance.js';
+import { migrateFinance, registerFinance, keepPaymentRecords } from './finance.js';
 import { migrateAssignments, registerAssignments, assignedQuizOpen } from './assignments.js';
 import { migrateReserved, registerReserved, scanReserved, scanSoon } from './reserved.js';
 import { registerProgress } from './progress.js';
@@ -92,6 +92,7 @@ if (!(await db.one("SELECT 1 AS x FROM settings WHERE key = '_reserved_v1'"))) {
   await db.run("INSERT INTO settings (key, value) VALUES ('_reserved_v1', '1') ON CONFLICT (key) DO NOTHING");
 }
 await migrateTiers();
+await keepPaymentRecords();
 await migrateSecurity();
 await db.exec(`
 CREATE TABLE IF NOT EXISTS user_activity (
