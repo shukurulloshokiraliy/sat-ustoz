@@ -164,6 +164,8 @@ export async function upsertModule(m, { src = 'bundled', insertAt = 1, renameFro
       else keep.push((await t.run("INSERT INTO roadmap_items (step_id, position, kind, title, content, status) VALUES (?,?,'lesson',?,?,'ready') RETURNING id", [step.id, pos, title, content])).id);
     }
     await t.run("DELETE FROM roadmap_items WHERE step_id = ? AND kind = 'lesson' AND NOT (id = ANY(?::int[]))", [step.id, keep]);
+    // titles the teacher changed in the lesson editor win over the file
+    await t.run("UPDATE roadmap_items r SET title = e.title FROM lesson_edits e WHERE e.item_id = r.id AND r.step_id = ? AND e.title <> ''", [step.id]);
     return { step_id: step.id, created, lessons: m.sections.length, ready: m.sections.filter((s) => statusOf(s) === 'ready').length, extras: extras.length };
   });
 }

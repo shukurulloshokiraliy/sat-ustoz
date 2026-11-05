@@ -6,6 +6,44 @@ import { getSettings } from '../db.js';
 import { upsertModule, validateModule, previewModule } from './modules.js';
 import { addCourseWords } from '../vocab.js';
 
+/* ---------- Teacher edits of lesson notes ----------
+ * The bundled module JSON is re-synced on every start-up, so the teacher's changes live in their own table and are laid
+ * over the original when a lesson is shown: edits survive deploys and content updates. Every save is kept in history.
+ */
+export async function migrateLessonEdits() {
+  await db.exec(`CREATE TABLE IF NOT EXISTS lesson_edits (
+    item_id INTEGER PRIMARY KEY REFERENCES roadmap_items(id) ON DELETE CASCADE,
+    title TEXT NOT NULL DEFAULT '', written TEXT NOT NULL DEFAULT '[]', sources TEXT NOT NULL DEFAULT '[]',
+    updated_by TEXT NOT NULL DEFAULT '', updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+  CREATE TABLE IF NOT EXISTS lesson_edit_history (
+    id SERIAL PRIMARY KEY, item_id INTEGER NOT NULL, title TEXT NOT NULL DEFAULT '', written TEXT NOT NULL DEFAULT '[]',
+    sources TEXT NOT NULL DEFAULT '[]', note TEXT NOT NULL DEFAULT '', saved_by TEXT NOT NULL DEFAULT '', saved_at TIMESTAMPTZ NOT NULL DEFAULT now());
+  CREATE INDEX IF NOT EXISTS idx_lesson_edit_history ON lesson_edit_history(item_id, id DESC);
+  ALTER TABLE lesson_edits ENABLE ROW LEVEL SECURITY; ALTER TABLE lesson_edit_history ENABLE ROW LEVEL SECURITY;`);
+}
+
+const BLOCK_TYPES = new Set(['h', 'p', 'list', 'steps', 'table', 'examples', 'trap', 'tip', 'uz', 'source']);
+const str = (x, max = 4000) => String(x ?? '').replace(/\r\n/g, '\n').slice(0, max);
+/** Clean the blocks the editor sends: known types only, strings only, sensible sizes. */
+export function cleanWritten(list) {
+  if (!Array.isArray(list)) throw Object.assign(new Error('The lesson text is not valid'), { status: 400 });
+  if (list.length > 300) throw Object.assign(new Error('Too many blocks (300 max)'), { status: 400 });
+  return list.filter((b) => b && BLOCK_TYPES.has(b.type)).map((b) => {
+    switch (b.type) {
+      case 'list': case 'steps': return { type: b.type, items: (Array.isArray(b.items) ? b.items : []).map((x) => str(x, 2000)).filter((x) => x.trim()).slice(0, 60) };
+      case 'table': {
+        const columns = (Array.isArray(b.columns) ? b.columns : []).map((x) => str(x, 300)).slice(0, 12);
+        const rows = (Array.isArray(b.rows) ? b.rows : []).slice(0, 80).map((r) => columns.map((_, j) => str(Array.isArray(r) ? r[j] : '', 1500)));
+        return { type: 'table', columns, rows };
+      }
+      case 'examples': return { type: 'examples', rows: (Array.isArray(b.rows) ? b.rows : []).slice(0, 60).map((r) => [str(r?.[0], 1500), str(r?.[1], 1500)]).filter((r) => r[0].trim() || r[1].trim()) };
+      case 'trap': return { type: 'trap', title: str(b.title, 300), text: str(b.text) };
+      default: return { type: b.type, text: str(b.text) };
+    }
+  }).filter((b) => (b.items ? b.items.length : b.rows ? b.rows.length || b.columns?.length : (b.text || '').trim() || b.title));
+}
+const parse = (x, d) => { try { return JSON.parse(x); } catch { return d; } };
+
 const publicQ = (q) => ({ id: q.id, kind: q.kind, prompt: q.prompt, passage: q.passage || '', options: q.options });
 const GRACE = 20; // seconds of network slack for timed checks
 async function overTime(c) {
@@ -24,6 +62,8 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     const item = await db.one("SELECT * FROM roadmap_items WHERE id = ? AND kind = 'lesson'", [id]);
     if (!item) return null;
     const content = JSON.parse(item.content || '{}');
+    const edit = await db.one('SELECT * FROM lesson_edits WHERE item_id = ?', [item.id]);
+    if (edit) { content.written = parse(edit.written, content.written || []); content.sources = parse(edit.sources, content.sources || []); content.edited = { by: edit.updated_by, at: edit.updated_at }; }
     const { steps } = await roadmapFor(user);
     const step = steps.find((s) => s.id === item.step_id);
     if (!step && user.role !== 'master') return null; // the step is in the Trash
@@ -71,6 +111,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
       next: idx >= 0 && idx < lessons.length - 1 ? { id: lessons[idx + 1].id, title: lessons[idx + 1].title, locked: lessons[idx + 1].locked } : null,
       video: content.video || null,
       written: showContent ? content.written || [] : [],
+      edited: req.user.role === 'master' ? content.edited || null : undefined,
       free: !!content.free,
       check: versions.length ? {
         versions, pass_percent: content.pass_percent ?? 80,
@@ -79,6 +120,35 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
       } : null,
       passed: !!state.done, best: state.best ?? null, history,
     });
+  }));
+
+  /* ---- teacher: edit the lesson notes (text, tables, lists…) — saved once, seen by every student right away ---- */
+  app.put('/api/lessons/:id/content', requireMaster, h(async (req, res) => {
+    const item = await db.one("SELECT id, title, content FROM roadmap_items WHERE id = ? AND kind = 'lesson'", [Number(req.params.id)]);
+    if (!item) return bad(res, 'Lesson not found', 404);
+    const written = cleanWritten(req.body?.written);
+    const sources = (Array.isArray(req.body?.sources) ? req.body.sources : []).map((x) => str(x, 500)).filter((x) => x.trim()).slice(0, 30);
+    const title = str(req.body?.title, 160).trim();
+    const by = req.user.name || 'Teacher';
+    await db.tx(async (t) => {
+      // the very first edit also stores the original, so "Undo all changes" and History can always bring it back
+      if (!(await t.one('SELECT 1 AS x FROM lesson_edit_history WHERE item_id = ? LIMIT 1', [item.id]))) {
+        const c = parse(item.content, {});
+        await t.run("INSERT INTO lesson_edit_history (item_id, title, written, sources, note, saved_by, saved_at) VALUES (?,?,?,?, 'Original', '', now() - interval '1 second')",
+          [item.id, item.title, JSON.stringify(c.written || []), JSON.stringify(c.sources || [])]);
+      }
+      await t.run(`INSERT INTO lesson_edits (item_id, title, written, sources, updated_by, updated_at) VALUES (?,?,?,?,?, now())
+        ON CONFLICT (item_id) DO UPDATE SET title = EXCLUDED.title, written = EXCLUDED.written, sources = EXCLUDED.sources, updated_by = EXCLUDED.updated_by, updated_at = now()`,
+      [item.id, title, JSON.stringify(written), JSON.stringify(sources), by]);
+      if (title && title !== item.title) await t.run('UPDATE roadmap_items SET title = ? WHERE id = ?', [title, item.id]);
+      await t.run('INSERT INTO lesson_edit_history (item_id, title, written, sources, note, saved_by) VALUES (?,?,?,?,?,?)',
+        [item.id, title || item.title, JSON.stringify(written), JSON.stringify(sources), str(req.body?.note, 120), by]);
+    });
+    res.json({ ok: true, blocks: written.length });
+  }));
+  app.get('/api/lessons/:id/content/history', requireMaster, h(async (req, res) => {
+    const rows = await db.all('SELECT id, title, note, saved_by, saved_at, written, sources FROM lesson_edit_history WHERE item_id = ? ORDER BY id DESC LIMIT 40', [Number(req.params.id)]);
+    res.json(rows.map((r) => ({ ...r, written: parse(r.written, []), sources: parse(r.sources, []) })));
   }));
 
   // start (or resume) a level check — the next version in the A → B → C rotation

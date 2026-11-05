@@ -8,6 +8,8 @@ import { IconArrow, IconCheck, IconCrown, IconLock, IconPlay } from '../../compo
 import { Rich, rich } from '../../components/Rich.jsx';
 import { VideoLocked, VideoPlayer } from '../student/Roadmap.jsx';
 import { HandoutRow } from '../../components/Handout.jsx';
+import LessonEditor from './LessonEditor.jsx';
+import { IconEdit } from '../../components/icons.jsx';
 
 const shortTitle = (t) => t.replace(/^Lesson (\d+):.*/, 'Lesson $1').replace(/^(Vocabulary|Session check):.*/, '$1');
 
@@ -21,6 +23,8 @@ function LessonView({ l, reload }) {
   const { user } = useAuth();
   const nav = useNavigate();
   const isTeacher = user.role === 'master';
+  const [editing, setEditing] = useState(false);
+  const canEdit = isTeacher && l.type !== 'vocab';
   const lessonName = l.title.replace(/^Lesson \d+:\s*/, '');
   const eyebrow = l.type === 'vocab' ? 'VOCABULARY' : l.type === 'session' ? 'FINAL CHECK OF THIS PART' : `LESSON ${l.order} OF ${l.sections ?? l.count}`;
 
@@ -31,6 +35,12 @@ function LessonView({ l, reload }) {
         <small className="eyebrow-ink">{eyebrow}{l.free ? ' · FREE PREVIEW' : ''}</small>
         <h1>{lessonName}</h1>
         {l.module.subtitle && <span className="chip domain">{l.module.subtitle}</span>}
+        {canEdit && !editing && (
+          <div className="le-open">
+            <button type="button" className="btn primary sm" onClick={() => setEditing(true)}><IconEdit width={16} height={16} /> Edit lesson text</button>
+            <small className="muted">{l.edited ? `Edited by ${l.edited.by || 'teacher'} · ${fmtDate(l.edited.at, { day: 'numeric', month: 'short' })}` : 'Text, tables, lists and spelling: students see your changes as soon as you save.'}</small>
+          </div>
+        )}
       </header>
 
       {l.locked && l.locked !== 'subscription' && (
@@ -79,7 +89,8 @@ function LessonView({ l, reload }) {
 
           {l.type === 'section' && l.module.handout && <HandoutRow stepId={l.module.step_id} h={l.module.handout} />}
 
-          {l.written.length > 0 && (
+          {editing && <LessonEditor l={l} Block={Block} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); reload(); }} />}
+          {!editing && l.written.length > 0 && (
             <article className="notes">
               {l.written.map((b, i) => <Block key={i} b={b} />)}
               {l.sources?.length > 0 && <div className="n-sources"><b>Sources</b><ul>{l.sources.map((s, i) => <li key={i}>{s}</li>)}</ul></div>}

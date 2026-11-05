@@ -78,7 +78,7 @@ and fix exactly what he points at. When a short Uzbek message can be read two wa
   random final exam, mistakes notebook + daily goal, offline-safe answers + PWA, SEO (uz/ru pages, sitemap, hreflang),
   Word Arena redesign (student picks the hero; epic/legendary heroes and extra backgrounds for subscribers; music and
   sounds), vocab word pictures, bank-card style wallet card on dashboard and profile, compact two-column dashboard and
-  one-screen profile.
+  one-screen profile, teacher editing of lesson notes (lesson_edits overlay + history, survives module re-sync).
 - Not built yet: a shop for mock books (the wallet mentions "books"; ask what kind before building).
 - He must still: enter the GIPHY API key in Settings, fill company details in the oferta (Website → Pages),
   set GOOGLE_SITE_VERIFICATION / YANDEX_VERIFICATION in Vercel and submit the sitemap in Search Console.
