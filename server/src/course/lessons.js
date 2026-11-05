@@ -5,6 +5,7 @@ import { scanSoon } from '../reserved.js';
 import { getSettings } from '../db.js';
 import { upsertModule, validateModule, previewModule } from './modules.js';
 import { addCourseWords } from '../vocab.js';
+import { afterPass, unlockPrice, dripDays } from '../drip.js';
 
 /* ---------- Teacher edits of lesson notes ----------
  * The bundled module JSON is re-synced on every start-up, so the teacher's changes live in their own table and are laid
@@ -75,7 +76,8 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     if (user.role !== 'master') {
       if (item.status !== 'ready') locked = 'soon';
       else if (state.locked) locked = step?.status === 'locked' ? 'step' : content.type === 'session' ? 'lessons' : 'previous';
-      else if (!access.roadmap && !content.free) locked = 'subscription';
+      else if (state.wait_until) locked = 'wait';
+      else if (!access.roadmap && !content.free && !state.weekly_open && !state.done) locked = 'subscription';
     }
     return { item, content, step, lessons, idx, state, locked, access };
   }
@@ -119,6 +121,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
         next_version: nextVersion, open_id: open?.id || null,
       } : null,
       passed: !!state.done, best: state.best ?? null, history,
+      wait: locked === 'wait' ? { until: state.wait_until, price: unlockPrice(await getSettings()), days: dripDays(await getSettings()) } : undefined,
     });
   }));
 
@@ -156,6 +159,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     const L = await lessonFor(req.user, req.params.id);
     if (!L) return bad(res, 'Not found', 404);
     if (L.locked === 'subscription') return bad(res, 'An active subscription is required for this lesson', 402, { code: 'subscription_required' });
+    if (L.locked === 'wait') return bad(res, 'This lesson opens later', 403);
     if (L.locked) return bad(res, L.locked === 'soon' ? 'This lesson is coming soon' : L.locked === 'lessons' ? 'Pass every lesson first' : 'Finish the previous lesson first', 403);
     const versions = L.content.versions || [];
     if (!versions.length) return bad(res, 'This lesson has no level check yet');
@@ -211,6 +215,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
       const score = qs.filter((q) => answers[q.id] === q.answer).length;
       const passed = qs.length > 0 && (score / qs.length) * 100 >= (content.pass_percent ?? 80);
       await db.run('UPDATE lesson_checks SET answers = ?, score = ?, total = ?, passed = ?, finished_at = now() WHERE id = ?', [JSON.stringify(answers), score, qs.length, passed, c.id]);
+      if (passed) await afterPass(req.user, roadmapFor);
     }
     res.json({ id: c.id });
   }));

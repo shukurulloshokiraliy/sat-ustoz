@@ -6,7 +6,7 @@ import { Card, Field, Gate, Modal, PageHeader, Segmented, useAsync } from '../..
 import { IconDownload, IconEdit, IconPlus, IconSearch, IconTrash } from '../../components/icons.jsx';
 
 const som = (n) => `${Math.round(Number(n || 0)).toLocaleString('en-US').replace(/,/g, ' ')} so'm`;
-const REASON = { top_up: 'Top-up', subscription: 'Plan', full_mock: 'Extra full mock', quiz: 'Extra quiz', prize: 'Leaderboard prize', correction: 'Correction', direct: 'Direct payment' };
+const REASON = { top_up: 'Top-up', subscription: 'Plan', full_mock: 'Extra full mock', quiz: 'Extra quiz', lesson: 'Lesson opened early', prize: 'Leaderboard prize', correction: 'Correction', direct: 'Direct payment' };
 const PERIODS = [{ value: 'month', label: 'This month' }, { value: 'last', label: 'Last month' }, { value: 'year', label: 'This year' }, { value: 'all', label: 'All time' }];
 
 /** Teacher finance: money in, revenue, prizes, expenses, profit and every student's wallet. */
@@ -27,10 +27,10 @@ export default function Finance() {
   );
 }
 
-const KIND = { top_up: 'Top-up', plan: 'Plan', subscription: 'Plan · wallet', full_mock: 'Extra full mock', quiz: 'Extra quiz', prize: 'Prize', correction: 'Correction' };
+const KIND = { top_up: 'Top-up', plan: 'Plan', subscription: 'Plan · wallet', full_mock: 'Extra full mock', quiz: 'Extra quiz', lesson: 'Lesson opened early', prize: 'Prize', correction: 'Correction' };
 const VIA = { receipt: 'Bot receipt', wallet: 'Wallet', teacher: 'Teacher', prize: 'Leaderboard', telegram: 'Telegram Pay', card: 'Card', click: 'Click', payme: 'Payme' };
 const STATUS = { pending: ['Waiting', 'warn'], approved: ['Approved', 'good'], rejected: ['Rejected', 'bad'], done: ['Done', ''] };
-const TYPES = [['', 'All types'], ['top_up', 'Top-ups'], ['plan', 'Plans'], ['mock', 'Extra full mocks'], ['quiz', 'Extra quizzes'], ['prize', 'Prizes'], ['correction', 'Corrections']];
+const TYPES = [['', 'All types'], ['top_up', 'Top-ups'], ['plan', 'Plans'], ['mock', 'Extra full mocks'], ['quiz', 'Extra quizzes'], ['lesson', 'Early lessons'], ['prize', 'Prizes'], ['correction', 'Corrections']];
 const STATES = [['', 'Any status'], ['pending', 'Waiting'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['done', 'Done']];
 const authed = (url) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
 
@@ -151,7 +151,7 @@ function FinanceView({ d, reload }) {
         <Card>
           <h3 className="fin-h">Where the revenue came from</h3>
           <ul className="fin-break">
-            {[['Plans', s.plans, '#2A55E5'], ['Extra full mocks', s.extra_mocks, '#F07A55'], ['Extra quizzes', s.extra_quizzes, '#22B07D']].map(([k, v, c]) => (
+            {[['Plans', s.plans, '#2A55E5'], ['Extra full mocks', s.extra_mocks, '#F07A55'], ['Extra quizzes', s.extra_quizzes, '#22B07D'], ['Lessons opened early', s.early_lessons || 0, '#8E5CF7']].map(([k, v, c]) => (
               <li key={k}><span><i style={{ background: c }} />{k}</span><b>{som(v)}</b><em style={{ width: `${s.revenue ? (v / s.revenue) * 100 : 0}%`, background: c }} /></li>
             ))}
             <li className="minus"><span><i style={{ background: '#F5B82E' }} />Leaderboard prizes</span><b>− {som(s.prizes)}</b></li>

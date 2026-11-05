@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, fmtDate } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
@@ -43,7 +43,8 @@ function LessonView({ l, reload }) {
         )}
       </header>
 
-      {l.locked && l.locked !== 'subscription' && (
+      {l.locked === 'wait' && l.wait && <WaitCard l={l} reload={reload} />}
+      {l.locked && l.locked !== 'subscription' && l.locked !== 'wait' && (
         <Card className="lesson-locked">
           <IconLock />
           <div>
@@ -252,5 +253,60 @@ function TryCheck({ lessonId }) {
         </Modal>
       )}
     </>
+  );
+}
+
+/** Free students: this lesson opens a week after the previous one was passed. Countdown, ways to open it now, things to do meanwhile. */
+function WaitCard({ l, reload }) {
+  const toast = useToast();
+  const { user, refresh } = useAuth();
+  const [now, setNow] = useState(Date.now());
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+  const left = Math.max(0, new Date(l.wait.until).getTime() - now);
+  useEffect(() => { if (left === 0) reload(); }, [left === 0]); // eslint-disable-line react-hooks/exhaustive-deps
+  const parts = [[Math.floor(left / 86400e3), 'days'], [Math.floor((left % 86400e3) / 3600e3), 'hours'], [Math.floor((left % 3600e3) / 60e3), 'min'], [Math.floor((left % 60e3) / 1000), 'sec']];
+  const price = l.wait.price ? `${l.wait.price.toLocaleString('en-US').replace(/,/g, ' ')} so'm` : '';
+  const openNow = async () => {
+    setBusy(true);
+    try { await api.post(`/lessons/${l.id}/unlock-now`); toast('Lesson opened. Enjoy!'); setConfirm(false); refresh?.(); reload(); }
+    catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); }
+  };
+  const linkBot = async () => {
+    const w = window.open('', '_blank');
+    try { const r = await api.get('/telegram/link'); if (w) w.location.href = r.url; else window.location.href = r.url; } catch (e) { w?.close(); toast(e.message, 'bad'); }
+  };
+  return (
+    <div className="wait">
+      <Card className="wait-main">
+        <small className="eyebrow-ink">THIS LESSON OPENS IN</small>
+        <div className="wait-cd" aria-label={`${parts[0][0]} days ${parts[1][0]} hours left`}>
+          {parts.map(([v, k]) => <div key={k}><b>{String(v).padStart(2, '0')}</b><span>{k}</span></div>)}
+        </div>
+        <p className="muted">On the free plan a new lesson opens {l.wait.days} days after you pass the previous one: <b>{new Date(l.wait.until).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</b>.{user.tg_chat_id ? ' Our Telegram bot will message you when it opens.' : ''}</p>
+        <div className="wait-acts">
+          {price && <button className="btn primary" onClick={() => setConfirm(true)}>Open now · {price}</button>}
+          <Link className="btn soft" to="/subscribe">Get a plan: every lesson opens at once</Link>
+          {!user.tg_chat_id && <button className="btn ghost" onClick={linkBot}>Tell me in Telegram</button>}
+        </div>
+      </Card>
+      <Card className="wait-meanwhile">
+        <b>While you wait</b>
+        <div className="wait-list">
+          {l.prev && <Link to={`/lesson/${l.prev.id}`}><span>Review the last lesson</span><small>{l.prev.title}</small></Link>}
+          <Link to="/vocab/review"><span>Review words</span><small>Flashcards that are due today</small></Link>
+          <Link to="/mistakes"><span>My mistakes</span><small>Fix questions you got wrong</small></Link>
+          <Link to="/practice"><span>Practice questions</span><small>Keep your streak going</small></Link>
+        </div>
+      </Card>
+      {confirm && (
+        <Modal title="Open this lesson now?" onClose={() => setConfirm(false)}
+          footer={<><button className="btn ghost" onClick={() => setConfirm(false)}>Cancel</button><button className="btn primary" disabled={busy} onClick={openNow}>{busy ? 'Opening…' : `Pay ${price}`}</button></>}>
+          <p style={{ marginTop: 0 }}><b>{price}</b> will be taken from your SAT Ustoz card and <b>{l.title.replace(/^Lesson \d+:\s*/, '')}</b> opens right away. The next lessons keep the weekly schedule.</p>
+          <p className="muted" style={{ marginBottom: 0 }}>Not enough on the card? Top it up on your profile, or get a plan to open every lesson.</p>
+        </Modal>
+      )}
+    </div>
   );
 }

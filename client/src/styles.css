@@ -3150,3 +3150,19 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .d-weak .bars { gap: 10px; }
 @media (min-width: 1101px) { .d-weak .bars { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; } }
 .v-deck-head > p { margin: 0; font-size: .9rem; } .v-deck-head > p b { color: var(--ink); }
+
+/* ---------- Weekly lessons (free plan): waiting lesson ---------- */
+.wait { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.wait-main { display: grid; gap: 12px; }
+.wait-main p { margin: 0; }
+.wait-cd { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-width: 420px; }
+.wait-cd div { background: var(--surface-2, var(--bg)); border-radius: 14px; padding: 10px 4px; text-align: center; display: grid; }
+.wait-cd b { font: 800 1.7rem/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.wait-cd span { font-size: .72rem; color: var(--muted); font-weight: 600; }
+.wait-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.wait-meanwhile { display: grid; gap: 8px; }
+.wait-list { display: grid; gap: 6px; }
+.wait-list a { display: grid; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.wait-list a:hover { border-color: var(--primary); text-decoration: none; }
+.wait-list a span { font-weight: 700; font-size: .9rem; } .wait-list a small { color: var(--muted); font-size: .78rem; }
+@media (max-width: 860px) { .wait { grid-template-columns: 1fr; } .wait-acts .btn { flex: 1 1 100%; justify-content: center; } }

@@ -88,6 +88,7 @@ export default function StudentDetail() {
               )}
             </Card>
           )}
+          <WeeklyLessons id={s.id} />
           {sub && <SubscriptionModal student={s} onClose={() => setSub(false)} onDone={() => { setSub(false); st.reload(); }} />}
           {edit && <EditStudent s={s} groups={groups} onClose={() => setEdit(false)} onSaved={() => { setEdit(false); toast("Saved"); st.reload(); }} />}
           {resetAsk && <Confirm title="Reset this student's password?" confirmLabel="Yes, make a new password" onClose={() => setResetAsk(false)}
@@ -132,5 +133,26 @@ function StudentTasks({ id }) {
         {give && <AssignModal quizzes={quizzes} studentId={id} onClose={() => setGive(false)} onDone={() => { setGive(false); st.reload(); }} />}
       </div>
     )}</Gate>
+  );
+}
+
+/** Free students get one roadmap lesson a week: see what they are waiting for and open a lesson for them. */
+function WeeklyLessons({ id }) {
+  const toast = useToast();
+  const st = useAsync(() => api.get(`/students/${id}/waits`), [id]);
+  const d = st.data;
+  if (!d || (!d.weekly && !d.unlocked.length)) return null;
+  const open = async (it) => { try { await api.post(`/students/${id}/unlock/${it.id}`); toast('Opened. The student got a Telegram message (if linked).'); st.reload(); } catch (e) { toast(e.message, 'bad'); } };
+  return (
+    <Card>
+      <div className="row between wrap"><h3 className="sr-h" style={{ margin: 0 }}>Weekly lessons</h3>{d.weekly && <span className="chip">free plan · one lesson a week</span>}</div>
+      {d.waiting.length ? d.waiting.map((w) => (
+        <div key={w.id} className="row between wrap" style={{ gap: 10, padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
+          <span><b>{w.title}</b><small className="muted" style={{ display: 'block' }}>{w.step} · opens {fmtDate(w.opens_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></span>
+          <button className="btn soft sm" onClick={() => open(w)}>Open now for this student</button>
+        </div>
+      )) : <p className="muted" style={{ margin: '8px 0 0' }}>{d.weekly ? 'Not waiting for any lesson right now.' : 'Has a plan: lessons open without waiting.'}</p>}
+      {d.unlocked.length > 0 && <p className="muted" style={{ fontSize: '.82rem', marginBottom: 0 }}>Opened early: {d.unlocked.map((u) => `${u.title.replace(/^Lesson (\d+):.*/, 'Lesson $1')} (${u.how === 'wallet' ? `paid ${u.price.toLocaleString('en-US')}` : `by ${u.by_name || 'teacher'}`})`).join(', ')}</p>}
+    </Card>
   );
 }

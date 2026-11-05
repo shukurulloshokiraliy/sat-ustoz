@@ -4,8 +4,16 @@ import { api } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Gate, Modal, PageHeader, Progress, useAsync } from '../../components/ui.jsx';
 import RoadmapMap, { ContinueBar, StepDisc, stepColor } from '../../components/RoadmapMap.jsx';
-import { IconArrow, IconCheck, IconDoc, IconLock, IconPlay, IconQuiz } from '../../components/icons.jsx';
+import { IconArrow, IconCheck, IconClock, IconDoc, IconLock, IconPlay, IconQuiz } from '../../components/icons.jsx';
 import { HandoutRow } from '../../components/Handout.jsx';
+
+/** "Opens in 3 days" / "Opens in 5 h" for a waiting lesson. */
+export function opensIn(iso) {
+  const ms = new Date(iso).getTime() - Date.now();
+  if (ms <= 0) return 'Opens now';
+  const d = Math.floor(ms / 86400e3); const h = Math.ceil((ms % 86400e3) / 3600e3);
+  return d >= 1 ? `Opens in ${d} day${d === 1 ? '' : 's'}${h && d < 2 ? ` ${h} h` : ''}` : `Opens in ${Math.max(1, Math.ceil(ms / 3600e3))} h`;
+}
 
 export default function Roadmap() {
   const st = useAsync(() => api.get('/roadmap'), []);
@@ -131,13 +139,14 @@ export function StepDrawer({ step, index, prev, onClose, onChanged, preview }) {
                   : [it.url || it.video_locked ? 'Video' : 'Video soon', it.lesson?.has_notes && 'Notes', it.lesson?.check_count && `Level check · ${it.lesson.check_count} q`].filter(Boolean).join(' · ');
                 return (
                   <div key={it.id} className={`item-row ${it.done ? 'done' : ''} ${soon ? 'soon' : ''}`}>
-                    <span className="item-ic lesson">{it.done ? <IconCheck /> : soon || it.locked ? <IconLock /> : (t === 'section' ? <span className="n">{it.lesson?.order}</span> : t === 'vocab' ? <IconDoc /> : <IconQuiz />)}</span>
+                    <span className="item-ic lesson">{it.done ? <IconCheck /> : it.wait_until && !locked ? <IconClock /> : soon || it.locked ? <IconLock /> : (t === 'section' ? <span className="n">{it.lesson?.order}</span> : t === 'vocab' ? <IconDoc /> : <IconQuiz />)}</span>
                     <div style={{ minWidth: 0 }}>
                       <b>{it.title}</b>
                       <small>{soon ? 'Coming soon' : meta}{it.best != null && !soon ? ` · best ${it.best}%` : ''}{it.lesson?.free && !soon ? ' · free' : ''}</small>
                     </div>
                     <div className="item-act row" style={{ gap: 6 }}>
-                      {!soon && (!canRoadmap && !it.lesson?.free && user.role === 'student'
+                      {!soon && it.wait_until && !locked && <Link className="btn soft sm" to={`/lesson/${it.id}`}><IconClock width={15} height={15} /> {opensIn(it.wait_until)}</Link>}
+                      {!soon && !it.wait_until && (!canRoadmap && !it.lesson?.free && !it.weekly_open && !it.done && user.role === 'student'
                         ? <Link className="btn soft sm" to="/subscribe"><IconLock width={15} height={15} /> Subscribe</Link>
                         : <button className={`btn sm ${it.done ? 'ghost' : 'primary'}`} disabled={locked || it.locked} onClick={() => nav(`/lesson/${it.id}`)}>{it.done ? 'Review' : 'Open'} <IconArrow width={15} height={15} /></button>)}
                     </div>

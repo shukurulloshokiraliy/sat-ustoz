@@ -77,6 +77,7 @@ and fix exactly what he points at. When a short Uzbek message can be read two wa
   (fullscreen, leaving costs time and is shown in details), leaderboard with prizes, assignments, reserved questions,
   random final exam, mistakes notebook + daily goal, offline-safe answers + PWA, SEO (uz/ru pages, sitemap, hreflang),
   Vocabulary units: Words → Flashcards → Reading (400–500 words, teacher pastes it) → 15 Words in Context questions (results saved, next unit stays open); no pictures/GIFs in vocab.
+  Weekly lessons for free students (drip.js): after the free lessons each roadmap lesson opens drip_days (7) after passing the previous one; open early from the wallet (lesson_unlock_price) or by the teacher (student page); Telegram message when it opens (15-min sweep on API traffic + daily Vercel cron /api/cron/drip). Subscribers never wait.
   Word Arena redesign (student picks the hero; epic/legendary heroes and extra backgrounds for subscribers; music and
   sounds), vocab word pictures, bank-card style wallet card on dashboard and profile, compact two-column dashboard and
   one-screen profile, teacher editing of lesson notes (lesson_edits overlay + history, survives module re-sync).

@@ -58,9 +58,9 @@ const FROM = {
   all: "'1970-01-01'::timestamptz",
 };
 const TO = { month: 'now() + interval \'1 minute\'', last: MONTH0, year: 'now() + interval \'1 minute\'', all: 'now() + interval \'1 minute\'' };
-const SPEND = ['subscription', 'full_mock', 'quiz'];
+const SPEND = ['subscription', 'full_mock', 'quiz', 'lesson'];
 const n = (x) => Number(x || 0);
-const KIND = { top_up: 'Top-up', plan: 'Plan', subscription: 'Plan (from wallet)', full_mock: 'Extra full mock', quiz: 'Extra quiz', prize: 'Leaderboard prize', correction: 'Correction' };
+const KIND = { top_up: 'Top-up', plan: 'Plan', subscription: 'Plan (from wallet)', full_mock: 'Extra full mock', quiz: 'Extra quiz', lesson: 'Lesson opened early', prize: 'Leaderboard prize', correction: 'Correction' };
 const VIA = { receipt: 'Telegram bot receipt', wallet: 'Wallet', teacher: 'Teacher', prize: 'Leaderboard', telegram: 'Telegram Pay', card: 'Card', click: 'Click', payme: 'Payme' };
 const STATUS = { pending: 'Waiting', approved: 'Approved', rejected: 'Rejected', done: 'Done' };
 
@@ -75,7 +75,7 @@ async function summary(from, to) {
   return {
     cash_in: (by.top_up?.s || 0) + n(direct.s), top_ups: by.top_up?.s || 0, top_up_count: by.top_up?.c || 0,
     direct: n(direct.s), direct_count: n(direct.c),
-    revenue, plans: spent.subscription + n(direct.s), extra_mocks: spent.full_mock, extra_quizzes: spent.quiz,
+    revenue, plans: spent.subscription + n(direct.s), extra_mocks: spent.full_mock, extra_quizzes: spent.quiz, early_lessons: spent.lesson,
     prizes, corrections: by.correction?.s || 0, expenses: n(exp.s), profit: revenue - prizes - n(exp.s),
   };
 }
@@ -96,7 +96,7 @@ const JOURNAL = `
   FROM tg_requests r
   UNION ALL
   SELECT 'l' || l.id, l.created_at, l.user_id, l.who, l.reason,
-    CASE WHEN l.reason IN ('subscription', 'full_mock', 'quiz') THEN 'wallet' WHEN l.reason = 'prize' THEN 'prize' ELSE 'teacher' END,
+    CASE WHEN l.reason IN ('subscription', 'full_mock', 'quiz', 'lesson') THEN 'wallet' WHEN l.reason = 'prize' THEN 'prize' ELSE 'teacher' END,
     l.amount, 'done', '', l.note, COALESCE(cb.name, ''), NULL, NULL
   FROM balance_ledger l LEFT JOIN users cb ON cb.id = l.created_by
   WHERE l.ref IS NULL OR l.ref NOT LIKE 'tg:%'
@@ -112,7 +112,7 @@ function journalWhere(q) {
   if (FROM[q.period] && q.period !== 'all' && !d(q.from)) { where.push(`j.at >= ${FROM[q.period]} AND j.at < ${TO[q.period]}`); }
   if (d(q.from)) { where.push(`j.at >= (?::date ${TZ})`); args.push(d(q.from)); }
   if (d(q.to)) { where.push(`j.at < ((?::date + 1) ${TZ})`); args.push(d(q.to)); }
-  const kinds = { top_up: ['top_up'], plan: ['plan', 'subscription'], mock: ['full_mock'], quiz: ['quiz'], prize: ['prize'], correction: ['correction'] };
+  const kinds = { top_up: ['top_up'], plan: ['plan', 'subscription'], mock: ['full_mock'], quiz: ['quiz'], lesson: ['lesson'], prize: ['prize'], correction: ['correction'] };
   if (kinds[q.kind]) { where.push(`j.kind = ANY(?::text[])`); args.push(kinds[q.kind]); }
   if (['pending', 'approved', 'rejected', 'done'].includes(q.status)) { where.push('j.status = ?'); args.push(q.status); }
   if (['receipt', 'wallet', 'teacher', 'prize'].includes(q.via)) { where.push('j.via = ?'); args.push(q.via); }
@@ -168,7 +168,7 @@ export function registerFinance(app, { h, bad, requireMaster }) {
     }
     const students = await db.all(`SELECT u.id, u.name, u.email, u.login, u.balance, u.sub_plan, u.sub_until,
         COALESCE((SELECT SUM(amount) FROM balance_ledger l WHERE l.user_id = u.id AND l.reason = 'top_up'), 0) AS topped,
-        COALESCE((SELECT -SUM(amount) FROM balance_ledger l WHERE l.user_id = u.id AND l.reason IN ('subscription','full_mock','quiz')), 0)
+        COALESCE((SELECT -SUM(amount) FROM balance_ledger l WHERE l.user_id = u.id AND l.reason IN ('subscription','full_mock','quiz','lesson')), 0)
           + COALESCE((SELECT SUM(amount) FROM payments p WHERE p.user_id = u.id AND p.provider <> 'wallet'), 0) AS spent
       FROM users u WHERE u.role = 'student' ORDER BY u.balance DESC, spent DESC, u.id DESC LIMIT 500`);
     const recent = await db.all(`SELECT x.* FROM (

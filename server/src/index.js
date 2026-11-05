@@ -23,6 +23,7 @@ import { registerFullMocks, migrateFullMocks } from './fullmock.js';
 import { registerVideo, playUrl, isBunny } from './video.js';
 import { migrateGifs, registerGifs } from './gifs.js';
 import { migrateFinance, registerFinance, keepPaymentRecords } from './finance.js';
+import { migrateDrip, registerDrip, unlocksFor, dripDays } from './drip.js';
 import { migrateAssignments, registerAssignments, assignedQuizOpen } from './assignments.js';
 import { migrateReserved, registerReserved, scanReserved, scanSoon } from './reserved.js';
 import { registerProgress } from './progress.js';
@@ -94,6 +95,7 @@ if (!(await db.one("SELECT 1 AS x FROM settings WHERE key = '_reserved_v1'"))) {
 }
 await migrateTiers();
 await keepPaymentRecords();
+await migrateDrip();
 await migrateSecurity();
 await db.exec(`
 CREATE TABLE IF NOT EXISTS user_activity (
@@ -288,9 +290,10 @@ app.get('/api/avatars/:id', h(async (req, res) => {
   res.send(Buffer.from(a.data));
 }));
 
-const PUBLIC = new Set(['/auth/login', '/auth/register', '/auth/google', '/config', '/template.xlsx']);
+const PUBLIC = new Set(['/auth/login', '/auth/register', '/auth/google', '/config', '/template.xlsx', '/cron/drip']);
 app.use('/api', (req, res, next) => (PUBLIC.has(req.path) && req.path !== '/template.xlsx' ? next() : requireAuth(req, res, next)));
 registerSiteAdmin(app, { h, bad, requireMaster });
+registerDrip(app, { h, bad, requireMaster, requireStudent, roadmapFor: (u) => roadmapFor(u), accessFor: (u) => accessFor(u) });
 registerBotAdmin(app, { h, bad, requireMaster, requireStudent });
 registerVocab(app, { h, bad, requireMaster, requireStudent, accessFor: (u) => accessFor(u) });
 
@@ -455,6 +458,8 @@ app.put('/api/settings', requireMaster, h(async (req, res) => {
   if ('tiers' in b) patch.tiers = cleanTiers(b.tiers);
   if ('fm_extra_price' in b) patch.fm_extra_price = digits(b.fm_extra_price) || '0';
   if ('focus_penalty' in b) patch.focus_penalty = String(Math.max(0, Math.min(600, Number(digits(b.focus_penalty)) || 0)));
+  if ('drip_days' in b) patch.drip_days = String(Math.max(0, Math.min(60, Number(digits(b.drip_days)) || 0)));
+  if ('lesson_unlock_price' in b) patch.lesson_unlock_price = String(Math.max(0, Math.min(10_000_000, Number(digits(b.lesson_unlock_price)) || 0)));
   if ('quiz_extra_price' in b) patch.quiz_extra_price = digits(b.quiz_extra_price) || '0';
   if ('free_q_day' in b) patch.free_q_day = String(Math.max(0, Math.min(999, Math.round(+b.free_q_day || 0))));
   if ('bunny_library_id' in b) patch.bunny_library_id = String(b.bunny_library_id || '').replace(/\D/g, '').slice(0, 12);
@@ -1004,7 +1009,12 @@ async function roadmapFor(user) {
   const exams = new Map((await db.all(`SELECT item_id, MAX(ROUND(100.0 * score / NULLIF(total, 0))) AS best, COUNT(*) AS tries
     FROM qbank_mocks WHERE user_id = ? AND item_id IS NOT NULL AND finished_at IS NOT NULL GROUP BY item_id`, [user.id])).map((r) => [r.item_id, r]));
   const checks = new Map((await db.all(`SELECT item_id, bool_or(passed) AS passed, MAX(ROUND(100.0 * score / NULLIF(total, 0))) AS best,
-    COUNT(finished_at) AS tries FROM lesson_checks WHERE user_id = ? GROUP BY item_id`, [user.id])).map((r) => [r.item_id, r]));
+    COUNT(finished_at) AS tries, MIN(finished_at) FILTER (WHERE passed) AS passed_at FROM lesson_checks WHERE user_id = ? GROUP BY item_id`, [user.id])).map((r) => [r.item_id, r]));
+  // free audience: lessons after the free ones open one by one, drip_days after the previous lesson was passed
+  const weekly = user.role === 'student' && !(await accessFor(user)).roadmap;
+  const waitMs = weekly ? dripDays(await getSettings()) * 86400e3 : 0;
+  const early = weekly ? await unlocksFor(user.id) : new Set();
+  let lastPassAt = null;
   const a = await userAnalytics(user.id);
   const estimate = a.estimates.english ?? user.diagnostic_score ?? null;
   let blocked = false;
@@ -1038,12 +1048,18 @@ async function roadmapFor(user) {
       }
       if (it.kind === 'lesson') {
         const type = it.lesson?.type || 'section';
-        if (type === 'vocab') return { ...it, done: done.has(it.id), locked: blocked };
+        if (type === 'vocab') return { ...it, done: done.has(it.id), locked: blocked, ...(weekly ? { weekly_open: true } : {}) };
         const c = checks.get(it.id);
         const passed = !!c?.passed;
         const locked = blocked || it.status !== 'ready' || !prevLessonsPassed;
+        let wait = null;
+        if (weekly && type === 'section' && !it.lesson?.free && !passed && !locked && !early.has(it.id) && waitMs && lastPassAt) {
+          const t = new Date(new Date(lastPassAt).getTime() + waitMs);
+          if (t > new Date()) wait = t.toISOString();
+        }
         if (type === 'section') prevLessonsPassed = prevLessonsPassed && passed;
-        return { ...it, done: passed, best: c?.best ?? null, tries: c?.tries || 0, locked };
+        if (passed && c.passed_at) lastPassAt = c.passed_at;
+        return { ...it, done: passed, best: c?.best ?? null, tries: c?.tries || 0, locked, ...(weekly ? { weekly_open: !wait, wait_until: wait } : {}) };
       }
       return { ...it, done: done.has(it.id) };
     });

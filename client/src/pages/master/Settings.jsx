@@ -57,6 +57,10 @@ function Form({ init }) {
           <Field label="Exam mode: seconds lost per exit" hint="leaving full screen, switching tab or app during a test (0 = only recorded)"><input type="number" min="0" max="600" value={f.focus_penalty ?? 30} onChange={set('focus_penalty')} /></Field>
         </div>
         <div className="grid g3">
+          <Field label="Free students: days between lessons" hint="after the free lessons, each roadmap lesson opens this many days after passing the previous one (0 = no wait)"><input type="number" min="0" max="60" value={f.drip_days ?? 7} onChange={set('drip_days')} /></Field>
+          <Field label="Open a waiting lesson now (from balance)" hint="0 = students can only wait or subscribe"><input inputMode="numeric" value={f.lesson_unlock_price ?? 10000} onChange={set('lesson_unlock_price')} /></Field>
+        </div>
+        <div className="grid g3">
           <Field label="Currency"><input maxLength={3} value={f.currency} onChange={set('currency')} /></Field>
           <Field label="Live lessons link" hint="plan 4"><input value={f.live_link || ''} onChange={set('live_link')} placeholder="https://meet.google.com/…" /></Field>
           <Field label="Live lessons schedule"><input value={f.live_note || ''} onChange={set('live_note')} placeholder="Tue & Thu, 19:00" /></Field>
