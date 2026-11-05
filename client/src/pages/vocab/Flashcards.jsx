@@ -3,7 +3,6 @@ import { api } from '../../api.js';
 import { useToast } from '../../context.jsx';
 import { IconFlip, IconVolume } from '../../components/icons.jsx';
 import Character from '../../components/Character.jsx';
-import { pictureOf, useWordPictures } from './usePictures.js';
 
 const RATINGS = [
   { r: 1, label: 'Again', cls: 'again' },
@@ -37,7 +36,6 @@ export function highlight(sentence, word) {
  * Space / tap flips the card; 1–4 rate it. "Again" and learning cards come back later in the same session.
  */
 export default function Flashcards({ words, onDone, title }) {
-  const pics = useWordPictures(words);
   const toast = useToast();
   const initial = useMemo(() => {
     const now = Date.now();
@@ -124,12 +122,7 @@ export default function Flashcards({ words, onDone, title }) {
             </div>
           ) : (
             <div className="fc-backside">
-              {(() => { const pic = pictureOf(card, pics); return pic ? (
-                <figure className="fc-pic" key={card.id}>
-                  <img src={pic.url} alt={card.word} referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.closest('figure').style.display = 'none'; }} />
-                  {pic.credit && <figcaption title={pic.credit}>{pic.landing ? <a href={pic.landing} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>{pic.credit}</a> : pic.credit}</figcaption>}
-                </figure>
-              ) : null; })()}
+              {card.image_url && <img key={card.id} src={card.image_url} alt={card.word} className="fc-img" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
               <div>
                 <div className="fc-word sm">{card.word}<button className="fc-say" onClick={(e) => { e.stopPropagation(); speak(card.word); }} aria-label="Listen"><IconVolume /></button></div>
                 <h4>Definition</h4>
