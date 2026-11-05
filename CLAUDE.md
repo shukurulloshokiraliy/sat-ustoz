@@ -31,8 +31,8 @@ and fix exactly what he points at. When a short Uzbek message can be read two wa
   the student's name in `who` and survive student deletion), tgbot.js (Telegram bot, receipts in tg_requests, receipt
   files copied to tg_receipt_files, notifyUser/notifyAdmins), security.js (rate limits, audit log, token_version),
   fullmock.js, scoring.js (3PL IRT SAT scale), qbank.js (Question Bank, Take a quiz, random final exam), assignments.js,
-  reserved.js, progress.js, mistakes.js, focus.js (exam focus / leave penalty), pictures.js (vocab word pictures,
-  Openverse), gifs.js (GIPHY proxy, vocab only), video.js (Bunny Stream), game.js (Word Arena), course/modules.js +
+  reserved.js, progress.js, mistakes.js, focus.js (exam focus / leave penalty), pictures.js (vocab word pictures, Openverse — no longer used by the client: vocab is flashcards only),
+  vocabReading.js (unit Reading text + 15 Words in Context questions, open after one flashcard session), gifs.js (GIPHY proxy, vocab only), video.js (Bunny Stream), game.js (Word Arena), course/modules.js +
   course/lessons.js (roadmap modules from JSON).
 
 ## Brand and design rules
@@ -76,6 +76,7 @@ and fix exactly what he points at. When a short Uzbek message can be read two wa
   approve/reject, CSV export), security hardening, full mocks with real-SAT scoring and score report, exam mode
   (fullscreen, leaving costs time and is shown in details), leaderboard with prizes, assignments, reserved questions,
   random final exam, mistakes notebook + daily goal, offline-safe answers + PWA, SEO (uz/ru pages, sitemap, hreflang),
+  Vocabulary units: Words → Flashcards → Reading (400–500 words, teacher pastes it) → 15 Words in Context questions (results saved, next unit stays open); no pictures/GIFs in vocab.
   Word Arena redesign (student picks the hero; epic/legendary heroes and extra backgrounds for subscribers; music and
   sounds), vocab word pictures, bank-card style wallet card on dashboard and profile, compact two-column dashboard and
   one-screen profile, teacher editing of lesson notes (lesson_edits overlay + history, survives module re-sync).

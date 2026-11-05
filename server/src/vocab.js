@@ -9,6 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db } from './db.js';
 import { gifMap } from './gifs.js';
+import { migrateVocabReading, registerVocabReading } from './vocabReading.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIR = path.join(__dirname, 'content', 'vocab');
@@ -47,6 +48,7 @@ ALTER TABLE vocab_units ADD COLUMN IF NOT EXISTS src TEXT NOT NULL DEFAULT 'bund
 -- course words (module vocabulary) review on a fixed ladder: 1, 3, 7, 14, 30 days
 ALTER TABLE vocab_progress ADD COLUMN IF NOT EXISTS ladder BOOLEAN NOT NULL DEFAULT false;
 `);
+  await migrateVocabReading();
 }
 
 /** Bundled decks → database. Words are matched by (unit, word), so progress and teacher edits stay. */
@@ -244,6 +246,8 @@ export function registerVocab(app, { h, bad, requireMaster, requireStudent, acce
     }
     res.json({ ok: true });
   }));
+
+  registerVocabReading(app, { h, bad, requireMaster, requireStudent, setOpen });
 
   // ---------- teacher ----------
   const txt = (v, max) => String(v ?? '').trim().slice(0, max);

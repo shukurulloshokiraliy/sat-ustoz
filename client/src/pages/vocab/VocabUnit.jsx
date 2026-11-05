@@ -7,11 +7,8 @@ import { IconArrow, IconBack, IconBook, IconEdit, IconFlip, IconPlay, IconPlus, 
 import { ItemForm, Ring } from './VocabHome.jsx';
 import { VideoPlayer } from '../student/Roadmap.jsx';
 import Flashcards, { highlight, speak } from './Flashcards.jsx';
-import VocabTest from './VocabTest.jsx';
-import GifSlot from '../../components/GifSlot.jsx';
 import ImportWords from './ImportWords.jsx';
-import { pictureOf, useWordPictures } from './usePictures.js';
-import PicturePicker from './PicturePicker.jsx';
+import { ReadingTab, WicTab } from './VocabReading.jsx';
 
 const STATE = { new: 'New', learning: 'Learning', review: 'Learned' };
 
@@ -35,7 +32,6 @@ export function VocabReview() {
 }
 
 function Unit({ u, reload }) {
-  const pics = useWordPictures(u.words);
   const { user } = useAuth();
   const teacher = user.role === 'master';
   const [tab, setTab] = useState('words');
@@ -53,8 +49,10 @@ function Unit({ u, reload }) {
   const TABS = [
     { value: 'words', label: 'Words', icon: <IconBook width={18} height={18} /> },
     ...(teacher ? [] : [{ value: 'cards', label: 'Flashcards', icon: <IconFlip width={18} height={18} /> }]),
-    { value: 'test', label: 'Test', icon: <IconQuiz width={18} height={18} /> },
+    { value: 'reading', label: 'Reading', icon: <IconBook width={18} height={18} /> },
+    { value: 'wic', label: 'Words in Context', icon: <IconQuiz width={18} height={18} /> },
   ];
+  const flashDone = () => { if (!teacher) api.post(`/vocab/units/${u.id}/flash-done`).catch(() => {}); };
 
   return (
     <>
@@ -80,7 +78,6 @@ function Unit({ u, reload }) {
               <button className="btn ghost sm danger-text" onClick={() => setDelUnit(true)}><IconTrash width={16} height={16} /> Delete unit</button>
             </>}
           </div>
-          <div className="vu-gif"><GifSlot kind="unit" refId={u.id} gif={u.gif} compact /></div>
         </div>
         {!teacher && (
           <div className="vu-stats">
@@ -108,7 +105,6 @@ function Unit({ u, reload }) {
               {u.words.map((w) => (
                 <article key={w.id} className="v-word">
                   <div className="row between"><h3>{w.word} <button className="fc-say sm" onClick={() => speak(w.word)} aria-label={`Listen to ${w.word}`}><IconVolume width={16} height={16} /></button></h3><span className={`v-state ${w.state}`}>{STATE[w.state]}</span></div>
-                  {pictureOf(w, pics) && <img className="v-pic" src={pictureOf(w, pics).url} alt={w.word} loading="lazy" referrerPolicy="no-referrer" title={pictureOf(w, pics).credit || undefined} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
                   <p>{w.definition}</p>
                   {w.example && <p className="v-ex">{highlight(w.example, w.word)}</p>}
                 </article>
@@ -117,8 +113,9 @@ function Unit({ u, reload }) {
           )}
         </>
       )}
-      {tab === 'cards' && <Flashcards words={u.words} onDone={finish} />}
-      {tab === 'test' && <VocabTest words={u.words} unitId={u.id} setId={u.set.id} onDone={finish} />}
+      {tab === 'cards' && <Flashcards words={u.words} onDone={() => setTab('reading')} onComplete={flashDone} />}
+      {tab === 'reading' && <ReadingTab u={u} teacher={teacher} onCards={() => setTab('cards')} onQuestions={() => setTab('wic')} />}
+      {tab === 'wic' && <WicTab u={u} teacher={teacher} onCards={() => setTab('cards')} />}
 
       <nav className="lesson-nav">
         {prev ? <Link className="btn ghost" to={`/vocab/unit/${prev.id}`}><IconBack width={18} height={18} /> Unit {idx}</Link> : <span />}
@@ -135,8 +132,6 @@ function Unit({ u, reload }) {
 const BLANK = { word: '', definition: '', uz: '', ru: '', example: '', image_url: '' };
 /** Teacher: edit, add or remove the words of a unit. */
 function WordEditor({ u, reload }) {
-  const pics = useWordPictures(u.words);
-  const [pick, setPick] = useState(null);
   const toast = useToast();
   const [edit, setEdit] = useState(null);
   const [del, setDel] = useState(null);
@@ -157,15 +152,9 @@ function WordEditor({ u, reload }) {
             </div>
             <p>{w.definition}</p>
             {w.example && <p className="v-ex">{highlight(w.example, w.word)}</p>}
-            {!w.image_url && pics[w.id] && <img className="v-pic" src={pics[w.id].url} alt={w.word} loading="lazy" referrerPolicy="no-referrer" title={pics[w.id].credit} />}
-            <div className="row wrap" style={{ gap: 8 }}>
-              {!w.image_url && <button className="btn ghost sm" onClick={() => setPick(w)}>{pics[w.id] ? 'Change picture' : 'Choose picture'}</button>}
-              <div className="v-gif"><GifSlot kind="word" refId={w.id} gif={w.image_url ? { url: w.image_url } : null} query={w.word} label="Add GIF" compact /></div>
-            </div>
           </article>
         ))}
       </div>
-      {pick && <PicturePicker w={pick} onClose={() => setPick(null)} onSaved={() => { setPick(null); window.location.reload(); }} />}
       {edit && <WordModal unitId={u.id} w={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); }} />}
       {imp && <ImportWords unitId={u.id} onClose={() => setImp(false)} onSaved={() => { setImp(false); reload(); }} />}
       {bulk && <BulkModal unitId={u.id} onClose={() => setBulk(false)} onSaved={() => { setBulk(false); reload(); }} />}
@@ -189,7 +178,6 @@ function WordModal({ unitId, w, onClose, onSaved }) {
       <Field label="Definition"><textarea rows={2} value={f.definition} onChange={set('definition')} /></Field>
       <div className="grid g2"><Field label="Uzbek"><input value={f.uz} onChange={set('uz')} /></Field><Field label="Russian"><input value={f.ru} onChange={set('ru')} /></Field></div>
       <Field label="Example sentence"><textarea rows={2} value={f.example} onChange={set('example')} /></Field>
-      <Field label="Picture or GIF link" hint="optional — helps remember the word; shown on the flashcard"><input value={f.image_url} onChange={set('image_url')} placeholder="https://…" /></Field>
     </Modal>
   );
 }
