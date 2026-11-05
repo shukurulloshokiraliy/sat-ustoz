@@ -28,6 +28,7 @@ import { migrateReserved, registerReserved, scanReserved, scanSoon } from './res
 import { registerProgress } from './progress.js';
 import { migrateMistakes, registerMistakes } from './mistakes.js';
 import { migrateFocus, registerFocus, penaltyOf, focusSummary } from './focus.js';
+import { migratePictures, registerPictures } from './pictures.js';
 import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails, moveBalance } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
@@ -82,6 +83,7 @@ await migrateAssignments();
 await migrateReserved();
 await migrateMistakes();
 await migrateFocus();
+await migratePictures();
 // roadmap history starts with today's roadmap, so even the first change can be undone
 if (!(await db.one('SELECT 1 AS x FROM roadmap_versions LIMIT 1'))) setTimeout(() => rmVersion({ user: { id: null, name: 'System' } }, 'Starting point'), 0);
 // keep exam questions out of practice: the first start scans every quiz and lesson check once
@@ -304,6 +306,7 @@ registerReserved(app, { h, bad, requireMaster });
 registerProgress(app, { h, bad, requireMaster, roadmapFor, userAnalytics });
 registerMistakes(app, { h, bad, requireStudent, requireMaster });
 registerFocus(app, { h, bad, requireStudent });
+registerPictures(app, { h, bad, requireMaster });
 
 app.get('/api/me', h(async (req, res) => res.json(await mepayload(req.user))));
 app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
