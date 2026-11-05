@@ -24,7 +24,7 @@ export function VocabReview() {
   const st = useAsync(() => api.get('/vocab/due'), []);
   return (
     <div className="page">
-      <div className="vu-top"><Link className="btn ghost sm vu-back" to="/vocab"><IconBack width={18} height={18} /> Vocabulary</Link></div>
+      <div className="vu-top"><Link className="btn ghost sm vu-back" to="/vocab"><IconBack width={18} height={18} /> Word Vault</Link></div>
       <header className="vu-hero card"><div className="vu-hero-main"><span className="vu-tag">SPACED REVIEW</span><h1>Words due today</h1></div></header>
       <Gate state={st}>{(d) => <Flashcards words={d.words} title="Words due for review" onDone={() => nav('/vocab')} />}</Gate>
     </div>
@@ -57,7 +57,7 @@ function Unit({ u, reload }) {
   return (
     <>
       <div className="vu-top">
-        <Link className="btn ghost sm vu-back" to="/vocab"><IconBack width={18} height={18} /> Vocabulary</Link>
+        <Link className="btn ghost sm vu-back" to={u.set.deck_id ? `/vocab/deck/${u.set.deck_id}` : '/vocab'}><IconBack width={18} height={18} /> Back to deck</Link>
         <nav className="vu-steps" aria-label={`${u.set.title} units`}>
           <span className="vu-steps-label">{u.set.title}</span>
           {u.siblings.map((s, k) => (

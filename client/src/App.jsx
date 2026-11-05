@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { OfflineBar } from './offline.js';
+import { UpdateBar } from './updates.jsx';
 import ActivityTracker from './components/ActivityTracker.jsx';
 import { useAuth } from './context.jsx';
 import { Spinner } from './components/ui.jsx';
@@ -101,7 +102,7 @@ export default function App() {
   // the placement test is optional: new students see an invitation on the dashboard, nothing is blocked
 
   return (
-    <Suspense fallback={<Wait />}><OfflineBar />{user.role === 'student' && <ActivityTracker />}
+    <Suspense fallback={<Wait />}><OfflineBar /><UpdateBar />{user.role === 'student' && <ActivityTracker />}
     <Routes>
       {user.role === 'student' && <Route path="/quiz/:id" element={<QuizTaker />} />}
       {user.role === 'student' && <Route path="/placement/test" element={<PlacementTest />} />}
@@ -123,6 +124,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path="practice" element={<Practice />} />
         <Route path="vocab" element={<VocabHome />} />
+        <Route path="vocab/deck/:deckId" element={<VocabHome />} />
         <Route path="vocab/unit/:id" element={<VocabUnit />} />
         <Route path="vocab/review" element={<VocabReview />} />
         <Route path="game" element={<GameHub />} />

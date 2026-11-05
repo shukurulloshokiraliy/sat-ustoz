@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth, useToast } from '../../context.jsx';
 import { Confirm, Field, Gate, Modal, useAsync } from '../../components/ui.jsx';
-import { IconArrow, IconCrown, IconEdit, IconGame, IconLock, IconPlay, IconPlus, IconTrash, IconUpload } from '../../components/icons.jsx';
+import { IconArrow, IconBack, IconCrown, IconEdit, IconGame, IconLock, IconPlay, IconPlus, IconTrash, IconUpload } from '../../components/icons.jsx';
 import { VideoPlayer } from '../student/Roadmap.jsx';
 import ImportWords from './ImportWords.jsx';
 
@@ -39,22 +39,19 @@ function Home({ d, reload }) {
     const cur = all.find((x) => x.units.some((u) => u.due)) || all.find((x) => x.units.some((u) => u.learned < u.words)) || all[0];
     return new Set(cur ? [cur.id] : []);
   });
-  // one deck at a time: the shelf on top picks it (remembered on this device)
-  const [deckId, setDeckId] = useState(() => {
-    let saved = null; try { saved = localStorage.getItem('vocab-deck'); } catch { /* storage blocked */ }
-    if (saved && d.decks.some((x) => x.id === saved)) return saved;
-    return (d.decks.find((x) => x.sets.some((st) => st.units.some((u) => u.due))) || d.decks[0])?.id || null;
-  });
-  const pickDeck = (id) => { setDeckId(id); try { localStorage.setItem('vocab-deck', id); } catch { /* storage blocked */ } };
+  // Word Vault home = a grid of decks; each deck has its own page (/vocab/deck/:deckId) with its sets
+  const { deckId } = useParams();
+  const nav = useNavigate();
   const deckStats = (dk) => {
     const us = dk.sets.flatMap((st) => st.units);
     const words = us.reduce((n, u) => n + u.words, 0); const learned = us.reduce((n, u) => n + u.learned, 0);
     return { sets: dk.sets.length, words, learned, due: us.reduce((n, u) => n + u.due, 0), pct: words ? Math.round((learned / words) * 100) : 0 };
   };
-  const cur = d.decks.find((x) => x.id === deckId) || d.decks[0];
+  const cur = deckId ? d.decks.find((x) => String(x.id) === deckId) : null;
   const toggle = (id) => setOpenSets((o) => { const n = new Set(o); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   return (
     <>
+      {!deckId && <>
       <section className="v-hero">
         <div className="v-hero-copy">
           <small className="eyebrow">VOCABULARY</small>
@@ -73,16 +70,39 @@ function Home({ d, reload }) {
         </div>
       </section>
 
-      <nav className="v-shelf" aria-label="Decks">
+      <div className="v-decks">
         {d.decks.filter((dk) => teacher || dk.sets.length).map((dk) => { const k = deckStats(dk); return (
-          <button key={dk.id} type="button" className={`v-deck ${cur?.id === dk.id ? 'on' : ''}`} aria-pressed={cur?.id === dk.id} onClick={() => pickDeck(dk.id)}>
-            <span className="v-deck-top"><b>{dk.title}</b>{!teacher && k.due > 0 && <em>{k.due} due</em>}</span>
-            <small>{k.sets} set{k.sets === 1 ? '' : 's'} · {k.words} words</small>
-            {!teacher && <span className="v-deck-bar" aria-label={`${k.pct}% learned`}><span style={{ width: `${Math.max(k.pct, 2)}%` }} /></span>}
-          </button>
+          <Link key={dk.id} to={`/vocab/deck/${dk.id}`} className="v-deckcard">
+            <span className="v-deckcard-top"><b>{dk.title}</b>{!teacher && k.due > 0 && <em>{k.due} due</em>}</span>
+            {dk.subtitle && <p>{dk.subtitle}</p>}
+            <small>{k.sets} set{k.sets === 1 ? '' : 's'} · {k.words} words{!teacher ? ` · ${k.pct}% learned` : ''}</small>
+            {!teacher && <span className="v-deck-bar" aria-hidden="true"><span style={{ width: `${Math.max(k.pct, 2)}%` }} /></span>}
+            <span className="v-deckcard-go">Open deck <IconArrow width={16} height={16} /></span>
+          </Link>
         ); })}
-        {teacher && <button type="button" className="v-deck add" onClick={() => setForm({ kind: 'deck', mode: 'new' })}><IconPlus width={20} height={20} /><b>New deck</b><small>e.g. SAT 3000</small></button>}
-      </nav>
+        {teacher && <button type="button" className="v-deckcard add" onClick={() => setForm({ kind: 'deck', mode: 'new' })}><IconPlus width={22} height={22} /><b>New deck</b><small>e.g. SAT 3000</small></button>}
+      </div>
+      </>}
+
+      {deckId && !cur && <div className="v-empty"><b>Deck not found</b><p className="muted">It may have been removed.</p><Link className="btn primary" to="/vocab">Back to Word Vault</Link></div>}
+      {cur && (() => { const k = deckStats(cur); return (
+        <header className="v-deckpage">
+          <Link to="/vocab" className="btn ghost sm vu-back"><IconBack width={18} height={18} /> Word Vault</Link>
+          <div className="v-deckpage-main">
+            <div className="grow">
+              <small className="eyebrow-ink">DECK</small>
+              <h1>{cur.title}</h1>
+              {cur.subtitle && <p className="muted">{cur.subtitle}</p>}
+            </div>
+            <div className="v-deckpage-stats">
+              <div><b>{k.sets}</b><span>sets</span></div>
+              <div><b>{k.words}</b><span>words</span></div>
+              {!teacher && <div><b>{k.pct}%</b><span>learned</span></div>}
+              {!teacher && k.due > 0 && <Link to="/vocab/review" className="btn sun sm">Review {k.due} due</Link>}
+            </div>
+          </div>
+        </header>
+      ); })()}
 
       {!d.full && cur && cur.sets.some((st) => !st.open) && (
         <div className="banner">
@@ -95,7 +115,7 @@ function Home({ d, reload }) {
       {[cur].filter(Boolean).map((deck) => (
         <section key={deck.id} className="stack">
           <div className="row between wrap v-deck-head">
-            <p className="muted"><b>{deck.title}</b>{deck.subtitle ? ` · ${deck.subtitle}` : ''}</p>
+            <p className="muted">{deck.sets.length ? 'Open a set, then a unit: words → flashcards → reading → Words in Context.' : ''}</p>
             {teacher && (
               <div className="row" style={{ gap: 6 }}>
                 <button className="btn soft sm" onClick={() => setForm({ kind: 'set', mode: 'new', parent: deck })}><IconPlus width={16} height={16} /> Add set</button>
@@ -116,7 +136,7 @@ function Home({ d, reload }) {
                     <span className="v-set-n">{s.n}</span>
                     <span className="grow v-set-info">
                       <b>{s.title}</b>
-                      <small>{s.units.length} units · {words} words{due ? <em> · {due} due</em> : ''}</small>
+                      <small>{s.units.length} unit{s.units.length === 1 ? "" : "s"} · {words} words{due ? <em> · {due} due</em> : ''}</small>
                       <span className="v-set-bar" aria-label={`${learned} of ${words} learned`}><span style={{ width: `${words ? Math.round((learned / words) * 100) : 0}%` }} /></span>
                     </span>
                     <svg className="v-set-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
@@ -157,11 +177,11 @@ function Home({ d, reload }) {
 
 
       {imp && <ImportWords setId={imp.id} units={imp.units} onClose={() => setImp(null)} onSaved={() => { setImp(null); reload(); }} />}
-      {form && <ItemForm {...form} onClose={() => setForm(null)} onSaved={(r) => { if (form.kind === 'deck' && form.mode === 'new' && r?.id) pickDeck(r.id); setForm(null); reload(); }} />}
+      {form && <ItemForm {...form} onClose={() => setForm(null)} onSaved={(r) => { if (form.kind === 'deck' && form.mode === 'new' && r?.id) nav(`/vocab/deck/${r.id}`); setForm(null); reload(); }} />}
       {del && <Confirm title={`Delete ${del.row.title}`}
         text={del.kind === 'deck' ? 'The whole deck, with its sets, units and words, disappears for every student.' : del.kind === 'set' ? 'This set, its units and words disappear for every student.' : 'This unit and its words disappear for every student.'}
         onClose={() => setDel(null)}
-        onConfirm={async () => { try { await api.del(`/vocab/${del.kind}s/${del.row.id}`); toast('Deleted'); setDel(null); reload(); } catch (e) { toast(e.message, 'bad'); } }} />}
+        onConfirm={async () => { try { await api.del(`/vocab/${del.kind}s/${del.row.id}`); toast('Deleted'); if (del.kind === 'deck') nav('/vocab'); setDel(null); reload(); } catch (e) { toast(e.message, 'bad'); } }} />}
 
       {video && (
         <Modal wide title={`${video.title} · video`} onClose={() => setVideo(null)}>

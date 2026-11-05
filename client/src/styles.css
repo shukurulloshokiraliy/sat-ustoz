@@ -3166,3 +3166,28 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .wait-list a:hover { border-color: var(--primary); text-decoration: none; }
 .wait-list a span { font-weight: 700; font-size: .9rem; } .wait-list a small { color: var(--muted); font-size: .78rem; }
 @media (max-width: 860px) { .wait { grid-template-columns: 1fr; } .wait-acts .btn { flex: 1 1 100%; justify-content: center; } }
+
+/* ---------- Word Vault: deck grid + deck page ---------- */
+.v-decks { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.v-deckcard { display: grid; gap: 6px; align-content: start; padding: 18px; border-radius: 20px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; text-align: left; font: inherit; cursor: pointer; transition: border-color .15s, transform .15s, box-shadow .15s; min-height: 150px; }
+.v-deckcard:hover { border-color: var(--primary); text-decoration: none; transform: translateY(-2px); box-shadow: 0 12px 26px -18px rgba(22,27,61,.45); }
+.v-deckcard-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.v-deckcard-top b { font: 800 1.2rem var(--display, inherit); }
+.v-deckcard-top em { font-style: normal; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--sun) 35%, transparent); flex: none; }
+.v-deckcard p { margin: 0; color: var(--muted); font-size: .86rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.v-deckcard small { color: var(--muted); font-size: .8rem; }
+.v-deckcard-go { margin-top: auto; padding-top: 6px; display: inline-flex; align-items: center; gap: 6px; color: var(--primary); font-weight: 700; font-size: .88rem; }
+.v-deckcard.add { border-style: dashed; color: var(--primary); align-content: center; justify-items: center; text-align: center; }
+.v-deckpage { display: grid; gap: 12px; }
+.v-deckpage .vu-back { justify-self: start; }
+.v-deckpage-main { display: flex; align-items: flex-end; gap: 18px; flex-wrap: wrap; padding: clamp(18px, 3vw, 26px); border-radius: 22px; background: var(--surface); border: 1px solid var(--line); }
+.v-deckpage-main h1 { margin: 2px 0 4px; font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.3rem); }
+.v-deckpage-main p { margin: 0; }
+.v-deckpage-stats { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.v-deckpage-stats > div { padding: 8px 14px; border-radius: 14px; background: var(--surface-2, var(--bg)); display: grid; text-align: center; min-width: 72px; }
+.v-deckpage-stats b { font: 800 1.15rem var(--display, inherit); } .v-deckpage-stats span { font-size: .72rem; color: var(--muted); }
+@media (max-width: 640px) { .v-decks { grid-template-columns: 1fr; } .v-deckcard { min-height: 0; } .v-deckpage-stats { width: 100%; } .v-deckpage-stats > div { flex: 1; min-width: 0; } }
+
+/* ---------- New version bar ---------- */
+.update-bar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 90; display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; border-radius: 16px; background: var(--night, #161B3D); color: #fff; box-shadow: 0 14px 34px -14px rgba(0,0,0,.5); font-size: .9rem; max-width: calc(100% - 32px); }
+@media (max-width: 1024px) { .update-bar { bottom: 92px; } }
