@@ -3117,3 +3117,36 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .wic-rev.no { border-left: 4px solid #E5484D; } .wic-rev.ok { border-left: 4px solid var(--good); }
 .wic-why { margin: 0; font-size: .92rem; color: var(--muted); }
 @media (max-width: 640px) { .vr-save { bottom: 84px; } .vr-body p { font-size: 1rem; } .vu-tabs button { white-space: nowrap; } }
+
+/* ---------- Word Vault: deck shelf (one deck at a time) ---------- */
+.v-shelf { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; scroll-snap-type: x proximity; scrollbar-width: thin; }
+.v-deck { flex: 0 0 auto; min-width: 210px; max-width: 280px; scroll-snap-align: start; display: grid; gap: 4px; text-align: left; padding: 14px 16px; border-radius: 18px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; transition: border-color .15s, background .15s; }
+.v-deck:hover { border-color: color-mix(in srgb, var(--primary) 50%, var(--line)); }
+.v-deck.on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 7%, var(--surface)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent); }
+.v-deck-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.v-deck-top b { font: 700 1rem var(--display, inherit); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v-deck-top em { font-style: normal; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--sun) 35%, transparent); color: var(--ink); flex: none; }
+.v-deck small { color: var(--muted); font-size: .78rem; }
+.v-deck-bar { display: block; height: 5px; border-radius: 999px; background: var(--track); overflow: hidden; margin-top: 4px; }
+.v-deck-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--good); }
+.v-deck.add { border-style: dashed; color: var(--primary); align-content: center; justify-items: start; min-width: 170px; }
+.v-deck.add small { color: var(--muted); }
+.v-empty { border: 1.5px dashed var(--line); border-radius: 18px; padding: 22px; display: grid; gap: 6px; justify-items: start; }
+.v-empty p { margin: 0 0 6px; }
+@media (max-width: 640px) { .v-deck { min-width: 180px; padding: 12px 14px; } }
+
+/* ---------- Dashboard polish: fit text inside cards, even columns ---------- */
+.dash .card h2 { font-size: 1.08rem; }
+.dash .card-title { margin-bottom: 10px; }
+.d-rr .ring-in strong { font-size: .62rem; letter-spacing: -.02em; }
+.d-rr .ring-in span { display: none; }
+.dash-side .exam-cd-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.dash-side .exam-cd-grid div { padding: 8px 2px; min-width: 0; }
+.dash-side .exam-cd-grid b { font-size: clamp(1.05rem, .7rem + .9vw, 1.35rem); }
+.dash-side .exam-cd-grid span { font-size: .66rem; }
+.dash-side .lb-mini > span:nth-child(2) { min-width: 0; }
+.dash-side .lb-mini small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-col > .card { min-width: 0; overflow: hidden; }
+.d-weak .bars { gap: 10px; }
+@media (min-width: 1101px) { .d-weak .bars { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; } }
+.v-deck-head > p { margin: 0; font-size: .9rem; } .v-deck-head > p b { color: var(--ink); }

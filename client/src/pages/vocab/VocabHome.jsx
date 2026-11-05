@@ -39,14 +39,27 @@ function Home({ d, reload }) {
     const cur = all.find((x) => x.units.some((u) => u.due)) || all.find((x) => x.units.some((u) => u.learned < u.words)) || all[0];
     return new Set(cur ? [cur.id] : []);
   });
+  // one deck at a time: the shelf on top picks it (remembered on this device)
+  const [deckId, setDeckId] = useState(() => {
+    let saved = null; try { saved = localStorage.getItem('vocab-deck'); } catch { /* storage blocked */ }
+    if (saved && d.decks.some((x) => x.id === saved)) return saved;
+    return (d.decks.find((x) => x.sets.some((st) => st.units.some((u) => u.due))) || d.decks[0])?.id || null;
+  });
+  const pickDeck = (id) => { setDeckId(id); try { localStorage.setItem('vocab-deck', id); } catch { /* storage blocked */ } };
+  const deckStats = (dk) => {
+    const us = dk.sets.flatMap((st) => st.units);
+    const words = us.reduce((n, u) => n + u.words, 0); const learned = us.reduce((n, u) => n + u.learned, 0);
+    return { sets: dk.sets.length, words, learned, due: us.reduce((n, u) => n + u.due, 0), pct: words ? Math.round((learned / words) * 100) : 0 };
+  };
+  const cur = d.decks.find((x) => x.id === deckId) || d.decks[0];
   const toggle = (id) => setOpenSets((o) => { const n = new Set(o); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   return (
     <>
       <section className="v-hero">
         <div className="v-hero-copy">
           <small className="eyebrow">VOCABULARY</small>
-          <h1>Words that <mark>stick</mark>.</h1>
-          <p>Learn every word from the ELS reading passages with flashcards that come back right before you forget them. Then test yourself, or battle friends in Word Arena.</p>
+          <h1>Word <mark>Vault</mark></h1>
+          <p>Every deck of SAT words in one place. Learn with flashcards that return right before you forget, read the words in a real text, then prove them in Words in Context or Word Arena.</p>
           <div className="row wrap" style={{ gap: 10, marginTop: 6 }}>
             {!teacher && <Link className={`btn lg ${t.due ? 'sun' : 'primary'}`} to="/vocab/review">{t.due ? `Review ${t.due} due word${t.due === 1 ? '' : 's'}` : 'Review words'} <IconArrow /></Link>}
             <Link className="btn lg on-dark" to="/game"><IconGame /> Word Arena</Link>
@@ -60,18 +73,29 @@ function Home({ d, reload }) {
         </div>
       </section>
 
-      {!d.full && (
+      <nav className="v-shelf" aria-label="Decks">
+        {d.decks.filter((dk) => teacher || dk.sets.length).map((dk) => { const k = deckStats(dk); return (
+          <button key={dk.id} type="button" className={`v-deck ${cur?.id === dk.id ? 'on' : ''}`} aria-pressed={cur?.id === dk.id} onClick={() => pickDeck(dk.id)}>
+            <span className="v-deck-top"><b>{dk.title}</b>{!teacher && k.due > 0 && <em>{k.due} due</em>}</span>
+            <small>{k.sets} set{k.sets === 1 ? '' : 's'} · {k.words} words</small>
+            {!teacher && <span className="v-deck-bar" aria-label={`${k.pct}% learned`}><span style={{ width: `${Math.max(k.pct, 2)}%` }} /></span>}
+          </button>
+        ); })}
+        {teacher && <button type="button" className="v-deck add" onClick={() => setForm({ kind: 'deck', mode: 'new' })}><IconPlus width={20} height={20} /><b>New deck</b><small>e.g. SAT 3000</small></button>}
+      </nav>
+
+      {!d.full && cur && cur.sets.some((st) => !st.open) && (
         <div className="banner">
           <span className="item-ic"><IconCrown /></span>
-          <div className="grow"><b>Set 1 is free</b><small>Subscribe to open all 15 sets ({t.words} words), tests and Word Arena with every set.</small></div>
+          <div className="grow"><b>{cur.free_sets ? `${cur.free_sets === 1 ? 'Set 1 is' : `The first ${cur.free_sets} sets are`} free` : 'This deck comes with a plan'}</b><small>Subscribe to open all {cur.sets.length} sets of {cur.title} ({deckStats(cur).words} words) and every deck in Word Arena.</small></div>
           <Link className="btn primary sm" to="/subscribe">See plans <IconArrow width={16} height={16} /></Link>
         </div>
       )}
 
-      {d.decks.map((deck) => (
+      {[cur].filter(Boolean).map((deck) => (
         <section key={deck.id} className="stack">
-          <div className="row between wrap">
-            <div><h2>{deck.title}</h2><p className="muted">{deck.subtitle}</p></div>
+          <div className="row between wrap v-deck-head">
+            <p className="muted"><b>{deck.title}</b>{deck.subtitle ? ` · ${deck.subtitle}` : ''}</p>
             {teacher && (
               <div className="row" style={{ gap: 6 }}>
                 <button className="btn soft sm" onClick={() => setForm({ kind: 'set', mode: 'new', parent: deck })}><IconPlus width={16} height={16} /> Add set</button>
@@ -80,7 +104,7 @@ function Home({ d, reload }) {
               </div>
             )}
           </div>
-          {teacher && !deck.sets.length && <p className="muted">No sets yet. Add a set, then units and words inside it.</p>}
+          {!deck.sets.length && <div className="v-empty"><b>{teacher ? 'This deck is empty' : 'Nothing here yet'}</b><p className="muted">{teacher ? 'Add a set, then units and words inside it. Each unit can get a reading text and 15 Words in Context questions.' : 'Your teacher is filling this deck.'}</p>{teacher && <button className="btn primary" onClick={() => setForm({ kind: 'set', mode: 'new', parent: deck })}><IconPlus width={16} height={16} /> Add the first set</button>}</div>}
           {deck.sets.map((s) => {
             const words = s.units.reduce((n, u) => n + u.words, 0);
             const learned = s.units.reduce((n, u) => n + u.learned, 0);
@@ -131,12 +155,11 @@ function Home({ d, reload }) {
         </section>
       ))}
 
-      {teacher && <button className="btn ghost block v-add-deck" onClick={() => setForm({ kind: 'deck', mode: 'new' })}><IconPlus width={18} height={18} /> New word book</button>}
 
       {imp && <ImportWords setId={imp.id} units={imp.units} onClose={() => setImp(null)} onSaved={() => { setImp(null); reload(); }} />}
-      {form && <ItemForm {...form} onClose={() => setForm(null)} onSaved={() => { setForm(null); reload(); }} />}
+      {form && <ItemForm {...form} onClose={() => setForm(null)} onSaved={(r) => { if (form.kind === 'deck' && form.mode === 'new' && r?.id) pickDeck(r.id); setForm(null); reload(); }} />}
       {del && <Confirm title={`Delete ${del.row.title}`}
-        text={del.kind === 'deck' ? 'The whole word book, with its sets, units and words, disappears for every student.' : del.kind === 'set' ? 'This set, its units and words disappear for every student.' : 'This unit and its words disappear for every student.'}
+        text={del.kind === 'deck' ? 'The whole deck, with its sets, units and words, disappears for every student.' : del.kind === 'set' ? 'This set, its units and words disappear for every student.' : 'This unit and its words disappear for every student.'}
         onClose={() => setDel(null)}
         onConfirm={async () => { try { await api.del(`/vocab/${del.kind}s/${del.row.id}`); toast('Deleted'); setDel(null); reload(); } catch (e) { toast(e.message, 'bad'); } }} />}
 
@@ -165,7 +188,7 @@ function VideoEdit({ set, onClose, onSaved }) {
   );
 }
 
-const LABEL = { deck: 'word book', set: 'set', unit: 'unit' };
+const LABEL = { deck: 'deck', set: 'set', unit: 'unit' };
 /** Teacher: create or rename a word book, set or unit. */
 export function ItemForm({ kind, mode, parent, row, onClose, onSaved }) {
   const toast = useToast();
@@ -178,11 +201,12 @@ export function ItemForm({ kind, mode, parent, row, onClose, onSaved }) {
     setBusy(true);
     try {
       const body = kind === 'deck' ? { title, subtitle, free_sets: Number(free) } : { title };
+      let r = null;
       if (mode === 'edit') await api.put(`/vocab/${kind}s/${row.id}`, body);
-      else if (kind === 'deck') await api.post('/vocab/decks', body);
-      else if (kind === 'set') await api.post(`/vocab/decks/${parent.id}/sets`, body);
-      else await api.post(`/vocab/sets/${parent.id}/units`, body);
-      toast('Saved'); onSaved();
+      else if (kind === 'deck') r = await api.post('/vocab/decks', body);
+      else if (kind === 'set') r = await api.post(`/vocab/decks/${parent.id}/sets`, body);
+      else r = await api.post(`/vocab/sets/${parent.id}/units`, body);
+      toast('Saved'); onSaved(r);
     } catch (ex) { toast(ex.message, 'bad'); setBusy(false); }
   };
   return (
@@ -190,7 +214,7 @@ export function ItemForm({ kind, mode, parent, row, onClose, onSaved }) {
       footer={<><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn primary" disabled={busy || (kind !== 'set' && !title.trim())} onClick={save}>Save</button></>}>
       <form onSubmit={save} className="stack">
         <Field label="Title" hint={kind === 'set' && mode === 'new' ? 'Leave empty to call it “Set N”.' : kind === 'unit' ? 'Usually the name of the reading passage.' : undefined}>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus maxLength={kind === 'unit' ? 120 : 80} placeholder={kind === 'deck' ? 'SAT Hard Words' : kind === 'set' ? 'Set 16' : 'The Lost City'} />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus maxLength={kind === 'unit' ? 120 : 80} placeholder={kind === 'deck' ? 'SAT 3000' : kind === 'set' ? 'Set 16' : 'The Lost City'} />
         </Field>
         {kind === 'deck' && <>
           <Field label="Short description"><input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} maxLength={200} placeholder="Words from our class readings" /></Field>

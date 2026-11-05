@@ -83,6 +83,10 @@ export default function Dashboard() {
                     </div>
                   )}
                 </Card>
+                <Card className="d-weak">
+                  <div className="card-title"><h2>{"Weak topics"}</h2></div>
+                  {all.weak.length ? <Bars rows={all.weak.slice(0, 4)} /> : <p className="muted">No weak topics yet: answer a few more questions.</p>}
+                </Card>
               </div>
 
               <div className="dash-col dash-side">
@@ -119,10 +123,6 @@ export default function Dashboard() {
                     <IconArrow width={16} height={16} />
                   </Link>
                 )}
-                <Card className="d-weak">
-                  <div className="card-title"><h2>{"Weak topics"}</h2></div>
-                  {all.weak.length ? <Bars rows={all.weak.slice(0, 4)} /> : <p className="muted">No weak topics yet: answer a few more questions.</p>}
-                </Card>
                 <div className="d-extra"><Extras access={user.access} stacked /></div>
               </div>
             </div>
