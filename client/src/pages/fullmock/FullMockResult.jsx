@@ -61,7 +61,7 @@ function Result({ a }) {
       <div className="stack">
         {list.map(({ q, i, ok, skipped }) => (
           <Card key={q.id} className={`rq ${skipped ? 'skip' : ok ? 'right' : 'wrong'}`}>
-            <div className="row wrap" style={{ gap: 8 }}><span className="q-num">{q.n || i + 1}</span>{q.skill && <span className="chip domain">{q.skill}</span>}{q.difficulty && <span className={`chip lvl-${q.difficulty}`}>{q.difficulty}</span>}{skipped && <span className="chip warn">Not answered</span>}{q.seconds != null && <span className="q-time">{fmtSec(q.seconds)}</span>}
+            <div className="row wrap" style={{ gap: 8 }}><span className="q-num">{q.n || i + 1}</span>{q.skill && <span className="chip domain">{q.skill}</span>}{(q.level || q.difficulty) && <span className={`chip lvl-${q.level || q.difficulty}`}>{q.level || q.difficulty}</span>}{q.pretest && <span className="chip" title="Like on the real SAT, 2 questions per module are not scored: they only measure the question">Unscored</span>}{q.pct != null && <span className="q-pct" title={`${q.answered_by} students answered this question`}>{q.pct}% of students got it right</span>}{skipped && <span className="chip warn">Not answered</span>}{q.seconds != null && <span className="q-time">{fmtSec(q.seconds)}</span>}
               {!q.options && <span className="chip">Your answer: {skipped ? '—' : L[a.answers[q.id]]} · Correct: {L[q.answer]}</span>}</div>
             {(q.passage || q.table) && <Passage text={q.passage} table={q.table} />}
             {q.prompt && <p style={{ fontWeight: 600 }}>{rich(q.prompt)}</p>}

@@ -67,7 +67,7 @@
     {
       "id": "ctc-05",
       "difficulty": "easy",
-      "passage": "**Text 1**\nPlanting trees is one of the easiest ways for a city to fight summer heat. Shaded streets can be several degrees cooler than streets without trees.\n\n**Text 2**\nIn a survey of 30 cities, streets lined with large trees were on average 3 to 5 degrees Celsius cooler in summer afternoons than nearby streets without trees.",
+      "passage": "**Text 1**\nPlanting trees is one of the easiest ways for a city to fight summer heat. Shaded streets can be several degrees cooler than streets without trees.\n\n**Text 2**\nIn a survey of 30 cities, streets lined with large trees were on average 3 to 5 degrees Celsius cooler on summer afternoons than nearby streets without trees.",
       "prompt": "Which choice best describes how Text 2 relates to Text 1?",
       "options": [
         "Text 2 disagrees with the main claim of Text 1.",
@@ -156,7 +156,7 @@
     },
     {
       "id": "ctc-11",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "**Text 1**\nMany economists argue that raising the minimum wage leads businesses to hire fewer workers. If labor becomes more expensive, they reason, employers will look for ways to use less of it.\n\n**Text 2**\nSeveral studies comparing neighboring regions, one of which raised its minimum wage and one of which did not, have found little or no difference in employment afterward. One explanation is that higher wages reduce how often workers quit, which lowers businesses' hiring and training costs.",
       "prompt": "Based on the texts, how would the author of Text 2 most likely respond to the reasoning in Text 1?",
       "options": [
@@ -171,7 +171,7 @@
     },
     {
       "id": "ctc-12",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "**Text 1**\nThe discovery of a 3.2-million-year-old skeleton nicknamed \"Lucy\" suggested that early human ancestors walked upright long before their brains grew large. This overturned the older idea that bigger brains came first and upright walking followed.\n\n**Text 2**\nFossil footprints found at Laetoli in Tanzania, made about 3.6 million years ago, show a clearly upright, two-legged walk. The animals that made them had small brains, similar in size to those of chimpanzees.",
       "prompt": "Which choice best describes how Text 2 relates to Text 1?",
       "options": [
@@ -186,7 +186,7 @@
     },
     {
       "id": "ctc-13",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "**Text 1**\nTranslations of poetry should stay as close as possible to the original words. When translators add their own phrases to create rhyme or rhythm, readers can no longer trust that they are reading the poet's ideas.\n\n**Text 2**\nA word-for-word translation of a poem may be accurate, but it often loses the music that made the original a poem in the first place. A good translator must sometimes change individual words in order to preserve the poem's sound and emotional effect, which are part of its meaning too.",
       "prompt": "Based on the texts, how would the author of Text 2 most likely respond to the argument in Text 1?",
       "options": [
@@ -201,12 +201,12 @@
     },
     {
       "id": "ctc-14",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "**Text 1**\nResearchers have long believed that crows solve puzzles mainly by trial and error, trying random actions until one works.\n\n**Text 2**\nIn a recent experiment, crows were shown a tube of water with food floating out of reach. Most crows immediately chose to drop heavy stones rather than light objects into the tube to raise the water level, and they ignored tubes filled with sand, where dropping stones would not help. The researchers argue that the birds understood the cause-and-effect relationship involved.",
       "prompt": "Based on the texts, how would the researchers in Text 2 most likely respond to the belief described in Text 1?",
       "options": [
         "They would argue that their findings suggest crows can solve some problems by understanding them rather than by random attempts.",
-        "They would agree that crows only solve problems by accident.",
+        "They would agree that crows usually solve problems by trying random actions, though they might add that crows learn quickly from their mistakes.",
         "They would claim that crows are unable to use tools.",
         "They would argue that water puzzles are too difficult for any bird."
       ],
@@ -216,7 +216,7 @@
     },
     {
       "id": "ctc-15",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "**Text 1**\nAncient Greek sculptures were painted in bright colors, but almost all of the paint has worn away. Museums should therefore display painted reconstructions alongside the white marble originals, so that visitors see the works as the ancient Greeks did.\n\n**Text 2**\nScientists can detect tiny traces of pigment on ancient statues, but these traces rarely show exactly which colors covered which areas, or how bright they were. Many reconstructions therefore rely heavily on guesswork, and presenting them as accurate images of the past may mislead visitors.",
       "prompt": "Based on the texts, how would the author of Text 2 most likely respond to the proposal in Text 1?",
       "options": [

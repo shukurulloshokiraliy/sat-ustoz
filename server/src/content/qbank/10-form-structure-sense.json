@@ -37,7 +37,7 @@
     {
       "id": "fss-03",
       "difficulty": "easy",
-      "passage": "Last summer, my grandparents ______ a small vineyard near Parkent, where they still grow several kinds of grapes.",
+      "passage": "Last summer, my grandparents ______ a small vineyard near Parkent, where they now grow several kinds of grapes.",
       "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
       "options": [
         "plant",
@@ -67,7 +67,7 @@
     {
       "id": "fss-05",
       "difficulty": "easy",
-      "passage": "The ______ uniforms were washed and ironed before the championship game.",
+      "passage": "Before the championship game, the team manager washed and ironed all eleven ______ uniforms.",
       "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
       "options": [
         "players",
@@ -156,7 +156,7 @@
     },
     {
       "id": "fss-11",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "The results of the long-term study, which followed more than 2,000 participants for nearly three decades, ______ that regular physical activity is linked to a lower risk of memory loss.",
       "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
       "options": [
@@ -171,7 +171,7 @@
     },
     {
       "id": "fss-12",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "The novelist's early stories were praised for their humor, their vivid descriptions of village life, and ______",
       "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
       "options": [
@@ -191,17 +191,17 @@
       "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
       "options": [
         "the wild mountain goats",
-        "it is",
+        "those",
         "the southern valley's",
         "that"
       ],
       "answer": 3,
-      "explanation": "The comparison must be between two populations. \"That\" stands for \"the population,\" so the sentence compares the population in the northern valley with the population in the southern valley. A compares a population with animals, C with a valley, and B (\"it is in the southern valley\") does not make a logical comparison.",
+      "explanation": "The comparison must be between two populations. \"That\" stands for \"the population,\" so the sentence compares the population in the northern valley with the population in the southern valley. A compares a population with animals, C with a valley, and B (\"those\") is plural, so it cannot stand for the singular \"population.\"",
       "tip": "Faulty comparison: compare like with like. \"That of\" or \"that\" often fixes the problem."
     },
     {
       "id": "fss-14",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "Known for its sweetness and long shelf life, ______",
       "prompt": "Which choice completes the text so that it conforms to the conventions of Standard English?",
       "options": [

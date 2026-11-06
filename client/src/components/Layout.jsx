@@ -50,6 +50,7 @@ const MASTER_NAV = [
   { to: '/roadmap', label: 'Roadmap', icon: IconRoad, c: '#F28B4E' },
   { to: '/question-bank/manage', label: 'Question Bank', icon: IconTarget, c: '#1E8E4E' },
   { to: '/reports', label: 'Question reports', icon: IconFlag, c: '#D9425B' },
+  { to: '/quality', label: 'Question quality', icon: IconChart, c: '#2A55E5' },
   { to: '/full-mocks', label: 'Full Mocks', icon: IconDoc, c: '#C2410C' },
   { to: '/consultations', label: 'Consultations', icon: IconConsult, c: '#0E9F6E' },
   { to: '/leaderboard', label: 'Leaderboard', icon: IconTrophy, c: '#E8A93C' },

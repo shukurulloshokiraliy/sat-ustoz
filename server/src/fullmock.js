@@ -15,6 +15,8 @@ import { parseUpload } from './parse.js';
 import { ROUTE_CUT, satScore } from './scoring.js';
 import { MOCK_BLUEPRINT, DOMAINS } from './qbank.js';
 import { penaltyOf, focusSummary } from './focus.js';
+import { difficultyOf, thetaOf, recordAnswers, calibrateIfStale } from './calibrate.js';
+import { scoreFromTheta, ROUTE_THETA } from './scoring.js';
 
 export async function migrateFullMocks() {
   await db.exec(`
@@ -137,16 +139,18 @@ export async function fmQuota(user) {
 export async function moduleSets(mock, a = null) {
   if (mock.mode === 'qbank') { // generated from the Question Bank: the question ids live on the attempt
     const gen = parseJSON(a?.gen, {});
-    const ids = Object.values(gen).flat();
+    const pre = new Set(gen.pretest || []); // two unscored questions per module (they only measure the question)
+    const mods = Object.entries(gen).filter(([m]) => MODULES[m]);
+    const ids = mods.flatMap(([, v]) => v);
     if (!ids.length) return {};
     const rows = await db.all('SELECT * FROM qbank_questions WHERE id = ANY(?::text[])', [ids]);
     const by = new Map(rows.map((q) => [q.id, q]));
     const out = {};
-    for (const [m, list] of Object.entries(gen)) {
+    for (const [m, list] of mods) {
       out[m] = list.map((id) => by.get(id)).filter(Boolean).map((q) => {
         const o = parseJSON(q.options, []);
-        return { id: q.id, module: m, passage: q.passage, table: parseJSON(q.data_table, null), prompt: q.prompt, skill: q.skill,
-          opt_a: o[0] ?? '', opt_b: o[1] ?? '', opt_c: o[2] ?? '', opt_d: o[3] ?? '', correct: L[q.answer], explanation: q.explanation, difficulty: q.difficulty };
+        return { id: q.id, module: m, passage: q.passage, table: parseJSON(q.data_table, null), prompt: q.prompt, skill: q.skill, skill_id: q.skill_id,
+          opt_a: o[0] ?? '', opt_b: o[1] ?? '', opt_c: o[2] ?? '', opt_d: o[3] ?? '', correct: L[q.answer], explanation: q.explanation, difficulty: q.difficulty, pretest: pre.has(q.id) };
       });
     }
     return out;
@@ -181,6 +185,38 @@ function grade(sets, a, answers) {
   return { sat, m1: m1.filter(ok).length, m2: m2.filter(ok).length, m1_total: m1.length, m2_total: m2.length };
 }
 
+/**
+ * Question Bank mocks: scored with the questions' learned difficulty (Rasch + guessing, see calibrate.js).
+ * Unscored (pretest) questions are left out of the score, the routing and the counts.
+ */
+async function gradeCalibrated(sets, a, answers, route) {
+  const m1 = (sets['1'] || []).filter((q) => !q.pretest); const m2 = (sets[a.m2] || []).filter((q) => !q.pretest);
+  const ok = (q) => answers[q.id] != null && L[answers[q.id]] === q.correct;
+  const diff = await difficultyOf([...m1, ...m2].map((q) => q.id));
+  const items = [...m1, ...m2].map((q) => ({ correct: ok(q), b: diff.get(q.id)?.b ?? 0 }));
+  const sat = items.length ? scoreFromTheta(thetaOf(items), route) : null;
+  return { sat, m1: m1.filter(ok).length, m2: m2.filter(ok).length, m1_total: m1.length, m2_total: m2.length };
+}
+
+/**
+ * Question types per module, varied like the real test (College Board ranges for one 27-question module:
+ * Craft and Structure 6–8, Information and Ideas 6–7, Standard English Conventions 5–8, Expression of Ideas 4–6,
+ * 25 scored), in the test's order. Returns [[skill_id, n], …].
+ */
+function blueprint() {
+  const rnd = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
+  let cs; let ii; let sec; let eoi;
+  do { cs = rnd(6, 8); ii = rnd(6, 7); sec = rnd(5, 8); eoi = rnd(4, 6); } while (cs + ii + sec + eoi !== 25);
+  const wic = Math.ceil(cs / 2); const ctc = 1; const tsp = cs - wic - ctc;
+  const coe = Math.round(ii * 0.4); const cid = Math.max(1, Math.round(ii * 0.3)); const inf = ii - coe - cid;
+  const bnd = Math.ceil(sec * 0.55); const fss = sec - bnd;
+  const rs = Math.ceil(eoi * 0.55); const tr = eoi - rs;
+  return [['words-in-context', wic], ['text-structure', tsp], ['cross-text', ctc], ['central-ideas', cid], ['command-of-evidence', coe], ['inferences', inf],
+    ['boundaries', bnd], ['form-structure-sense', fss], ['transitions', tr], ['rhetorical-synthesis', rs]].filter(([, n]) => n > 0);
+}
+// learned difficulty targets for each module: Module 1 covers the whole range, Module 2 leans hard or easy
+const TARGET = { 1: [-1.5, 1.5], '2h': [-0.2, 2.2], '2e': [-2.0, 0.5] };
+
 export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, upload }) {
   const state = async (a, mock, sets) => {
     const pen = a.stage === 'done' ? 0 : await penaltyOf('fullmock', a.id, a.stage);
@@ -196,9 +232,14 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     if (done) {
       out.result = { score: a.score, low: a.low, high: a.high, route: a.route, m1: a.m1_correct, m2: a.m2_correct, m1_total: a.m1_total, m2_total: a.m2_total };
       const times = parseJSON(a.times, {});
+      const stat = mock.mode === 'qbank' ? await difficultyOf([...(sets['1'] || []), ...(sets[a.m2] || [])].map((q) => q.id)) : new Map();
       out.review = [['1', sets['1'] || []], [a.m2, sets[a.m2] || []]].map(([m, qs]) => ({ module: m, label: MODULES[m],
-        questions: qs.map((q) => ({ ...pubQ(q, true), domain: domainOf(q.skill || q.topic) || undefined, seconds: times[q.id] ?? null })) }));
-      out.report = await scoreReport(out.review, answers, times);
+        questions: qs.map((q) => {
+          const st = stat.get(q.id);
+          return { ...pubQ(q, true), domain: domainOf(q.skill || q.topic) || undefined, seconds: times[q.id] ?? null,
+            ...(q.pretest ? { pretest: true } : {}), ...(st ? { level: st.level, pct: st.n >= 10 ? st.pct : null, answered_by: st.n } : {}) };
+        }) }));
+      out.report = await scoreReport(out.review.map((r) => ({ ...r, questions: r.questions.filter((q) => !q.pretest) })), answers, times);
       out.focus = await focusSummary('fullmock', a.id);
     }
     return out;
@@ -221,30 +262,56 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     return m;
   };
   /**
-   * 54 questions: Module 1 (27, mixed easy / medium / hard as on the test) and two prepared Module 2 versions
-   * (harder and easier, 27 each) — the student gets one of them after Module 1. Every module follows the SAT
-   * order of question types; unseen questions come first and no question repeats inside the test.
+   * A full mock from the Question Bank, built like the real Digital SAT:
+   *  - Module 1, Module 2 harder and Module 2 easier (27 each); the student gets one Module 2 after Module 1.
+   *  - Question types vary per module within the official ranges, in the test's order; inside each type the
+   *    questions go from easier to harder.
+   *  - Difficulty comes from what students actually did (calibrate.js), not only from the label: Module 1 spans
+   *    the whole range, the harder Module 2 is really hard, the easier one really easier.
+   *  - 25 scored questions + 2 unscored ones per module: new or little-answered questions, so the bank keeps measuring
+   *    itself. Unseen questions come first; nothing repeats inside one test.
    */
   async function generate(userId) {
-    const MIX = { 1: ['easy', 'medium', 'hard'], '2h': ['medium', 'hard', 'hard'], '2e': ['easy', 'easy', 'medium'] };
+    const pool = await db.all(`SELECT q.id, q.skill_id, q.difficulty, c.b, COALESCE(c.n, 0) AS n, (a.question_id IS NOT NULL) AS seen
+      FROM qbank_questions q LEFT JOIN qbank_calib c ON c.question_id = q.id
+      LEFT JOIN qbank_answers a ON a.question_id = q.id AND a.user_id = ?
+      WHERE q.active AND q.reserved_for IS NULL`, [userId]);
+    const PRIOR = { easy: -1.1, medium: 0, hard: 1.2 };
+    for (const q of pool) q.bb = q.b != null ? Number(q.b) : PRIOR[q.difficulty] ?? 0;
     const used = new Set();
-    const gen = {};
+    const gen = { pretest: [] };
     for (const m of ['1', '2h', '2e']) {
-      gen[m] = [];
-      for (const [skill, n] of MOCK_BLUEPRINT) {
-        const pool = await db.all(`SELECT q.id, q.difficulty, (a.question_id IS NOT NULL) AS seen FROM qbank_questions q
-          LEFT JOIN qbank_answers a ON a.question_id = q.id AND a.user_id = ? WHERE q.active AND q.reserved_for IS NULL AND q.skill_id = ? ORDER BY random()`, [userId, skill]);
+      const plan = blueprint();
+      const [lo, hi] = TARGET[m];
+      const total = plan.reduce((x, [, n]) => x + n, 0);
+      // spread difficulty targets over the module, then hand them out to the question types at random
+      const targets = Array.from({ length: total }, (_, i) => lo + ((i + 0.5) / total) * (hi - lo) + (Math.random() - 0.5) * 0.3).sort(() => Math.random() - 0.5);
+      let ti = 0;
+      const groups = [];
+      for (const [skill, n] of plan) {
         const pick = [];
         for (let i = 0; i < n; i++) {
-          const want = MIX[m][i % 3];
-          const order = [want, ...['easy', 'medium', 'hard'].filter((d) => d !== want)];
-          let q = null;
-          for (const d of order) { q = pool.find((x) => !used.has(x.id) && x.difficulty === d && !x.seen) || pool.find((x) => !used.has(x.id) && x.difficulty === d); if (q) break; }
-          if (!q) q = pool.find((x) => !used.has(x.id));
-          if (q) { used.add(q.id); pick.push(q); }
+          const want = targets[ti++];
+          let best = null; let bestCost = Infinity;
+          for (const q of pool) {
+            if (q.skill_id !== skill || used.has(q.id)) continue;
+            const cost = Math.abs(q.bb - want) + (q.seen ? 0.8 : 0) + Math.random() * 0.15;
+            if (cost < bestCost) { best = q; bestCost = cost; }
+          }
+          if (best) { used.add(best.id); pick.push(best); }
         }
-        gen[m].push(...pick.sort((x, y) => ({ easy: 0, medium: 1, hard: 2 }[x.difficulty] - { easy: 0, medium: 1, hard: 2 }[y.difficulty])).map((x) => x.id));
+        groups.push([skill, pick.sort((x, y) => x.bb - y.bb)]);
       }
+      // two unscored questions: the least-answered ones of two question types already in this module
+      const skills = groups.map(([k]) => k).sort(() => Math.random() - 0.5);
+      for (const skill of skills.slice(0, 2)) {
+        const cand = pool.filter((q) => q.skill_id === skill && !used.has(q.id)).sort((x, y) => (x.n - y.n) || (x.seen - y.seen) || (Math.random() - 0.5))[0];
+        if (!cand) continue;
+        used.add(cand.id); gen.pretest.push(cand.id);
+        const g = groups.find(([k]) => k === skill)[1];
+        g.splice(Math.floor(Math.random() * (g.length + 1)), 0, cand);
+      }
+      gen[m] = groups.flatMap(([, g]) => g.map((q) => q.id));
     }
     return gen;
   }
@@ -315,19 +382,31 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
   async function advance(a, mock, sets, answers) {
     if (a.stage === 'm1') {
       const m1 = sets['1'] || [];
-      const right = m1.filter((q) => answers[q.id] != null && L[answers[q.id]] === q.correct).length;
+      const scored = m1.filter((q) => !q.pretest);
+      const right = scored.filter((q) => answers[q.id] != null && L[answers[q.id]] === q.correct).length;
       const adaptive = sets['2h']?.length && sets['2e']?.length;
-      const m2 = adaptive ? (m1.length && right / m1.length >= ROUTE_CUT ? '2h' : '2e') : '2';
+      let harder = scored.length && right / scored.length >= ROUTE_CUT;
+      if (mock.mode === 'qbank' && scored.length) { // route by ability: which questions were right, not only how many
+        const diff = await difficultyOf(scored.map((q) => q.id));
+        harder = thetaOf(scored.map((q) => ({ correct: answers[q.id] != null && L[answers[q.id]] === q.correct, b: diff.get(q.id)?.b ?? 0 }))).theta >= ROUTE_THETA;
+      }
+      const m2 = adaptive ? (harder ? '2h' : '2e') : '2';
       await db.run("UPDATE full_mock_attempts SET stage = 'm2', m2 = ?, route = ?, stage_started_at = now(), answers = ?, m1_correct = ? WHERE id = ?",
         [m2, adaptive ? (m2 === '2h' ? 'hard' : 'easy') : null, JSON.stringify(answers), right, a.id]);
     } else if (a.stage === 'm2') {
-      const g = grade(sets, a, answers);
-      const table = parseJSON(mock.conversion, {})[a.route || 'single'];
+      const g = mock.mode === 'qbank' ? await gradeCalibrated(sets, a, answers, a.route) : grade(sets, a, answers);
+      const table = mock.mode === 'qbank' ? null : parseJSON(mock.conversion, {})[a.route || 'single'];
       const scaled = convert(table, g.m1 + g.m2);
       if (scaled != null && g.sat) g.sat = { score: scaled, low: Math.max(200, scaled - 20), high: Math.min(800, scaled + 20) };
       else if (scaled != null) g.sat = { score: scaled, low: scaled, high: scaled };
       await db.run("UPDATE full_mock_attempts SET stage = 'done', answers = ?, m1_correct = ?, m2_correct = ?, m1_total = ?, m2_total = ?, score = ?, low = ?, high = ?, finished_at = now() WHERE id = ?",
         [JSON.stringify(answers), g.m1, g.m2, g.m1_total, g.m2_total, g.sat?.score ?? 200, g.sat?.low ?? 200, g.sat?.high ?? 200, a.id]);
+      if (mock.mode === 'qbank') {
+        // every answer (scored or not) teaches the bank about its questions; then the difficulties are refreshed
+        const all = [...(sets['1'] || []), ...(sets[a.m2] || [])].filter((q) => answers[q.id] != null);
+        await db.tx((t) => recordAnswers(t, a.user_id, all.map((q) => ({ id: q.id, choice: answers[q.id], correct: L[answers[q.id]] === q.correct }))));
+        await calibrateIfStale(10).catch((e) => console.error('[calibrate]', e.message));
+      }
     }
     return db.one('SELECT * FROM full_mock_attempts WHERE id = ?', [a.id]);
   }

@@ -156,13 +156,13 @@
     },
     {
       "id": "tsp-11",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "The historian begins by acknowledging that the 15th-century Timurid court in Herat was famous for its poetry and painting. She then notes that most studies of the court focus on its rulers and famous artists. Finally, she turns to account books and workshop records to show how much of the court's artistic production depended on paper makers, bookbinders and pigment grinders whose names are rarely remembered.",
       "prompt": "Which choice best describes the overall structure of the text?",
       "options": [
         "It praises famous artists, then criticizes rulers for neglecting them.",
         "It describes a well-known topic, identifies a gap in how it is usually studied, and then presents evidence that fills that gap.",
-        "It summarizes a debate between two historians and declares one of them correct.",
+        "It summarizes a debate between two historians about the Timurid court and then explains why one historian's view is more convincing.",
         "It explains how paper was invented and later used for painting."
       ],
       "answer": 1,
@@ -186,7 +186,7 @@
     },
     {
       "id": "tsp-13",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "The following text is from a novel.\n\nEveryone in the family agreed that Aunt Gulnora was the most generous person they knew. She brought gifts to every celebration, lent money without being asked, and cooked for neighbors who were ill. It was only years later, reading her diaries, that her niece understood how carefully Gulnora had saved, mending her own coats and skipping meals, so that she could give so freely to others.",
       "prompt": "Which choice best describes the overall structure of the text?",
       "options": [
@@ -216,7 +216,7 @@
     },
     {
       "id": "tsp-15",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "A common explanation for why zebras have stripes is that the pattern confuses predators such as lions. Field studies, however, have found little evidence that lions have more trouble catching striped animals. More recent experiments point to a different benefit: biting flies, which spread disease, land far less often on striped surfaces than on plain ones. Some researchers now think that protection from these insects may be the main advantage of stripes.",
       "prompt": "Which choice best states the main purpose of the text?",
       "options": [

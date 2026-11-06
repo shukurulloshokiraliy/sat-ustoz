@@ -21,6 +21,7 @@ const Leaderboard = page(() => import('./pages/student/Leaderboard.jsx'));
 const Finance = page(() => import('./pages/master/Finance.jsx'));
 const Progress = page(() => import('./pages/master/Progress.jsx'));
 const Reports = page(() => import('./pages/master/Reports.jsx'));
+const Quality = page(() => import('./pages/master/Quality.jsx'));
 const Mistakes = page(() => import('./pages/student/Mistakes.jsx'));
 const MistakeReview = page(() => import('./pages/student/Mistakes.jsx').then((m) => ({ default: m.MistakeReview })));
 const Assignments = page(() => import('./pages/student/Assignments.jsx'));
@@ -146,6 +147,7 @@ export default function App() {
             <Route path="finance" element={<Finance />} />
             <Route path="progress" element={<Progress />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="quality" element={<Quality />} />
             <Route path="assignments" element={<Assignments />} />
             <Route path="website" element={<Website />} />
             <Route path="support" element={<Support />} />

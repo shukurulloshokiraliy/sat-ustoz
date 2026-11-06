@@ -285,7 +285,7 @@
     },
     {
       "id": "coe-11",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "An economist claims that a city's new free bus program, which began in 2023, was the main reason downtown shops saw more customers in 2024.",
       "prompt": "Which finding, if true, would most directly weaken the economist's claim?",
       "options": [
@@ -300,11 +300,11 @@
     },
     {
       "id": "coe-12",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "Students studying with a classmate scored an average of 82 points on a test, while students studying alone scored an average of 76. A student concludes that studying with a partner improves test scores. A teacher points out that the students who chose to study with a partner had also earned higher grades than the others earlier in the year.",
       "prompt": "Which choice best describes how the teacher's observation affects the student's conclusion?",
       "options": [
-        "It strengthens the conclusion by showing that partner study works for strong students.",
+        "It strengthens the conclusion by showing that studying with a partner works especially well for students who already earn high grades.",
         "It has no effect on the conclusion, because the test scores are still different.",
         "It proves that studying alone is more effective than studying with a partner.",
         "It weakens the conclusion by suggesting that the higher scores may reflect differences between the students rather than the effect of studying together."
@@ -354,7 +354,7 @@
     },
     {
       "id": "coe-14",
-      "difficulty": "hard",
+      "difficulty": "easy",
       "passage": "The following text is from an essay about the Silk Road.\n\nThe author argues that the Silk Road was important not only for the goods it carried but also for the ideas that traveled along it.",
       "prompt": "Which quotation from the essay would most effectively support the author's argument?",
       "options": [

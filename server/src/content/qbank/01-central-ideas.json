@@ -101,7 +101,7 @@
       "prompt": "Which choice best states the main idea of the text?",
       "options": [
         "Octopuses change color mainly to communicate with other octopuses.",
-        "Octopuses see colors more clearly than humans do.",
+        "Octopuses can see colors more clearly than humans can, which explains how they match their surroundings.",
         "Researchers have proven that octopus skin can see colors.",
         "Octopuses match their surroundings well, even though their eyes may not detect color, and scientists are investigating how."
       ],
@@ -156,7 +156,7 @@
     },
     {
       "id": "cid-11",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "Archaeologists long assumed that the earliest farmers in a region abandoned hunting once they began growing crops. But animal bones excavated from several early farming villages tell a more complicated story: for centuries after crops appeared, villagers continued to hunt wild deer and gazelle, and these animals made up a large share of the meat they ate. Farming, it seems, was added to older ways of getting food rather than replacing them.",
       "prompt": "Which choice best states the main idea of the text?",
       "options": [
@@ -171,7 +171,7 @@
     },
     {
       "id": "cid-12",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "Composer Ludwig van Beethoven continued to write music after he had become almost completely deaf. Some listeners have treated this as evidence that he no longer needed to hear music at all. Music historians offer a more nuanced view: Beethoven had spent decades training his inner ear, so he could imagine with great precision how notes would sound together. His late works, they argue, show not that hearing did not matter, but that his long experience allowed him to compose without it.",
       "prompt": "Which choice best states the main idea of the text?",
       "options": [
@@ -186,7 +186,7 @@
     },
     {
       "id": "cid-13",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "The following text is from a novel.\n\nFrom the window of the train, Akmal watched the cotton fields give way to the first gray buildings of the city. He had imagined this moment for years, picturing himself stepping onto the platform with confidence. Now, holding his small suitcase on his knees, he found that he was counting the stations backward, as if some part of him were still traveling home.",
       "prompt": "Which choice best describes Akmal's feelings in the text?",
       "options": [
@@ -201,7 +201,7 @@
     },
     {
       "id": "cid-14",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "Economists studying microloans (small loans given to people with little income who want to start businesses) expected the loans to sharply reduce poverty. Large studies in several countries found more modest results. Borrowers often started or expanded small businesses, and some households gained more control over how they spent their money, but average household incomes rose only slightly. The researchers concluded that microloans can be useful tools, though they are not the dramatic solution that early supporters had hoped for.",
       "prompt": "Which choice best states the main idea of the text?",
       "options": [
@@ -216,7 +216,7 @@
     },
     {
       "id": "cid-15",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "passage": "Most birds that migrate long distances fly mainly at night. One explanation is that the cooler night air helps the birds avoid overheating and losing water during long flights. Another is that flying at night leaves the daytime free for feeding, so birds can rebuild the fat reserves they burn while flying. Researchers also point out that many birds navigate partly by the stars, which are visible only after dark. These explanations are not competing; most scientists think all of them contribute.",
       "prompt": "Which choice best states the main idea of the text?",
       "options": [

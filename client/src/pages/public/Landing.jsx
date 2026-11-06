@@ -85,7 +85,7 @@ export default function Landing() {
           </div>
           <div className="pub-teaser-q" aria-hidden="true">
             <span className="chip">Boundaries · Easy</span>
-            <p>The museum opened in 1998 ______ it has welcomed more than two million visitors.</p>
+            <p>The museum opened in ______ it has welcomed more than two million visitors.</p>
             <ol><li>1998, since then,</li><li>1998, since then</li><li>1998 since then,</li><li className="ok">1998. Since then,</li></ol>
           </div>
         </div>

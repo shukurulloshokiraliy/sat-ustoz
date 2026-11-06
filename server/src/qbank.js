@@ -50,7 +50,8 @@ async function upsertBank(file, src) {
       ids.push(id);
       await t.run(`INSERT INTO qbank_questions (id, domain, skill_id, skill, difficulty, passage, data_table, prompt, options, answer, explanation, tip, position, src)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        ON CONFLICT (id) DO UPDATE SET domain = EXCLUDED.domain, skill_id = EXCLUDED.skill_id, skill = EXCLUDED.skill, difficulty = EXCLUDED.difficulty,
+        ON CONFLICT (id) DO UPDATE SET domain = EXCLUDED.domain, skill_id = EXCLUDED.skill_id, skill = EXCLUDED.skill,
+          difficulty = CASE WHEN qbank_questions.diff_locked THEN qbank_questions.difficulty ELSE EXCLUDED.difficulty END,
           passage = EXCLUDED.passage, data_table = EXCLUDED.data_table, prompt = EXCLUDED.prompt, options = EXCLUDED.options, answer = EXCLUDED.answer,
           explanation = EXCLUDED.explanation, tip = EXCLUDED.tip, position = EXCLUDED.position, src = EXCLUDED.src
         WHERE qbank_questions.edited IS NOT TRUE`,
@@ -226,9 +227,9 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const choice = Number(req.body?.choice);
     if (!Number.isInteger(choice) || choice < 0 || choice > 3) return bad(res, 'Choose an answer first');
     const correct = choice === q.answer;
-    await db.run(`INSERT INTO qbank_answers (user_id, question_id, choice, correct, first_correct, tries, answered_at) VALUES (?,?,?,?,?,1,now())
+    await db.run(`INSERT INTO qbank_answers (user_id, question_id, choice, correct, first_correct, first_choice, tries, answered_at) VALUES (?,?,?,?,?,?,1,now())
       ON CONFLICT (user_id, question_id) DO UPDATE SET choice = EXCLUDED.choice, correct = EXCLUDED.correct, tries = qbank_answers.tries + 1, answered_at = now()`,
-    [req.user.id, q.id, choice, correct, correct]);
+    [req.user.id, q.id, choice, correct, correct, choice]);
     res.json({ choice, answer: q.answer, correct, explanation: q.explanation, tip: q.tip });
   }));
 
@@ -307,9 +308,9 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
       for (const k of keys) {
         if (answers[k.id] == null) continue;
         const ok = answers[k.id] === k.answer; score += ok ? 1 : 0;
-        await db.run(`INSERT INTO qbank_answers (user_id, question_id, choice, correct, first_correct, tries, answered_at) VALUES (?,?,?,?,?,1,now())
+        await db.run(`INSERT INTO qbank_answers (user_id, question_id, choice, correct, first_correct, first_choice, tries, answered_at) VALUES (?,?,?,?,?,?,1,now())
           ON CONFLICT (user_id, question_id) DO UPDATE SET choice = EXCLUDED.choice, correct = EXCLUDED.correct, tries = qbank_answers.tries + 1, answered_at = now()`,
-        [req.user.id, k.id, answers[k.id], ok, ok]);
+        [req.user.id, k.id, answers[k.id], ok, ok, answers[k.id]]);
       }
       const est = satScore(keys.map((k) => ({ correct: answers[k.id] === k.answer, difficulty: k.difficulty })))?.score ?? null;
       await db.run('UPDATE qbank_mocks SET answers = ?, score = ?, estimate = ?, finished_at = now() WHERE id = ? AND finished_at IS NULL', [JSON.stringify(answers), score, est, m.id]);
@@ -407,10 +408,18 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     if (!q) return bad(res, 'Not found', 404);
     const b = req.body || {};
     const answer = Number.isInteger(b.answer) && b.answer >= 0 && b.answer <= 3 ? b.answer : q.answer;
-    const fixed = answer !== q.answer || (b.explanation != null && b.explanation !== q.explanation);
-    await db.run('UPDATE qbank_questions SET active = ?, premium = ?, answer = ?, explanation = ?, edited = edited OR ? WHERE id = ?', [
-      'active' in b ? !!b.active : q.active, 'premium' in b ? !!b.premium : q.premium, answer,
-      b.explanation != null ? String(b.explanation).slice(0, 4000) : q.explanation, fixed, q.id]);
+    // the teacher can also fix the text itself (spelling, punctuation, a choice) and the difficulty label
+    const txt = (v, max) => (v == null ? null : String(v).replace(/\r\n/g, '\n').slice(0, max));
+    const passage = txt(b.passage, 6000) ?? q.passage; const prompt = txt(b.prompt, 600) ?? q.prompt;
+    let options = q.options;
+    if (Array.isArray(b.options) && b.options.length === 4 && b.options.every((o) => String(o).trim())) options = JSON.stringify(b.options.map((o) => String(o).slice(0, 600)));
+    else if (b.options != null) return bad(res, 'Give four non-empty answer choices');
+    const difficulty = ['easy', 'medium', 'hard'].includes(b.difficulty) ? b.difficulty : q.difficulty;
+    const explanation = b.explanation != null ? String(b.explanation).slice(0, 4000) : q.explanation;
+    const fixed = answer !== q.answer || explanation !== q.explanation || passage !== q.passage || prompt !== q.prompt || options !== q.options;
+    await db.run('UPDATE qbank_questions SET active = ?, premium = ?, answer = ?, explanation = ?, passage = ?, prompt = ?, options = ?, difficulty = ?, diff_locked = diff_locked OR ?, edited = edited OR ? WHERE id = ?', [
+      'active' in b ? !!b.active : q.active, 'premium' in b ? !!b.premium : q.premium, answer, explanation, passage, prompt, options,
+      difficulty, difficulty !== q.difficulty, fixed, q.id]);
     // a fixed key re-grades every answer already given to this question
     if (answer !== q.answer) await db.run('UPDATE qbank_answers SET correct = (choice = ?) WHERE question_id = ?', [answer, q.id]);
     res.json({ ok: true });

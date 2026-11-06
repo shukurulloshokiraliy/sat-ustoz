@@ -117,3 +117,25 @@ export function mathFromModules(m1, m2) {
   const r = (x) => Math.max(200, Math.min(hard ? 800 : 650, Math.round(x / 10) * 10));
   return { score: s, low: r(s - 20), high: r(s + 20), route: hard ? 'hard' : 'easy' };
 }
+
+/* ---------------- scores from calibrated questions (full mock v2) ---------------- */
+// Module 1 ability needed for the harder Module 2: about 65% right on an average-difficulty module
+export const ROUTE_THETA = 0.15;
+/** θ (EAP on calibrated questions) → 200–800 with a range; the easier route still caps near 630. */
+// θ (Rasch + guessing, EAP) → scaled, anchored to published raw → scaled points on both routes:
+// harder route 50 → 800, 45 → 735, 40 → 660, 35 → 610, 30 → 575, 25 → 540; easier route 40 → ~590, 30 → 510, 25 → 460, 20 → 420
+const SCALE_R = [[-3.2, 200], [-2.8, 230], [-2.19, 320], [-1.75, 360], [-1.15, 420], [-0.69, 460], [-0.23, 510], [0.09, 540], [0.55, 575], [1.04, 610], [1.58, 660], [2.24, 735], [2.75, 780], [3.14, 800]];
+const toScaleR = (t) => {
+  if (t <= SCALE_R[0][0]) return 200;
+  for (let i = 1; i < SCALE_R.length; i++) {
+    const [t1, s1] = SCALE_R[i]; const [t0, s0] = SCALE_R[i - 1];
+    if (t <= t1) return s0 + ((t - t0) / (t1 - t0)) * (s1 - s0);
+  }
+  return 800;
+};
+export function scoreFromTheta({ theta, se }, route = null) {
+  let score = toScaleR(theta);
+  if (route === 'easy') score = Math.min(score, EASY_PATH_CAP);
+  const spread = Math.max(20, Math.min(90, (toScaleR(theta + se) - toScaleR(theta - se)) / 2));
+  return { score: round10(score), low: round10(score - spread), high: round10(Math.min(route === 'easy' ? EASY_PATH_CAP : 800, score + spread)), theta: Math.round(theta * 100) / 100 };
+}
