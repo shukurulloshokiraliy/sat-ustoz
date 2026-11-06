@@ -92,6 +92,11 @@ and fix exactly what he points at. When a short Uzbek message can be read two wa
   the holder renews ≥3 days before the end) / renew / waitlist (first in line gets a Telegram offer with 24 h to pay);
   sweepLive runs on slot views, the drip tick and the daily cron. Teacher sees the board, can close a time, end or cancel
   (refund reason 'refund', subtracted from Finance revenue). Ultra can't be bought from /plans/buy, only via a slot.
+  Question review (review.js, Question quality → Review tab, default): every question (Question Bank, teacher quizzes,
+  level/session checks, typed-in full mocks; not PDF mocks) one at a time; Approve takes it off the list (still in use),
+  closes its open reports. Comes back if its fingerprint changes, a student reports it later, or a new statistics flag.
+  Level check fixes live in check_edits (overlay applied by applyCheckEdits everywhere checks are read, survives re-sync).
+  CSS note: `.rv` is the global scroll-reveal class (opacity 0) — never reuse it; review styles are `.qr-*`.
 - Not built yet: a shop for mock books (the wallet mentions "books"; ask what kind before building).
 - He must still: enter the GIPHY API key in Settings, fill company details in the oferta (Website → Pages),
   set GOOGLE_SITE_VERIFICATION / YANDEX_VERIFICATION in Vercel and submit the sitemap in Search Console.

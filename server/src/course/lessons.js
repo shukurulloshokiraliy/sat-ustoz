@@ -4,6 +4,7 @@ import { playUrl } from '../video.js';
 import { scanSoon } from '../reserved.js';
 import { getSettings } from '../db.js';
 import { meterMap, assertLeft } from '../tiers.js';
+import { applyCheckEdits } from '../review.js';
 import { upsertModule, validateModule, previewModule } from './modules.js';
 import { addCourseWords } from '../vocab.js';
 import { afterPass, unlockPrice, dripDays } from '../drip.js';
@@ -63,7 +64,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
   async function lessonFor(user, id) {
     const item = await db.one("SELECT * FROM roadmap_items WHERE id = ? AND kind = 'lesson'", [id]);
     if (!item) return null;
-    const content = JSON.parse(item.content || '{}');
+    const content = await applyCheckEdits(item.id, JSON.parse(item.content || '{}'));
     const edit = await db.one('SELECT * FROM lesson_edits WHERE item_id = ?', [item.id]);
     if (edit) { content.written = parse(edit.written, content.written || []); content.sources = parse(edit.sources, content.sources || []); content.edited = { by: edit.updated_by, at: edit.updated_at }; }
     const { steps } = await roadmapFor(user);
@@ -185,7 +186,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
   app.get('/api/lessons/:id/preview-check', requireMaster, h(async (req, res) => {
     const item = await db.one("SELECT * FROM roadmap_items WHERE id = ? AND kind = 'lesson'", [req.params.id]);
     if (!item) return bad(res, 'Not found', 404);
-    const content = JSON.parse(item.content || '{}');
+    const content = await applyCheckEdits(item.id, JSON.parse(item.content || '{}'));
     const versions = content.versions || Object.keys(content.checks || {});
     const v = versions.includes(req.query.version) ? req.query.version : versions[0];
     if (!v) return bad(res, 'This lesson has no level check yet');
@@ -208,7 +209,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     if (!c) return bad(res, 'Not found', 404);
     if (!c.finished_at) {
       const item = await db.one('SELECT content FROM roadmap_items WHERE id = ?', [c.item_id]);
-      const content = JSON.parse(item?.content || '{}');
+      const content = await applyCheckEdits(c.item_id, JSON.parse(item?.content || '{}'));
       const qs = content.checks?.[c.version] || [];
       let answers = { ...JSON.parse(c.answers || '{}') };
       // answers sent after a timed check's deadline are ignored (what was saved in time counts)
@@ -229,7 +230,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     if (!c || (req.user.role !== 'master' && c.user_id !== req.user.id)) return bad(res, 'Not found', 404);
     if (!c.finished_at) return bad(res, 'This check is not finished yet', 409);
     const item = await db.one('SELECT id, title, content, step_id FROM roadmap_items WHERE id = ?', [c.item_id]);
-    const content = JSON.parse(item?.content || '{}');
+    const content = await applyCheckEdits(c.item_id, JSON.parse(item?.content || '{}'));
     const answers = JSON.parse(c.answers || '{}');
     const { n } = await db.one('SELECT COUNT(*) AS n FROM lesson_checks WHERE user_id = ? AND item_id = ? AND finished_at IS NOT NULL', [c.user_id, c.item_id]);
     const versions = content.versions || [];

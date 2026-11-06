@@ -25,6 +25,7 @@ import { migrateGifs, registerGifs } from './gifs.js';
 import { migrateFinance, registerFinance, keepPaymentRecords } from './finance.js';
 import { migrateDrip, registerDrip, unlocksFor, dripDays } from './drip.js';
 import { migrateLive, registerLive } from './live.js';
+import { migrateReview, registerReview } from './review.js';
 import { migrateCalib } from './calibrate.js';
 import { registerQuality } from './quality.js';
 import { migrateAssignments, registerAssignments, assignedQuizOpen } from './assignments.js';
@@ -100,6 +101,7 @@ await migrateTiers();
 await keepPaymentRecords();
 await migrateDrip();
 await migrateLive();
+await migrateReview();
 await migrateCalib();
 await migrateSecurity();
 await db.exec(`
@@ -310,6 +312,7 @@ registerSiteAdmin(app, { h, bad, requireMaster });
 registerQuality(app, { h, bad, requireMaster });
 registerDrip(app, { h, bad, requireMaster, requireStudent, roadmapFor: (u) => roadmapFor(u), accessFor: (u) => accessFor(u) });
 registerLive(app, { h, bad, requireMaster, requireStudent });
+registerReview(app, { h, bad, requireMaster });
 registerBotAdmin(app, { h, bad, requireMaster, requireStudent });
 registerVocab(app, { h, bad, requireMaster, requireStudent, accessFor: (u) => accessFor(u) });
 

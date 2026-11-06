@@ -16,6 +16,7 @@
 import { db } from './db.js';
 import { moduleSets } from './fullmock.js';
 import { notifyAdmins } from './tgbot.js';
+import { applyCheckEdits } from './review.js';
 
 const L = ['A', 'B', 'C', 'D'];
 const GAP_DAYS = 2;
@@ -98,7 +99,7 @@ export async function scanMistakes(userId) {
   const lc = await db.all(`SELECT c.item_id, c.version, c.answers, c.finished_at, i.title, i.content FROM lesson_checks c JOIN roadmap_items i ON i.id = c.item_id
     WHERE c.user_id = ? AND c.finished_at IS NOT NULL AND c.finished_at > ?`, [userId, since]);
   for (const c of lc) {
-    const content = parse(c.content, {});
+    const content = await applyCheckEdits(c.item_id, parse(c.content, {}));
     const ans = parse(c.answers, {});
     for (const q of content.checks?.[c.version] || []) {
       if (!Array.isArray(q.options) || ans[q.id] == null || ans[q.id] === q.answer) continue;

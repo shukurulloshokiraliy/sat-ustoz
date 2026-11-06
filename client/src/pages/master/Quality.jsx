@@ -2,21 +2,24 @@ import { useMemo, useState } from 'react';
 import { api, fmtDate } from '../../api.js';
 import { useToast } from '../../context.jsx';
 import { Card, Field, Gate, Modal, PageHeader, Segmented, useAsync } from '../../components/ui.jsx';
+import Review from './Review.jsx';
 
 /**
  * Question quality (teacher): how hard each Question Bank question really is, text problems found automatically,
  * and questions the statistics say to check. Fix a question right here; its difficulty keeps learning from students.
  */
 const LV = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
-const TABS = [{ value: 'difficulty', label: 'Difficulty' }, { value: 'checks', label: 'Text checks' }, { value: 'suspicious', label: 'To check' }];
+const TABS = [{ value: 'review', label: 'Review' }, { value: 'difficulty', label: 'Difficulty' }, { value: 'checks', label: 'Text checks' }, { value: 'suspicious', label: 'To check' }];
 
 export default function Quality() {
-  const st = useAsync(() => api.get('/quality'), []);
-  const [tab, setTab] = useState('difficulty');
+  const [tab, setTab] = useState('review');
+  const review = tab === 'review';
+  const st = useAsync(() => (review ? Promise.resolve({}) : api.get('/quality')), [review]);
   return (
     <div className="page">
-      <PageHeader title="Question quality" sub="Difficulty learned from students' answers, automatic text checks and questions the statistics flag. Every finished full mock makes it more exact." />
-      <Gate state={st}>{(d) => <Body d={d} reload={st.reload} tab={tab} setTab={setTab} />}</Gate>
+      <PageHeader title="Question quality" sub="Review and approve every question, see the difficulty learned from students' answers, automatic text checks and questions the statistics flag." />
+      {review ? <><div className="ql-bar"><Segmented value={tab} onChange={setTab} options={TABS} /></div><Review /></>
+        : <Gate state={st}>{(d) => (d?.rows ? <Body d={d} reload={st.reload} tab={tab} setTab={setTab} /> : null)}</Gate>}
     </div>
   );
 }
