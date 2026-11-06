@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth, useTheme } from '../context.jsx';
 import { getConfig } from '../config.js';
 import GoogleButton from '../components/GoogleButton.jsx';
+import TelegramLogin from '../components/TelegramLogin.jsx';
 import { IconMoon, IconSun, Logo } from '../components/icons.jsx';
 import { Segmented } from '../components/ui.jsx';
 
@@ -19,7 +20,7 @@ export default function Login() {
   const needAgree = () => { setNudge(true); setErr('Tick “I agree to the oferta” first.'); setTimeout(() => setNudge(false), 900); };
 
   useEffect(() => { getConfig().then(setCfg); sessionStorage.removeItem('auth_error'); }, []);
-  useEffect(() => { window.history.replaceState(null, '', mode === 'signup' ? '/signup' : '/login'); setErr(''); }, [mode]);
+  useEffect(() => { window.history.replaceState(null, '', (mode === 'signup' ? '/signup' : '/login') + (window.location.search.includes('tg=') ? window.location.search : '')); setErr(''); }, [mode]);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const submit = async (e) => {
@@ -69,12 +70,14 @@ export default function Login() {
             <input type="checkbox" checked={agree} onChange={(e) => { setAgree(e.target.checked); if (e.target.checked) setErr(''); }} />
             <span>I agree to the <a href="/p/oferta" target="_blank" rel="noreferrer">oferta (terms of use)</a></span>
           </label>}
-          {cfg?.google && (
+          {(cfg?.google || cfg?.telegram_bot) && (
             <>
-              <div className={`google-gate ${agree || mode !== 'signup' ? '' : 'locked'}`}>
+              {cfg.google && <div className={`google-gate ${agree || mode !== 'signup' ? '' : 'locked'}`}>
                 <GoogleButton clientId={cfg.googleClientId} mode={mode} theme={theme} onCredential={google} onError={setErr} />
                 {!agree && mode === 'signup' && <button type="button" className="google-cover" onClick={needAgree} aria-label="Accept the oferta first" />}
-              </div>
+              </div>}
+              {cfg.telegram_bot && <TelegramLogin signup={mode === 'signup'} agree={agree} needAgree={needAgree} onError={setErr}
+                onTerms={() => { setMode('signup'); setTimeout(() => { setErr('This Telegram account is new here. Tick “I agree to the oferta”, then press “Sign up with Telegram” again.'); setNudge(true); setTimeout(() => setNudge(false), 900); }, 50); }} />}
               <div className="or"><span>or</span></div>
             </>
           )}

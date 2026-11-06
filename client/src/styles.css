@@ -3338,3 +3338,14 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
   .qr-actions .grow { display: none; } .qr-actions .btn { padding-left: 10px; padding-right: 10px; }
   .qr-actions .btn.primary { flex: 1 1 auto; } .qr-hide-s { display: none; }
 }
+
+/* ---------- Continue with Telegram (components/TelegramLogin.jsx) ---------- */
+.tg-login { display: grid; gap: 8px; }
+.tg-btn { width: 100%; justify-content: center; background: #2AABEE; color: #fff; border-color: #2AABEE; }
+.tg-btn:hover { background: #229ED9; border-color: #229ED9; color: #fff; }
+.tg-wait { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); font-size: .86rem; line-height: 1.45; }
+.tg-wait > span:nth-child(2) { flex: 1 1 200px; }
+.tg-wait .link-btn { margin: 0; }
+.tg-dot { width: 8px; height: 8px; border-radius: 50%; background: #2AABEE; animation: tgpulse 1.2s ease-in-out infinite; }
+@keyframes tgpulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .tg-dot { animation: none; } }

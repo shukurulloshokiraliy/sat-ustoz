@@ -97,6 +97,11 @@ and fix exactly what he points at. When a short Uzbek message can be read two wa
   closes its open reports. Comes back if its fingerprint changes, a student reports it later, or a new statistics flag.
   Level check fixes live in check_edits (overlay applied by applyCheckEdits everywhere checks are read, survives re-sync).
   CSS note: `.rv` is the global scroll-reveal class (opacity 0) — never reuse it; review styles are `.qr-*`.
+  Telegram sign-in (tgbot.js + components/TelegramLogin.jsx): /api/auth/telegram/start makes a one-time code →
+  t.me/<bot>?start=login_<code>; a chat already linked to a student signs in; someone new must have ticked the oferta
+  (/auth/telegram/agree), shares the phone (request_contact) and gets an account (provider 'telegram', login = phone digits,
+  users.phone, no password until they add one in Profile). The page polls /auth/telegram/poll (token handed out once);
+  the bot also sends /login?tg=<code>. Teachers can't sign in this way.
 - Not built yet: a shop for mock books (the wallet mentions "books"; ask what kind before building).
 - He must still: enter the GIPHY API key in Settings, fill company details in the oferta (Website → Pages),
   set GOOGLE_SITE_VERIFICATION / YANDEX_VERIFICATION in Vercel and submit the sitemap in Search Console.

@@ -64,7 +64,7 @@ export default function Profile() {
       {pwOpen && (
         <Modal title={user.has_password ? 'Change password' : 'Set a password'} onClose={() => setPwOpen(false)}>
           <form className="stack" onSubmit={async (e) => { if (await savePw(e)) setPwOpen(false); }}>
-            {!user.has_password && <p className="muted" style={{ fontSize: '.88rem' }}>You signed in with Google. Add a password to also sign in with your email ({user.email}).</p>}
+            {!user.has_password && <p className="muted" style={{ fontSize: '.88rem' }}>{user.provider === 'telegram' ? <>You signed in with Telegram. Add a password to also sign in with your login <b>{user.login}</b>.</> : <>You signed in with Google. Add a password to also sign in with your email ({user.email}).</>}</p>}
             {user.has_password && <Field label={"Current password"}><input type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} required autoFocus /></Field>}
             <Field label={"New password"} hint={"At least 8 characters, not 12345678 or your name"}><input type="password" autoComplete="new-password" minLength={8} value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} required /></Field>
             <div><button className="btn primary">{"Update password"}</button></div>

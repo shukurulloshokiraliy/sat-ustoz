@@ -28,7 +28,7 @@ export default function Students() {
       <Gate state={st}>{([students, groups]) => {
         const week = Date.now() - 7 * 86400e3;
         const FILTERS = { all: () => true, subscribed: (s) => s.sub_active, free: (s) => !s.sub_active, new: (s) => new Date(s.created_at) > week };
-        const shown = students.filter((s) => FILTERS[filter](s) && (!gid || String(s.group_id) === gid) && (!q || (s.name + s.login + (s.email || '')).toLowerCase().includes(q.toLowerCase())));
+        const shown = students.filter((s) => FILTERS[filter](s) && (!gid || String(s.group_id) === gid) && (!q || (s.name + s.login + (s.email || '') + (s.phone || '')).toLowerCase().includes(q.toLowerCase())));
         return (
           <>
             <Segmented value={filter} onChange={setFilter} options={[

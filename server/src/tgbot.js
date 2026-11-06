@@ -13,7 +13,7 @@
 import { readTiers, moveBalance, walletNo, buyPlan, MIN_TOPUP, MAX_TOPUP } from './tiers.js';
 import crypto from 'node:crypto';
 import { db, getSettings } from './db.js';
-import { getSecret, subActive } from './auth.js';
+import { getSecret, subActive, signToken } from './auth.js';
 import { getBlock } from './site.js';
 import { CATS, MENU, answer, closeTicket, getState, menuKeyboard, migrateSupport, registerSupportAdmin, registerSupportWeb, setState, ticketByAdminMessage, userMessage } from './tgsupport.js';
 
@@ -37,6 +37,11 @@ CREATE INDEX IF NOT EXISTS idx_tg_requests ON tg_requests(status, created_at);
 CREATE TABLE IF NOT EXISTS tg_state (chat_id TEXT PRIMARY KEY, data TEXT NOT NULL DEFAULT '{}', updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
 ALTER TABLE tg_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tg_state ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT NOT NULL DEFAULT '';
+CREATE TABLE IF NOT EXISTS tg_logins (
+  code TEXT PRIMARY KEY, accept_terms BOOLEAN NOT NULL DEFAULT false, status TEXT NOT NULL DEFAULT 'waiting',
+  chat_id TEXT, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), expires_at TIMESTAMPTZ NOT NULL);
+ALTER TABLE tg_logins ENABLE ROW LEVEL SECURITY;
 `);
   await migrateSupport();
 }
@@ -351,7 +356,9 @@ async function handle(u) {
   }
 
   const text = String(msg.text || '').trim();
+  if (text.startsWith('/start login_')) return loginStart(chat, text.split(/\s+/)[1].slice(6));
   const st = await getState(chat);
+  if (st.login && (msg.contact || text)) return loginContact(chat, msg, st.login);
   if (text === '/cancel') { await setState(chat, {}); return send(chat, 'Bekor qilindi.', { reply_markup: menuKeyboard() }); }
   if (text.startsWith('/admin')) {
     const code = text.split(/\s+/)[1] || '';
@@ -450,6 +457,67 @@ async function handle(u) {
   if (text) return userMessage(ctx, chat, msg, { category: 'question' });
 }
 
+// ---------- sign in / sign up with Telegram ----------
+// The website makes a one-time code and opens t.me/<bot>?start=login_<code>. Here the bot finds the account linked to this
+// chat (an existing student signs straight in) or, for someone new, asks for their phone number and creates the account.
+// The website polls the code and receives the session once (or the student taps "Back to the website").
+const loginRow = (code) => db.one("SELECT * FROM tg_logins WHERE code = ? AND status IN ('waiting', 'phone') AND expires_at > now()", [String(code || '').slice(0, 64)]);
+const expired = (chat) => send(chat, "⌛ Bu havola eskirgan. Saytda <b>Continue with Telegram</b> tugmasini qayta bosing.", { reply_markup: menuKeyboard() });
+
+async function loginDone(chat, code, user, fresh) {
+  await db.run("UPDATE tg_logins SET status = 'done', user_id = ?, chat_id = ? WHERE code = ?", [user.id, String(chat), code]);
+  await setState(chat, {});
+  const site = await getKey('_site_url');
+  await send(chat, fresh
+    ? `🎉 Xush kelibsiz, <b>${esc(user.name.split(' ')[0])}</b>! Akkauntingiz ochildi.\nBrauzerga qayting — sayt o'zi ochiladi. Ochilmasa, pastdagi tugmani bosing.`
+    : `✅ Saytga kirdingiz, <b>${esc(user.name.split(' ')[0])}</b>.\nBrauzerga qayting — sayt o'zi ochiladi. Ochilmasa, pastdagi tugmani bosing.`,
+  site ? { reply_markup: { inline_keyboard: [[{ text: 'Saytga qaytish', url: `${site}/login?tg=${code}` }]] } } : {});
+  await send(chat, 'Menyu pastda: savol, to\'lov va hamyon shu yerda.', { reply_markup: menuKeyboard() });
+}
+
+async function loginStart(chat, code) {
+  const row = await loginRow(code);
+  if (!row) return expired(chat);
+  const user = await db.one("SELECT * FROM users WHERE tg_chat_id = ? AND role = 'student'", [String(chat)]);
+  if (user) return loginDone(chat, row.code, user, false);
+  if (await db.one("SELECT 1 AS x FROM users WHERE tg_chat_id = ? AND role = 'master'", [String(chat)])) return send(chat, "O'qituvchi akkaunti Telegram orqali kirmaydi: saytda login va parol bilan kiring.");
+  if (!row.accept_terms) {
+    await db.run("UPDATE tg_logins SET status = 'terms', chat_id = ? WHERE code = ?", [String(chat), row.code]);
+    return send(chat, "Siz saytda hali ro'yxatdan o'tmagansiz. Saytda <b>Create account</b> → oferta shartlariga rozilik belgisini qo'ying va <b>Continue with Telegram</b> ni qayta bosing.");
+  }
+  await db.run("UPDATE tg_logins SET status = 'phone', chat_id = ? WHERE code = ?", [String(chat), row.code]);
+  await setState(chat, { login: row.code });
+  return send(chat, "Ro'yxatdan o'tish uchun telefon raqamingizni yuboring 👇\n(pastdagi tugmani bosing)", {
+    reply_markup: { keyboard: [[{ text: '📱 Raqamni yuborish', request_contact: true }], [{ text: 'Bekor qilish' }]], resize_keyboard: true, one_time_keyboard: true },
+  });
+}
+
+async function loginContact(chat, msg, code) {
+  if (!msg.contact) {
+    if (/^(bekor|\/cancel)/i.test(String(msg.text || ''))) { await setState(chat, {}); return send(chat, 'Bekor qilindi.', { reply_markup: menuKeyboard() }); }
+    return send(chat, "Pastdagi <b>📱 Raqamni yuborish</b> tugmasini bosing (raqamni qo'lda yozish shart emas).", {
+      reply_markup: { keyboard: [[{ text: '📱 Raqamni yuborish', request_contact: true }], [{ text: 'Bekor qilish' }]], resize_keyboard: true, one_time_keyboard: true },
+    });
+  }
+  if (msg.contact.user_id && msg.from?.id && msg.contact.user_id !== msg.from.id) return send(chat, "Iltimos, o'zingizning raqamingizni yuboring (pastdagi tugma orqali).");
+  const row = await loginRow(code);
+  if (!row) { await setState(chat, {}); return expired(chat); }
+  const digits = String(msg.contact.phone_number || '').replace(/\D/g, '').slice(0, 15);
+  if (digits.length < 9) return send(chat, "Raqamni o'qib bo'lmadi. Pastdagi tugmani qayta bosing.");
+  const already = await db.one("SELECT * FROM users WHERE tg_chat_id = ? AND role = 'student'", [String(chat)]);
+  if (already) return loginDone(chat, row.code, already, false);
+  const from = msg.from || {};
+  const name = [from.first_name, from.last_name].filter(Boolean).join(' ').trim().slice(0, 80) || 'Student';
+  // the phone number is the login (easy to remember if they add a password later); fall back when it is taken
+  let login = digits;
+  if (await db.one('SELECT 1 AS x FROM users WHERE login = ?', [login])) login = `tg${from.id || chat}`;
+  if (await db.one('SELECT 1 AS x FROM users WHERE login = ?', [login])) login = `tg${from.id || chat}_${crypto.randomBytes(2).toString('hex')}`;
+  const u = await db.one(`INSERT INTO users (name, login, email, password_hash, role, provider, tg_chat_id, phone, last_login_at, terms_accepted_at)
+    VALUES (?, ?, NULL, NULL, 'student', 'telegram', ?, ?, now(), now()) RETURNING *`, [name, login, String(chat), `+${digits}`]);
+  await notifyAdmins(`🆕 Telegram orqali yangi o'quvchi: <b>${esc(name)}</b>${from.username ? ` (@${esc(from.username)})` : ''}, +${digits}`).catch(() => {});
+  return loginDone(chat, row.code, u, true);
+}
+
 export function registerBot(app, { h, bad, requireMaster, requireStudent }) {
   registerSupportWeb(app, { h, bad }, ctx); // website chat (public: signed-in students and guests)
   // Telegram → webhook (public; checked by the secret header Telegram sends)
@@ -458,6 +526,36 @@ export function registerBot(app, { h, bad, requireMaster, requireStudent }) {
     if (!secret || req.headers['x-telegram-bot-api-secret-token'] !== secret) return res.status(401).end();
     try { await handle(req.body || {}); } catch (e) { console.error('[tg] update failed:', e.message); }
     res.json({ ok: true });
+  }));
+
+  // website: start a Telegram sign-in, then poll it
+  app.post('/api/auth/telegram/start', h(async (req, res) => {
+    const s = await getSettings();
+    if (!s.telegram_bot || !(await getKey('_tg_token'))) return bad(res, 'Telegram sign-in is not available yet');
+    const code = crypto.randomBytes(18).toString('base64url');
+    await db.run("DELETE FROM tg_logins WHERE expires_at < now() - interval '1 day'");
+    await db.run("INSERT INTO tg_logins (code, accept_terms, expires_at) VALUES (?, ?, now() + interval '15 minutes')", [code, req.body?.accept_terms === true]);
+    res.json({ code, url: `https://t.me/${s.telegram_bot}?start=login_${code}` });
+  }));
+  app.post('/api/auth/telegram/agree', h(async (req, res) => {
+    await db.run("UPDATE tg_logins SET accept_terms = true WHERE code = ? AND status IN ('waiting', 'terms')", [String(req.body?.code || '').slice(0, 64)]);
+    await db.run("UPDATE tg_logins SET status = 'waiting' WHERE code = ? AND status = 'terms'", [String(req.body?.code || '').slice(0, 64)]);
+    res.json({ ok: true });
+  }));
+  app.post('/api/auth/telegram/poll', h(async (req, res) => {
+    const code = String(req.body?.code || '').slice(0, 64);
+    const row = await db.one('SELECT * FROM tg_logins WHERE code = ?', [code]);
+    if (!row) return bad(res, 'This Telegram sign-in is not valid. Press "Continue with Telegram" again.', 404);
+    if (row.status === 'terms') return bad(res, 'This Telegram account is new here. Tick "I agree to the oferta", then press "Continue with Telegram" again.', 400, { code: 'terms_required' });
+    if (row.status === 'done') {
+      // the session is handed out once
+      const claimed = await db.one("UPDATE tg_logins SET status = 'used' WHERE code = ? AND status = 'done' RETURNING user_id", [code]);
+      const u = claimed && (await db.one('UPDATE users SET last_login_at = now() WHERE id = ? RETURNING id, role, token_version', [claimed.user_id]));
+      if (u) return res.json({ token: signToken(u) });
+    }
+    if (row.status === 'used') return bad(res, 'This sign-in was already used. Press "Continue with Telegram" again.', 410);
+    if (new Date(row.expires_at) < new Date()) return bad(res, 'The Telegram sign-in timed out. Press "Continue with Telegram" again.', 410);
+    res.json({ waiting: true, step: row.status });
   }));
 }
 

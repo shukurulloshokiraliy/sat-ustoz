@@ -30,13 +30,14 @@ export function AuthProvider({ children }) {
   const login = useCallback((loginName, password) => api.post('/auth/login', { login: loginName, password }).then(withToken), [withToken]);
   const register = useCallback((body) => api.post('/auth/register', { ...body, accept_terms: true }).then(withToken), [withToken]);
   const google = useCallback((credential, accept = false) => api.post('/auth/google', { credential, accept_terms: accept }).then(withToken), [withToken]);
+  const telegram = useCallback((token) => withToken({ token }), [withToken]);
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
   }, []);
   const refresh = useCallback(async () => setUser(await api.get('/me')), []);
 
-  const value = useMemo(() => ({ user, loading, login, register, google, logout, refresh }), [user, loading, login, register, google, logout, refresh]);
+  const value = useMemo(() => ({ user, loading, login, register, google, telegram, logout, refresh }), [user, loading, login, register, google, telegram, logout, refresh]);
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
 

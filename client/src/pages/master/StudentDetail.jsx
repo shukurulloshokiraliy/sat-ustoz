@@ -59,7 +59,7 @@ export default function StudentDetail() {
     <div className="page">
       <Gate state={st}>{([s, a, pf, groups, pl, rep]) => (
         <>
-          <PageHeader title={s.name} sub={<><Link to="/students">Students</Link> / {s.email || '@' + s.login}{s.group_name ? ` · ${s.group_name}` : ''}</>}>
+          <PageHeader title={s.name} sub={<><Link to="/students">Students</Link> / {s.email || '@' + s.login}{s.phone ? <> · <a href={`tel:${s.phone}`}>{s.phone}</a></> : ''}{s.provider === 'telegram' ? ' · Telegram' : ''}{s.group_name ? ` · ${s.group_name}` : ''}</>}>
             <button className={`btn ${s.sub_active ? 'soft' : 'primary'}`} onClick={() => setSub(true)}><IconCrown width={16} height={16} /> {s.sub_active ? 'Extend subscription' : 'Activate subscription'}</button>
             <button className="btn ghost" onClick={() => setEdit(true)}><IconEdit width={16} height={16} /> {"Edit"}</button>
             {s.provider !== 'google' && <button className="btn ghost" onClick={() => setResetAsk(true)}><IconKey width={16} height={16} /> {"Reset password"}</button>}

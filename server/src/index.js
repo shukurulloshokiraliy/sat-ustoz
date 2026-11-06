@@ -57,6 +57,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '5mb' }));
 // floods and scripted guessing: a general cap per IP, a tight one on sign-in / sign-up
 app.use('/api', rateLimit({ windowMs: 60e3, max: 600 }));
+app.use('/api/auth/telegram/start', rateLimit({ windowMs: 10 * 60e3, max: 30, message: 'Too many sign-in attempts from this network. Wait 10 minutes.' }));
 app.use(['/api/auth/login', '/api/auth/register', '/api/auth/google'], rateLimit({ windowMs: 10 * 60e3, max: 40, message: 'Too many sign-in attempts from this network. Wait 10 minutes.' }));
 app.use(['/api/me/password', '/api/plans/buy', '/api/full-mocks', '/api/students'], rateLimit({ windowMs: 60e3, max: 120 }));
 
@@ -297,7 +298,7 @@ app.get('/api/avatars/:id', h(async (req, res) => {
   res.send(Buffer.from(a.data));
 }));
 
-const PUBLIC = new Set(['/auth/login', '/auth/register', '/auth/google', '/config', '/template.xlsx', '/cron/drip']);
+const PUBLIC = new Set(['/auth/login', '/auth/register', '/auth/google', '/auth/telegram/start', '/auth/telegram/poll', '/auth/telegram/agree', '/config', '/template.xlsx', '/cron/drip']);
 app.use('/api', (req, res, next) => (PUBLIC.has(req.path) && req.path !== '/template.xlsx' ? next() : requireAuth(req, res, next)));
 // free daily limit: today's count, and counting one answer the moment it is picked inside a test
 app.get('/api/usage', h(async (req, res) => res.json(await usageOf(req.user))));
@@ -517,7 +518,7 @@ app.delete('/api/groups/:id', requireMaster, h(async (req, res) => {
 }));
 
 // ---------- students (teacher) ----------
-const studentRow = `SELECT u.id, u.name, u.login, u.email, u.provider, u.avatar_url, u.group_id, g.name AS group_name, u.target_english, u.target_math,
+const studentRow = `SELECT u.id, u.name, u.login, u.email, u.phone, u.provider, u.avatar_url, u.group_id, g.name AS group_name, u.target_english, u.target_math,
   u.exam_date, u.created_at, u.last_login_at, u.balance, u.diagnostic_score, u.cefr, u.admitted, u.placement_at, u.sub_until, u.sub_plan,
   (SELECT MAX(finished_at) FROM attempts a WHERE a.user_id = u.id) AS last_active,
   (SELECT COUNT(*) FROM attempts a WHERE a.user_id = u.id AND a.finished_at IS NOT NULL) AS attempts,
