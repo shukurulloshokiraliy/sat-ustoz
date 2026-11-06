@@ -82,6 +82,16 @@ and fix exactly what he points at. When a short Uzbek message can be read two wa
   Word Arena redesign (student picks the hero; epic/legendary heroes and extra backgrounds for subscribers; music and
   sounds), vocab word pictures, bank-card style wallet card on dashboard and profile, compact two-column dashboard and
   one-screen profile, teacher editing of lesson notes (lesson_edits overlay + history, survives module re-sync).
+  Plans (Nov 2026): Free = 100 answers a day across EVERY test (strict: usage_answers + meterAnswers/meterMap in tiers.js;
+  practice, Take a quiz, full mocks, level checks, Words in Context; pages call meter() from usage.jsx on each pick and the
+  LimitWall in App shows one wall on any 402 code daily_limit; placement test not counted), Plus 99k (unlimited practice,
+  2 mocks/week), Pro 249k (+ roadmap without video, 3 mocks), Pro Max 449k (everything self-paced), Ultra 2 500 000 per
+  12 live lessons. 0 in q_day/quiz_day/fm_week = unlimited.
+  Live lessons (live.js, page /live): 6 fixed slots (Mon/Wed/Fri or Tue/Thu/Sat × 09:00, 10:30, 21:00), one student each,
+  a booking = 12 lessons and gives Ultra; book / pre-book next period (paid, refundable before start, moves 4 weeks later if
+  the holder renews ≥3 days before the end) / renew / waitlist (first in line gets a Telegram offer with 24 h to pay);
+  sweepLive runs on slot views, the drip tick and the daily cron. Teacher sees the board, can close a time, end or cancel
+  (refund reason 'refund', subtracted from Finance revenue). Ultra can't be bought from /plans/buy, only via a slot.
 - Not built yet: a shop for mock books (the wallet mentions "books"; ask what kind before building).
 - He must still: enter the GIPHY API key in Settings, fill company details in the oferta (Website → Pages),
   set GOOGLE_SITE_VERIFICATION / YANDEX_VERIFICATION in Vercel and submit the sitemap in Search Console.

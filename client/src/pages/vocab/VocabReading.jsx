@@ -4,6 +4,7 @@ import { useToast } from '../../context.jsx';
 import { Card, Gate, useAsync } from '../../components/ui.jsx';
 import { IconArrow, IconBack, IconCheck, IconFlip, IconLock } from '../../components/icons.jsx';
 import { rich } from '../../components/Rich.jsx';
+import { meter } from '../../usage.jsx';
 
 /**
  * Unit Reading (400–500 words using the unit's words) and 15 Words in Context questions.
@@ -147,6 +148,7 @@ function WicRun({ u, qs }) {
   const toast = useToast();
   const [i, setI] = useState(0);
   const [pick, setPick] = useState({});
+  const [run, setRun] = useState(() => Math.random().toString(36).slice(2, 12));
   const [res, setRes] = useState(null);
   const [busy, setBusy] = useState(false);
   const q = qs[i];
@@ -154,7 +156,7 @@ function WicRun({ u, qs }) {
   const submit = async () => {
     if (answered < qs.length && !window.confirm(`${qs.length - answered} question(s) have no answer. Submit anyway?`)) return;
     setBusy(true);
-    try { setRes(await api.post(`/vocab/units/${u.id}/wic`, { answers: pick })); window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); }
+    try { setRes(await api.post(`/vocab/units/${u.id}/wic`, { answers: pick, run })); window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); }
   };
   if (res) {
     const pct = Math.round((res.score / res.total) * 100);
@@ -162,7 +164,7 @@ function WicRun({ u, qs }) {
       <div className="wic">
         <Card className="wic-score">
           <div><small className="eyebrow-ink">WORDS IN CONTEXT</small><h2>{res.score} / {res.total} correct</h2><p className="muted">{pct >= 80 ? 'Great work: these words are yours.' : pct >= 60 ? 'Good. Look at the ones you missed below.' : 'Review the words with flashcards, then try again.'}</p></div>
-          <div className="row wrap" style={{ gap: 8 }}><button className="btn soft" onClick={() => { setRes(null); setPick({}); setI(0); }}>Try again</button></div>
+          <div className="row wrap" style={{ gap: 8 }}><button className="btn soft" onClick={() => { setRes(null); setPick({}); setI(0); setRun(Math.random().toString(36).slice(2, 12)); }}>Try again</button></div>
         </Card>
         {qs.map((x, k) => { const rv = res.review[k]; const ok = rv.picked === rv.answer; return (
           <Card key={k} className={`wic-rev ${ok ? 'ok' : 'no'}`}>
@@ -186,7 +188,7 @@ function WicRun({ u, qs }) {
         <p className="wic-prompt">{q.prompt}</p>
         <ul className="wic-opts">
           {q.options.map((o, j) => (
-            <li key={j}><button type="button" className={pick[i] === j ? 'on' : ''} onClick={() => setPick({ ...pick, [i]: j })}><span>{L[j]}</span>{o}</button></li>
+            <li key={j}><button type="button" className={pick[i] === j ? 'on' : ''} onClick={() => { meter(`wic:${u.id}:${run}:${i}`); setPick({ ...pick, [i]: j }); }}><span>{L[j]}</span>{o}</button></li>
           ))}
         </ul>
         <div className="row between wrap" style={{ gap: 8 }}>

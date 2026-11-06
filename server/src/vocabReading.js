@@ -9,6 +9,7 @@
  * Answers never reach the student before they submit.
  */
 import { db } from './db.js';
+import { meterMap, assertLeft } from './tiers.js';
 import { parseText, DEFAULT_PROMPT } from './parse.js';
 
 export const WIC_PROMPT = 'Which choice completes the text with the most logical and precise word or phrase?';
@@ -123,6 +124,7 @@ export function registerVocabReading(app, { h, bad, requireMaster, requireStuden
     if (!u) return bad(res, 'Unit not found', 404);
     if (!(await setOpen(req.user, { deck_id: u.deck_id, n: u.set_n }))) return bad(res, 'This set needs an active subscription', 402, { code: 'subscription_required' });
     if (req.user.role !== 'master' && !(await flashDone(req.user.id, u.id))) return bad(res, 'Finish the flashcards of this unit first', 403);
+    if (req.user.role === 'student') await assertLeft(req.user);
     const t = await db.one('SELECT questions FROM vocab_unit_texts WHERE unit_id = ?', [u.id]);
     const qs = parseJson(t?.questions, []);
     res.json({ questions: qs.map((q, i) => ({ n: i, passage: q.passage, prompt: q.prompt, options: q.options, ...(req.user.role === 'master' ? { answer: q.answer, explanation: q.explanation } : {}) })) });
@@ -136,7 +138,10 @@ export function registerVocabReading(app, { h, bad, requireMaster, requireStuden
     const t = await db.one('SELECT questions FROM vocab_unit_texts WHERE unit_id = ?', [u.id]);
     const qs = parseJson(t?.questions, []);
     if (!qs.length) return bad(res, 'This unit has no questions yet', 404);
-    const given = req.body?.answers && typeof req.body.answers === 'object' ? req.body.answers : {};
+    let given = req.body?.answers && typeof req.body.answers === 'object' ? req.body.answers : {};
+    // free daily limit: the run id groups this try's answers (the page counts each pick as it is made)
+    const run = /^[a-z0-9]{4,24}$/.test(String(req.body?.run || '')) ? req.body.run : `s${Date.now().toString(36)}`;
+    given = await meterMap(req.user, `wic:${u.id}:${run}:`, given, { strict: false });
     const pick = qs.map((_, i) => (Number.isInteger(given[i]) && given[i] >= 0 && given[i] < 4 ? given[i] : null));
     const score = qs.reduce((s, q, i) => s + (pick[i] === q.answer ? 1 : 0), 0);
     await db.tx(async (tx) => {

@@ -5,6 +5,7 @@ import { api, fmtDate } from '../../api.js';
 import { useAuth } from '../../context.jsx';
 import { Card, Empty, Gate, PageHeader, Segmented, pctTone, useAsync } from '../../components/ui.jsx';
 import { IconArrow, IconCheck, IconClock, IconCrown, IconLock, IconQuiz } from '../../components/icons.jsx';
+import { UsageChip } from '../../usage.jsx';
 
 export function PaywallBanner() {
   return (
@@ -23,7 +24,7 @@ export default function Quizzes() {
   const [tab, setTab] = useState('all');
   return (
     <div className="page">
-      <PageHeader title="Quizzes" sub="A quick random SAT module, plus quizzes from your teacher." />
+      <PageHeader title="Quizzes" sub="A quick random SAT module, plus quizzes from your teacher."><UsageChip /></PageHeader>
       {user.role === 'student' && <TakeQuizCard />}
       {!user.access?.can_practice && <PaywallBanner />}
       <Gate state={st}>{(list) => {

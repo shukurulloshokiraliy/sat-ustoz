@@ -5,6 +5,7 @@ import { api } from '../../api.js';
 import { useAuth } from '../../context.jsx';
 import { Gate, PageHeader, Segmented, useAsync } from '../../components/ui.jsx';
 import { IconArrow, IconLock } from '../../components/icons.jsx';
+import { UsageChip } from '../../usage.jsx';
 
 const LEVELS = [['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard']];
 
@@ -52,6 +53,7 @@ function Bank({ d }) {
     <>
       <PageHeader title="Question Bank" sub="Choose a skill, set the level and practise. Every answer comes with an explanation.">
         {user.role === 'student' && <span className="qb-done"><b>{doneAll}</b> of {d.total} done{answered > 0 && <> · {Math.round((correct / answered) * 100)}% right</>}</span>}
+        <UsageChip />
       </PageHeader>
 
       {!d.open_levels.includes('medium') && (

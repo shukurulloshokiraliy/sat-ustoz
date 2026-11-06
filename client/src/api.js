@@ -21,6 +21,8 @@ async function request(method, url, body, isForm) {
   }
   const ct = res.headers.get('content-type') || '';
   const data = ct.includes('json') ? await res.json() : null;
+  // the free daily limit was reached (any test, any page): the app shows one wall for it
+  if (res.status === 402 && data?.code === 'daily_limit') window.dispatchEvent(new CustomEvent('limit:daily', { detail: data }));
   if (!res.ok) throw Object.assign(new Error(data?.error ? data.error : "Something went wrong"), { status: res.status, data });
   return data;
 }

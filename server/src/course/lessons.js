@@ -3,6 +3,7 @@ import { penaltyOf, focusSummary } from '../focus.js';
 import { playUrl } from '../video.js';
 import { scanSoon } from '../reserved.js';
 import { getSettings } from '../db.js';
+import { meterMap, assertLeft } from '../tiers.js';
 import { upsertModule, validateModule, previewModule } from './modules.js';
 import { addCourseWords } from '../vocab.js';
 import { afterPass, unlockPrice, dripDays } from '../drip.js';
@@ -165,6 +166,7 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     if (!versions.length) return bad(res, 'This lesson has no level check yet');
     let c = await db.one('SELECT * FROM lesson_checks WHERE user_id = ? AND item_id = ? AND finished_at IS NULL ORDER BY id DESC LIMIT 1', [req.user.id, L.item.id]);
     if (!c) {
+      await assertLeft(req.user);
       const { n } = await db.one('SELECT COUNT(*) AS n FROM lesson_checks WHERE user_id = ? AND item_id = ? AND finished_at IS NOT NULL', [req.user.id, L.item.id]);
       c = await db.one('INSERT INTO lesson_checks (user_id, item_id, version) VALUES (?,?,?) RETURNING *', [req.user.id, L.item.id, versions[n % versions.length]]);
     }
@@ -196,7 +198,8 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
     if (await overTime(c)) return res.json({ ok: false, late: true });
     const answers = {};
     for (const [k, v] of Object.entries(req.body?.answers || {})) if (Number.isInteger(v)) answers[String(k).slice(0, 40)] = v;
-    await db.run('UPDATE lesson_checks SET answers = ? WHERE id = ?', [JSON.stringify(answers), c.id]);
+    const save = (a) => db.run('UPDATE lesson_checks SET answers = ? WHERE id = ?', [JSON.stringify(a), c.id]);
+    try { await save(await meterMap(req.user, `lc:${c.id}:`, answers)); } catch (e) { if (e.kept) await save(e.kept); throw e; }
     res.json({ ok: true });
   }));
 
@@ -207,11 +210,12 @@ export function registerLessons(app, { h, bad, requireStudent, requireMaster, ro
       const item = await db.one('SELECT content FROM roadmap_items WHERE id = ?', [c.item_id]);
       const content = JSON.parse(item?.content || '{}');
       const qs = content.checks?.[c.version] || [];
-      const answers = { ...JSON.parse(c.answers || '{}') };
+      let answers = { ...JSON.parse(c.answers || '{}') };
       // answers sent after a timed check's deadline are ignored (what was saved in time counts)
       if (!(content.time_minutes && Date.now() - new Date(c.started_at).getTime() > (content.time_minutes * 60 + GRACE - await penaltyOf('check', c.id)) * 1000)) {
         for (const [k, v] of Object.entries(req.body?.answers || {})) if (Number.isInteger(v)) answers[k] = v;
       }
+      answers = await meterMap(req.user, `lc:${c.id}:`, answers, { strict: false });
       const score = qs.filter((q) => answers[q.id] === q.answer).length;
       const passed = qs.length > 0 && (score / qs.length) * 100 >= (content.pass_percent ?? 80);
       await db.run('UPDATE lesson_checks SET answers = ?, score = ?, total = ?, passed = ?, finished_at = now() WHERE id = ?', [JSON.stringify(answers), score, qs.length, passed, c.id]);

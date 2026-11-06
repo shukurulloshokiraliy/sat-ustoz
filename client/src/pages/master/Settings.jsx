@@ -34,7 +34,7 @@ function Form({ init }) {
       </Card>
       <Card className="stack">
         <h2>Plans</h2>
-        <small className="muted">Price is per month. Limits: Question Bank answers a day, Take a quiz per day, full mocks per week. 0 a day = unlimited; 0 mocks a week = none.</small>
+        <small className="muted">Price is per month (Ultra: per 12 live lessons, booked on the Live lessons page). Questions / day counts every answer on the platform; 0 = unlimited (also for full mocks a week).</small>
         <div className="table-wrap"><table className="t plans-edit">
           <thead><tr><th>Plan</th><th>Name</th><th>Price / month</th><th>Questions / day</th><th>Quizzes / day</th><th>Full mocks / week</th><th>Consultation every … days</th></tr></thead>
           <tbody>{f.tiers.map((t, i) => (
@@ -46,9 +46,9 @@ function Form({ init }) {
             </tr>
           ))}</tbody>
         </table></div>
-        <small className="muted">1: questions, Take a quiz, mocks, explanations and scores · 2: + roadmap lessons (no video), consultations · 3: + video lessons, ask the teacher, weekly 30-minute consultation · 4: + live online lessons.</small>
+        <small className="muted">1 Plus: unlimited practice, quizzes, Word Vault · 2 Pro: + roadmap lessons (no video), consultations · 3 Pro Max: everything self-paced (video, ask the teacher, weekly consultation) · 4 Ultra: everything + 12 live 1-on-1 lessons at a fixed time.</small>
         <div className="grid g3">
-          <Field label="Free: questions / day"><input type="number" min="0" value={f.free_q_day} onChange={set('free_q_day')} /></Field>
+          <Field label="Free: questions / day" hint="every test counts: practice, quizzes, full mocks, level checks, Words in Context"><input type="number" min="0" value={f.free_q_day} onChange={set('free_q_day')} /></Field>
           <Field label="Free: full mocks / week"><input type="number" min="0" value={f.fm_free} onChange={set('fm_free')} /></Field>
           <Field label="Extra full mock (from balance)"><input inputMode="numeric" value={f.fm_extra_price} onChange={set('fm_extra_price')} /></Field>
         </div>

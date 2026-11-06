@@ -14,11 +14,12 @@ export function tierPerks(t) {
   return [
     [true, `${lim(t.q_day, 'questions / day')} with explanations`],
     [true, `${t.quiz_day ? `${t.quiz_day} quizzes / day` : 'Unlimited quizzes'} and score tracking`],
-    [true, `${t.fm_week} full mock${t.fm_week === 1 ? '' : 's'} / week`],
+    [true, t.fm_week ? `${t.fm_week} full mock${t.fm_week === 1 ? '' : 's'} / week` : 'Unlimited full mocks'],
+    [true, 'Word Vault: every deck and Words in Context'],
     [t.roadmap, t.video ? 'Roadmap lessons with video' : 'Roadmap lessons (no video)'],
     [t.ask, 'Ask the teacher about any question'],
     [!!t.consult_days, t.consult_days ? `${t.consult_min}-min consultation ${t.consult_days <= 7 ? 'every week' : `every ${Math.round(t.consult_days / 7)} weeks`}` : 'Consultations with the teacher'],
-    [t.live, 'Live online lessons'],
+    [t.live, t.live ? '12 live 1-on-1 lessons a month at your fixed time' : 'Live 1-on-1 lessons with the teacher'],
   ];
 }
 
@@ -56,7 +57,7 @@ export default function Subscribe() {
 
   return (
     <div className="page">
-      <PageHeader title="Plans & balance" sub="Choose a plan, pay by card and the teacher turns it on. Your balance pays for extra full mocks." />
+      <PageHeader title="Plans & balance" sub="Free gives 100 questions a day. Plans open unlimited practice, the roadmap, video lessons and live 1-on-1 lessons." />
       <Gate state={st}>{([p, bal]) => (
         <>
           <div className="sub-top">
@@ -65,7 +66,7 @@ export default function Subscribe() {
               <div className="grow">
                 <small className="muted">Your plan</small>
                 <b className="sub-plan">{user.access?.tier?.name || 'Free'}</b>
-                <p className="muted" style={{ fontSize: '.88rem' }}>{user.sub_active ? `Active until ${fmtDate(user.sub_until)}.` : `Free: ${p.free.q_day} questions a day and ${p.free.fm_week} full mock a week.`}</p>
+                <p className="muted" style={{ fontSize: '.88rem' }}>{user.sub_active ? `Active until ${fmtDate(user.sub_until)}.` : `Free: ${p.free.q_day} questions a day across every test and ${p.free.fm_week} full mock a week.`}</p>
               </div>
             </Card>
             <div className="wallet-col">
@@ -83,12 +84,16 @@ export default function Subscribe() {
                 {i === 2 && <span className="chip primary ribbon">Most chosen</span>}
                 <small className="tier-n">Plan {i + 1}</small>
                 <b className="tier-name">{t.name}</b>
-                <div className="price">{fmtMoney(t.price, p.currency)}<small> / month</small></div>
+                <div className="price">{fmtMoney(t.price, p.currency)}<small>{t.live ? ' / 12 lessons' : ' / month'}</small></div>
                 <ul className="tier-perks">{tierPerks(t).map(([on, x]) => <li key={x} className={on ? '' : 'off'}>{on ? <IconCheck width={16} height={16} /> : <IconX width={14} height={14} />}{x}</li>)}</ul>
+                {t.live && <small className="muted tier-self">Fixed time, 3 lessons a week, one student per time</small>}
+                {!t.live && t.id === 't3' && <small className="muted tier-self">Everything, at your own pace</small>}
+                {t.live ? <Link className="btn sun" to="/live">{t.id === tierId ? 'My lesson time' : 'Choose a lesson time'}</Link> : <>
                 {bal.balance >= t.price && <button className="btn primary" onClick={() => setBuy(t)}>{t.id === tierId ? 'Extend from wallet' : 'Buy from wallet'}</button>}
                 {t.id === tierId ? <span className="chip good" style={{ justifySelf: 'start' }}><IconCheck width={14} height={14} /> Your plan</span>
                   : bal.balance >= t.price ? null : cfg?.telegram_bot ? <button className="btn primary" disabled={opening} onClick={pay}><IconSend width={18} height={18} /> Pay via Telegram</button>
                     : <a className="btn soft" href="#pay">Pay by card</a>}
+                </>}
               </Card>
             ))}
           </div>
@@ -185,9 +190,12 @@ export function Extras({ access, stacked = false }) {
       )}
       {live.data && (
         <Card className="stack">
-          <h3 className="sr-h">Live online lessons</h3>
-          <p className="muted">{live.data.note || 'The schedule will appear here.'}</p>
-          {live.data.link ? <a className="btn primary" href={live.data.link} target="_blank" rel="noreferrer">Join the live lesson</a> : <small className="muted">The link will appear here before the lesson.</small>}
+          <h3 className="sr-h">Live 1-on-1 lessons</h3>
+          <p className="muted">{live.data.note || 'Your fixed lesson time, renewal and next lessons.'}</p>
+          <div className="row wrap" style={{ gap: 8 }}>
+            <Link className="btn soft" to="/live">Open Live lessons</Link>
+            {live.data.link && <a className="btn primary" href={live.data.link} target="_blank" rel="noreferrer">Join the live lesson</a>}
+          </div>
         </Card>
       )}
     </div>

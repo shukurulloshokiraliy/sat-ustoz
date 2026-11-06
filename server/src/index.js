@@ -24,6 +24,7 @@ import { registerVideo, playUrl, isBunny } from './video.js';
 import { migrateGifs, registerGifs } from './gifs.js';
 import { migrateFinance, registerFinance, keepPaymentRecords } from './finance.js';
 import { migrateDrip, registerDrip, unlocksFor, dripDays } from './drip.js';
+import { migrateLive, registerLive } from './live.js';
 import { migrateCalib } from './calibrate.js';
 import { registerQuality } from './quality.js';
 import { migrateAssignments, registerAssignments, assignedQuizOpen } from './assignments.js';
@@ -32,7 +33,7 @@ import { registerProgress } from './progress.js';
 import { migrateMistakes, registerMistakes } from './mistakes.js';
 import { migrateFocus, registerFocus, penaltyOf, focusSummary } from './focus.js';
 import { migratePictures, registerPictures } from './pictures.js';
-import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, tooManyFails, noteFail, clearFails, moveBalance } from './tiers.js';
+import { readTiers, registerTiers, migrateTiers, tierOf, cleanTiers, usedToday, usageOf, meterAnswers, limitError, tooManyFails, noteFail, clearFails, moveBalance } from './tiers.js';
 import { migrateVocab, registerVocab, syncVocab } from './vocab.js';
 import { migrateGame, registerGame } from './game.js';
 import { migrateSite, seedSite, registerSitePublic, registerSiteAdmin } from './site.js';
@@ -98,6 +99,7 @@ if (!(await db.one("SELECT 1 AS x FROM settings WHERE key = '_reserved_v1'"))) {
 await migrateTiers();
 await keepPaymentRecords();
 await migrateDrip();
+await migrateLive();
 await migrateCalib();
 await migrateSecurity();
 await db.exec(`
@@ -198,7 +200,7 @@ async function accessFor(user, settings) {
 }
 async function mepayload(user) {
   const group = user.group_id ? await db.one('SELECT id, name FROM groups WHERE id = ?', [user.group_id]) : null;
-  return { ...publicUser(user), group, access: await accessFor(user) };
+  return { ...publicUser(user), group, access: await accessFor(user), usage: await usageOf(user) };
 }
 
 // ---------- public ----------
@@ -295,9 +297,19 @@ app.get('/api/avatars/:id', h(async (req, res) => {
 
 const PUBLIC = new Set(['/auth/login', '/auth/register', '/auth/google', '/config', '/template.xlsx', '/cron/drip']);
 app.use('/api', (req, res, next) => (PUBLIC.has(req.path) && req.path !== '/template.xlsx' ? next() : requireAuth(req, res, next)));
+// free daily limit: today's count, and counting one answer the moment it is picked inside a test
+app.get('/api/usage', h(async (req, res) => res.json(await usageOf(req.user))));
+app.post('/api/usage/answer', requireStudent, h(async (req, res) => {
+  const keys = (Array.isArray(req.body?.keys) ? req.body.keys : [req.body?.key]).map(String).filter((k) => /^(qz|fm|lc|wic):[\w:.-]{1,100}$/.test(k)).slice(0, 60);
+  const m = await meterAnswers(req.user, keys);
+  if (m.refused) throw limitError(m.cap);
+  res.json(await usageOf(req.user));
+}));
+
 registerSiteAdmin(app, { h, bad, requireMaster });
 registerQuality(app, { h, bad, requireMaster });
 registerDrip(app, { h, bad, requireMaster, requireStudent, roadmapFor: (u) => roadmapFor(u), accessFor: (u) => accessFor(u) });
+registerLive(app, { h, bad, requireMaster, requireStudent });
 registerBotAdmin(app, { h, bad, requireMaster, requireStudent });
 registerVocab(app, { h, bad, requireMaster, requireStudent, accessFor: (u) => accessFor(u) });
 
@@ -1374,7 +1386,7 @@ if (fs.existsSync(dist)) {
 
 app.use((err, req, res, next) => {
   if (err?.code === 'LIMIT_FILE_SIZE') return bad(res, 'File is too large (max 15 MB)');
-  if (err instanceof HttpError || Number.isInteger(err?.status)) return bad(res, err.message, err.status || 400);
+  if (err instanceof HttpError || Number.isInteger(err?.status)) return bad(res, err.message, err.status || 400, typeof err.code === 'string' && /^[a-z_]+$/.test(err.code) ? { code: err.code } : {});
   console.error(err);
   // the teacher sees the real reason (helps fixing it); students only a short message
   res.status(500).json({ error: req.user?.role === 'master' ? `Server error: ${String(err?.message || err).slice(0, 300)}` : 'Server error' });

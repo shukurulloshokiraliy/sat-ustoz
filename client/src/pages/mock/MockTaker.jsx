@@ -8,6 +8,7 @@ import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
 import { fmtMoney } from '../student/Subscribe.jsx';
 import { sendWhenOnline, useOnReconnect } from '../../offline.js';
+import { meter } from '../../usage.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
 const DIRECTIONS = (
@@ -97,7 +98,7 @@ function Runner({ m, exam }) {
   useEffect(() => { if (left === 0) { toast('Time is up — here is your result'); submitRef.current(); } }, [left, toast]);
 
   const go = (i) => { setCur(Math.max(0, Math.min(qs.length - 1, i))); setView('q'); setNav2(false); };
-  const choose = (k) => setAns((a) => { const i = L.indexOf(k); return { ...a, [q.id]: a[q.id] === i ? undefined : i }; });
+  const choose = (k) => { meter(`qz:${m.id}:${q.id}`); setAns((a) => { const i = L.indexOf(k); return { ...a, [q.id]: a[q.id] === i ? undefined : i }; }); };
   useEffect(() => {
     const f = (e) => {
       if (view !== 'q' || e.metaKey || e.ctrlKey || e.target.closest('input, textarea, [role=dialog]')) return;

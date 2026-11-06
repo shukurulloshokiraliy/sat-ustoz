@@ -1,11 +1,11 @@
 /**
  * Plans (tiers), limits, balance and consultations.
  *
- *  free  – no subscription
- *  t1    – questions, mocks, explanations and score tracking (limited)
- *  t2    – t1 + roadmap lessons (no video) + more limits + a consultation every 2 weeks
- *  t3    – t2 + video lessons + more limits + direct questions to the teacher + 30 min consultation every week
- *  t4    – everything + live online lessons
+ *  free  – 100 answers a day across everything (strict: the 101st answer is refused, even inside a test)
+ *  t1    – Plus: unlimited practice and quizzes, 2 full mocks a week, Word Vault
+ *  t2    – Pro: + roadmap lessons (no video), 3 full mocks a week, a consultation every 2 weeks
+ *  t3    – Pro Max: everything, self-paced (video lessons, unlimited mocks, ask the teacher, weekly consultation)
+ *  t4    – Ultra: everything + 12 individual live lessons a month at a fixed time (booked in live.js)
  *
  * The teacher edits names, prices and limits in Settings (stored as JSON in settings.tiers).
  * 0 in a daily/weekly limit = unlimited. Full mocks beyond the weekly limit cost settings.fm_extra_price from
@@ -16,13 +16,15 @@ import crypto from 'node:crypto';
 import { db, getSettings } from './db.js';
 import { subActive } from './auth.js';
 
+// 0 in q_day / quiz_day / fm_week = unlimited
 export const DEFAULT_TIERS = [
-  { id: 't1', name: 'Plus', price: 99000, q_day: 80, quiz_day: 2, fm_week: 2, roadmap: false, video: false, ask: false, consult_days: 0, consult_min: 0, live: false },
-  { id: 't2', name: 'Pro', price: 149000, q_day: 200, quiz_day: 4, fm_week: 3, roadmap: true, video: false, ask: false, consult_days: 14, consult_min: 30, live: false },
-  { id: 't3', name: 'Pro Max', price: 249000, q_day: 0, quiz_day: 0, fm_week: 5, roadmap: true, video: true, ask: true, consult_days: 7, consult_min: 30, live: false },
-  { id: 't4', name: 'Ultra', price: 399000, q_day: 0, quiz_day: 0, fm_week: 7, roadmap: true, video: true, ask: true, consult_days: 7, consult_min: 30, live: true },
+  { id: 't1', name: 'Plus', price: 99000, q_day: 0, quiz_day: 0, fm_week: 2, roadmap: false, video: false, ask: false, consult_days: 0, consult_min: 0, live: false },
+  { id: 't2', name: 'Pro', price: 249000, q_day: 0, quiz_day: 0, fm_week: 3, roadmap: true, video: false, ask: false, consult_days: 14, consult_min: 30, live: false },
+  { id: 't3', name: 'Pro Max', price: 449000, q_day: 0, quiz_day: 0, fm_week: 0, roadmap: true, video: true, ask: true, consult_days: 7, consult_min: 30, live: false },
+  { id: 't4', name: 'Ultra', price: 2500000, q_day: 0, quiz_day: 0, fm_week: 0, roadmap: true, video: true, ask: true, consult_days: 7, consult_min: 30, live: true },
 ];
-export const FREE_TIER = { id: 'free', name: 'Free', price: 0, q_day: 20, quiz_day: 1, fm_week: 1, roadmap: false, video: false, ask: false, consult_days: 0, consult_min: 0, live: false };
+// free: 100 answers a day across the whole platform (practice, quizzes, full mocks, level checks, Words in Context)
+export const FREE_TIER = { id: 'free', name: 'Free', price: 0, q_day: 100, quiz_day: 0, fm_week: 1, roadmap: false, video: false, ask: false, consult_days: 0, consult_min: 0, live: false };
 const ALL = { id: 'master', name: 'Teacher', price: 0, q_day: 0, quiz_day: 0, fm_week: 0, roadmap: true, video: true, ask: true, consult_days: 0, consult_min: 0, live: true };
 const LEGACY = { month: 't3', quarter: 't3' }; // plans sold before tiers existed keep full course access
 
@@ -63,11 +65,63 @@ export function tierOf(user, settings) {
 }
 
 const TODAY = "date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent'";
-/** Question Bank answers and Take a quiz starts used today. */
+const DAY = "(now() AT TIME ZONE 'Asia/Tashkent')::date";
+/** Answers counted today (free limit) and Take a quiz starts used today. */
 export async function usedToday(userId) {
-  const q = await db.one(`SELECT COUNT(*) AS n FROM qbank_answers WHERE user_id = ? AND answered_at >= ${TODAY}`, [userId]);
+  const q = await db.one(`SELECT COUNT(*) AS n FROM usage_answers WHERE user_id = ? AND day = ${DAY}`, [userId]);
   const m = await db.one(`SELECT COUNT(*) AS n FROM qbank_mocks WHERE user_id = ? AND started_at >= ${TODAY} AND NOT paid AND item_id IS NULL`, [userId]).catch(() => ({ n: 0 }));
   return { questions: Number(q.n), quizzes: Number(m.n) };
+}
+
+/** The daily answer limit of this user (0 = none). */
+export async function dailyCap(user) {
+  if (!user || user.role !== 'student') return 0;
+  const s = await getSettings();
+  if (s.require_subscription !== 'true') return 0;
+  return tierOf(user, s).q_day || 0;
+}
+export async function usageOf(user) {
+  const cap = await dailyCap(user);
+  if (!cap) return { cap: 0, used: 0, left: null };
+  const used = (await usedToday(user.id)).questions;
+  return { cap, used, left: Math.max(0, cap - used) };
+}
+export const limitError = (cap) => Object.assign(new Error(`You have used today's ${cap} free questions. They come back tomorrow, or get a plan for unlimited practice.`), { status: 402, code: 'daily_limit' });
+
+/**
+ * The one meter for every answer on the platform. `keys` are answer ids like "fm:12:q-3" (what, which test, which
+ * question). An answer already counted (any day) stays allowed; new ones are counted while today's limit lasts.
+ * Returns the set of allowed keys, and whether some were refused.
+ */
+export async function meterAnswers(user, keys) {
+  keys = [...new Set(keys.map((k) => String(k).slice(0, 120)))];
+  const cap = await dailyCap(user);
+  if (!cap || !keys.length) return { allowed: new Set(keys), refused: 0, cap };
+  const known = new Set((await db.all('SELECT k FROM usage_answers WHERE user_id = ? AND k = ANY(?::text[])', [user.id, keys])).map((r) => r.k));
+  const fresh = keys.filter((k) => !known.has(k));
+  let left = fresh.length ? Math.max(0, cap - (await usedToday(user.id)).questions) : 0;
+  for (const k of fresh) {
+    if (left <= 0) break;
+    const r = await db.one(`INSERT INTO usage_answers (user_id, k, day) VALUES (?, ?, ${DAY}) ON CONFLICT DO NOTHING RETURNING k`, [user.id, k]);
+    known.add(k); if (r) left--;
+  }
+  return { allowed: known, refused: keys.length - known.size, cap };
+}
+/** Keep only the answers the meter allows: { qid: choice } with keys `${prefix}${qid}`. Throws when one is refused. */
+export async function meterMap(user, prefix, answers, { strict = true } = {}) {
+  const ids = Object.keys(answers || {}).filter((k) => answers[k] != null);
+  if (!ids.length) return answers || {};
+  const { allowed, refused, cap } = await meterAnswers(user, ids.map((id) => prefix + id));
+  if (!refused) return answers;
+  const out = {};
+  for (const id of ids) if (allowed.has(prefix + id)) out[id] = answers[id];
+  if (strict) throw Object.assign(limitError(cap), { kept: out });
+  return out;
+}
+/** Refuse to start a new test when nothing is left today. */
+export async function assertLeft(user) {
+  const u = await usageOf(user);
+  if (u.cap && u.left <= 0) throw limitError(u.cap);
 }
 
 export async function migrateTiers() {
@@ -89,9 +143,26 @@ CREATE TABLE IF NOT EXISTS consultations (
 );
 CREATE INDEX IF NOT EXISTS idx_consult_user ON consultations(user_id, created_at DESC);
 ALTER TABLE balance_ledger ENABLE ROW LEVEL SECURITY; ALTER TABLE consultations ENABLE ROW LEVEL SECURITY;
+CREATE TABLE IF NOT EXISTS usage_answers (user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, k TEXT NOT NULL, day DATE NOT NULL,
+  at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (user_id, k));
+CREATE INDEX IF NOT EXISTS idx_usage_day ON usage_answers(user_id, day);
+ALTER TABLE usage_answers ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS auth_fails (key TEXT PRIMARY KEY, n INTEGER NOT NULL DEFAULT 0, first_at TIMESTAMPTZ NOT NULL DEFAULT now());
 ALTER TABLE auth_fails ENABLE ROW LEVEL SECURITY;
 `);
+  // 2026-11 plan ladder (Free 100/day · Plus 99k · Pro 249k · Pro Max 449k · Ultra 2.5M): once, saved plans take the
+  // new prices and limits (custom names stay); the free limit moves from the old default 20 to 100
+  const done = await db.one("SELECT value FROM settings WHERE key = '_tiers_v'");
+  if (done?.value !== '2026-11b') {
+    const row = await db.one("SELECT value FROM settings WHERE key = 'tiers'");
+    let list = []; try { list = JSON.parse(row?.value || '[]'); } catch { list = []; }
+    if (Array.isArray(list) && list.length) {
+      const next = DEFAULT_TIERS.map((d) => { const t = list.find((x) => x?.id === d.id) || {}; return { ...t, id: d.id, name: nameOf(t, d), price: d.price, q_day: d.q_day, quiz_day: d.quiz_day, fm_week: d.fm_week, consult_days: d.consult_days, consult_min: d.consult_min }; });
+      await db.run("UPDATE settings SET value = ? WHERE key = 'tiers'", [JSON.stringify(next)]);
+    }
+    await db.run("UPDATE settings SET value = '100' WHERE key = 'free_q_day' AND value IN ('20', '')");
+    await db.run("INSERT INTO settings (key, value) VALUES ('_tiers_v', '2026-11b') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value");
+  }
   // the balance can never be negative, whatever happens in the code
   await db.exec(`DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_balance_nonneg') THEN
@@ -246,6 +317,7 @@ export async function buyPlan(userId, tierId, months, key) {
   const s = await getSettings();
   const tier = readTiers(s).find((t) => t.id === tierId);
   if (!tier || !tier.price) throw Object.assign(new Error('Choose a plan'), { status: 400 });
+  if (tier.live) throw Object.assign(new Error('Ultra comes with a fixed lesson time: pick one on the Live lessons page'), { status: 400 });
   months = [1, 3, 6, 12].includes(Number(months)) ? Number(months) : 1;
   const price = tier.price * months;
   if (key && (await db.one('SELECT id FROM balance_ledger WHERE ref = ?', [`buy:${userId}:${String(key).slice(0, 40)}`]))) {

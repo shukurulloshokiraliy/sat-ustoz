@@ -3222,3 +3222,71 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .ql-key { display: flex; gap: 6px; align-items: center; font-weight: 700; }
 @media (max-width: 760px) { .ql-kpis { grid-template-columns: repeat(2, 1fr); } .ql-row { grid-template-columns: 1fr; } .ql-side { justify-items: start; text-align: left; } }
 @media (max-width: 760px) { .ql-kpis { grid-template-columns: repeat(3, 1fr); gap: 6px; } .ql-kpis > * { padding: 8px 10px; } .ql-kpis b { font-size: 1.1rem; } }
+
+/* ---------- Free daily limit wall (usage.jsx) ---------- */
+.lw-back { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 16px; background: rgba(15, 18, 40, .55); backdrop-filter: blur(3px); }
+.lw-card { width: min(460px, 100%); display: grid; gap: 10px; justify-items: start; padding: 24px; border-radius: 22px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: var(--shadow-lg); }
+.lw-card h2 { margin: 2px 0 0; font-size: 1.3rem; line-height: 1.25; }
+.lw-card p { margin: 0; line-height: 1.5; }
+.lw-ic { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: var(--warn-soft); color: var(--warn); }
+.lw-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+@media (max-width: 420px) { .lw-act .btn { flex: 1 1 100%; } .lw-card { padding: 20px; } }
+
+/* ---------- Live lessons (pages/student/Live.jsx) ---------- */
+.lv-top { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 12px; margin-bottom: 12px; }
+.lv-intro, .lv-mine-h { display: flex; gap: 14px; align-items: center; }
+.lv-intro h2 { margin: 0 0 4px; font-size: 1.15rem; } .lv-intro p { margin: 0; }
+.lv-ic { width: 48px; height: 48px; flex: none; }
+.lv-price { display: grid; gap: 2px; align-content: center; }
+.lv-price b { font-size: 1.5rem; letter-spacing: -.01em; }
+.lv-link { font-size: .88rem; font-weight: 600; }
+.lv-mine { display: grid; gap: 10px; }
+.lv-mine-h .grow { display: grid; gap: 2px; min-width: 0; }
+.lv-mine-t { font-size: 1.2rem; }
+.lv-next { display: flex; flex-wrap: wrap; gap: 6px; }
+.lv-next span { padding: 5px 10px; border-radius: 10px; background: var(--surface-2); font-size: .82rem; font-weight: 600; }
+.lv-next span.on { background: var(--primary-soft); color: var(--primary); }
+.lv-offer, .lv-note { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 16px; margin-bottom: 12px; }
+.lv-offer { background: var(--sun-50, var(--warn-soft)); border: 1px solid var(--warn); }
+.lv-offer > div { display: grid; gap: 2px; } .lv-offer span { font-size: .9rem; }
+.lv-note { background: var(--primary-soft); font-size: .92rem; }
+.lv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.lv-col { display: grid; gap: 8px; align-content: start; }
+.lv-days { margin: 0 0 2px; font-size: 1rem; }
+.lv-slot { display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); }
+.lv-slot.mine, .lv-slot.mine_next { border-color: var(--primary); background: var(--primary-soft); }
+.lv-slot.free { border-color: var(--good); }
+.lv-slot.closed { opacity: .6; }
+.lv-time { display: flex; gap: 6px; align-items: center; color: var(--muted); } .lv-time b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.lv-st { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; min-width: 0; }
+.lv-act { display: flex; justify-content: flex-end; }
+.lv-act .btn { white-space: nowrap; }
+.lv-how { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.lv-how > div { display: grid; gap: 3px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); font-size: .88rem; }
+.lv-how span { color: var(--muted); line-height: 1.45; }
+.lv-sum { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.lv-sum > div { display: grid; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.lv-sum small { color: var(--muted); }
+.lv-terms { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: .9rem; }
+.lv-terms li { display: flex; gap: 8px; align-items: flex-start; } .lv-terms svg { margin-top: 3px; flex: none; color: var(--good); }
+.lv-tslot { display: grid; gap: 8px; padding: 12px; border-radius: 14px; border: 1px solid var(--line); }
+.lv-close { gap: 6px; font-size: .82rem; color: var(--muted); cursor: pointer; }
+.lv-who { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.lv-who > div { display: grid; gap: 2px; min-width: 0; } .lv-who.next > div { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.lv-empty { margin: 0; font-size: .9rem; }
+.lv-q { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: .88rem; }
+.lv-q li span { display: inline; } .lv-q li { position: relative; padding-right: 36px; } .lv-q .icon-btn { position: absolute; right: 0; top: -4px; width: 28px; height: 28px; }
+.tier-self { display: block; margin-top: -2px; }
+@media (max-width: 900px) { .lv-how { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .lv-top, .lv-grid { grid-template-columns: 1fr; }
+  .lv-slot { grid-template-columns: minmax(0, 1fr) auto; }
+  .lv-slot .lv-st { grid-column: 1; grid-row: 2; }
+  .lv-slot .lv-act { grid-column: 2; grid-row: 1 / span 2; }
+  .ql-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 420px) { .lv-how { grid-template-columns: 1fr; } .lv-sum { grid-template-columns: 1fr 1fr; } }
+.lv-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } @media (max-width: 760px) { .lv-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .lv-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; } .lv-price b { font-size: 1.25rem; } .lv-price small { flex-basis: 100%; } }
+.lv-kpis > div:last-child b { font-size: 1.1rem; }
+@media (max-width: 760px) { .lv-mine-h { flex-wrap: wrap; } .lv-mine-h .grow { flex: 1 1 calc(100% - 64px); } .lv-mine-h > .btn { flex: 1 1 100%; } .lv-mine-t { font-size: 1.05rem; } }

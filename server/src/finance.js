@@ -60,7 +60,7 @@ const FROM = {
 const TO = { month: 'now() + interval \'1 minute\'', last: MONTH0, year: 'now() + interval \'1 minute\'', all: 'now() + interval \'1 minute\'' };
 const SPEND = ['subscription', 'full_mock', 'quiz', 'lesson'];
 const n = (x) => Number(x || 0);
-const KIND = { top_up: 'Top-up', plan: 'Plan', subscription: 'Plan (from wallet)', full_mock: 'Extra full mock', quiz: 'Extra quiz', lesson: 'Lesson opened early', prize: 'Leaderboard prize', correction: 'Correction' };
+const KIND = { top_up: 'Top-up', plan: 'Plan', subscription: 'Plan (from wallet)', full_mock: 'Extra full mock', quiz: 'Extra quiz', lesson: 'Lesson opened early', prize: 'Leaderboard prize', correction: 'Correction', refund: 'Refund' };
 const VIA = { receipt: 'Telegram bot receipt', wallet: 'Wallet', teacher: 'Teacher', prize: 'Leaderboard', telegram: 'Telegram Pay', card: 'Card', click: 'Click', payme: 'Payme' };
 const STATUS = { pending: 'Waiting', approved: 'Approved', rejected: 'Rejected', done: 'Done' };
 
@@ -70,12 +70,13 @@ async function summary(from, to) {
   const direct = await db.one(`SELECT COALESCE(SUM(amount), 0) AS s, COUNT(*) AS c FROM payments WHERE provider <> 'wallet' AND amount > 0 AND created_at >= ${from} AND created_at < ${to}`);
   const exp = await db.one(`SELECT COALESCE(SUM(amount), 0) AS s FROM expenses WHERE spent_on >= (${from})::date AND spent_on < (${to})::date + 1`);
   const spent = Object.fromEntries(SPEND.map((k) => [k, -(by[k]?.s || 0)]));
-  const revenue = SPEND.reduce((s, k) => s + spent[k], 0) + n(direct.s);
+  const refunds = by.refund?.s || 0; // money given back to the wallet (e.g. a cancelled live booking)
+  const revenue = SPEND.reduce((s, k) => s + spent[k], 0) + n(direct.s) - refunds;
   const prizes = by.prize?.s || 0;
   return {
     cash_in: (by.top_up?.s || 0) + n(direct.s), top_ups: by.top_up?.s || 0, top_up_count: by.top_up?.c || 0,
     direct: n(direct.s), direct_count: n(direct.c),
-    revenue, plans: spent.subscription + n(direct.s), extra_mocks: spent.full_mock, extra_quizzes: spent.quiz, early_lessons: spent.lesson,
+    revenue, plans: spent.subscription + n(direct.s) - refunds, refunds, extra_mocks: spent.full_mock, extra_quizzes: spent.quiz, early_lessons: spent.lesson,
     prizes, corrections: by.correction?.s || 0, expenses: n(exp.s), profit: revenue - prizes - n(exp.s),
   };
 }
@@ -96,7 +97,7 @@ const JOURNAL = `
   FROM tg_requests r
   UNION ALL
   SELECT 'l' || l.id, l.created_at, l.user_id, l.who, l.reason,
-    CASE WHEN l.reason IN ('subscription', 'full_mock', 'quiz', 'lesson') THEN 'wallet' WHEN l.reason = 'prize' THEN 'prize' ELSE 'teacher' END,
+    CASE WHEN l.reason IN ('subscription', 'full_mock', 'quiz', 'lesson', 'refund') THEN 'wallet' WHEN l.reason = 'prize' THEN 'prize' ELSE 'teacher' END,
     l.amount, 'done', '', l.note, COALESCE(cb.name, ''), NULL, NULL
   FROM balance_ledger l LEFT JOIN users cb ON cb.id = l.created_by
   WHERE l.ref IS NULL OR l.ref NOT LIKE 'tg:%'

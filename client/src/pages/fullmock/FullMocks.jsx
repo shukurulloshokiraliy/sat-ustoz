@@ -6,6 +6,7 @@ import { Card, Confirm, Gate, PageHeader, useAsync } from '../../components/ui.j
 import { fmtMoney } from '../student/Subscribe.jsx';
 import FullMockCard from '../mock/FullMockCard.jsx';
 import { IconArrow, IconClock, IconDoc, IconLock } from '../../components/icons.jsx';
+import { UsageChip } from '../../usage.jsx';
 
 
 /** Official full-length mocks: two Reading & Writing modules (adaptive), weekly limit by plan. */
@@ -23,16 +24,16 @@ export default function FullMocks() {
   };
   return (
     <div className="page">
-      <PageHeader title="Full Mocks" sub="Full Reading & Writing sections: Module 1, then a harder or easier Module 2, scored like the SAT." />
+      <PageHeader title="Full Mocks" sub="Full Reading & Writing sections: Module 1, then a harder or easier Module 2, scored like the SAT."><UsageChip /></PageHeader>
       <Gate state={st}>{({ quota: q, mocks }) => (
         <>
           <div className={`fm-quota ${q.left ? '' : 'out'}`}>
             <div>
               <small>{q.plan_name} plan · this week</small>
-              <b>{q.left} of {q.limit} left</b>
-              <span>{q.left ? 'A mock counts when you start it.' : `New mocks open ${fmtDate(q.resets_at)} (Monday). Extra mock: ${fmtMoney(q.extra_price, 'UZS')} from your balance.`}</span>
+              <b>{q.unlimited ? 'Unlimited' : `${q.left} of ${q.limit} left`}</b>
+              <span>{q.unlimited ? 'Your plan has no weekly limit.' : q.left ? 'A mock counts when you start it.' : `New mocks open ${fmtDate(q.resets_at)} (Monday). Extra mock: ${fmtMoney(q.extra_price, 'UZS')} from your balance.`}</span>
             </div>
-            <div className="fm-dots" aria-hidden="true">{Array.from({ length: Math.min(q.limit, 7) }, (_, i) => <i key={i} className={i < q.used ? 'used' : ''} />)}</div>
+            {!q.unlimited && <div className="fm-dots" aria-hidden="true">{Array.from({ length: Math.min(q.limit, 7) }, (_, i) => <i key={i} className={i < q.used ? 'used' : ''} />)}</div>}
             <div className="fm-bal"><small>Balance</small><b>{fmtMoney(q.balance, 'UZS')}</b><Link to="/subscribe#pay">Top up</Link></div>
             {q.plan === 'free' && user.role === 'student' && <Link className="btn sun" to="/subscribe">More mocks with a plan <IconArrow width={16} height={16} /></Link>}
           </div>

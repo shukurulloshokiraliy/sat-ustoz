@@ -8,7 +8,7 @@ import { Avatar, Spinner } from './ui.jsx';
 import SupportChat from './ChatLater.jsx';
 import {
   IconBookmark, IconBriefcase, IconChats, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
-  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconConsult, IconVolume, IconMute, IconWallet, IconTask, IconFlag } from './icons.jsx';
+  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconLive, IconConsult, IconVolume, IconMute, IconWallet, IconTask, IconFlag } from './icons.jsx';
 
 const STUDENT_NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, c: '#2A55E5' },
@@ -23,6 +23,7 @@ const STUDENT_NAV = [
   { to: '/analytics', label: 'Results', icon: IconChart, c: '#2A55E5' },
   { to: '/leaderboard', label: 'Leaderboard', icon: IconTrophy, c: '#E8A93C' },
   { to: '/consultations', label: 'Consultations', icon: IconConsult, c: '#0E9F6E' },
+  { to: '/live', label: 'Live lessons', icon: IconLive, c: '#E2553D' },
   { to: '/saved', label: 'Saved', icon: IconBookmark, c: '#E0569B' },
   { to: '/subscribe', label: 'Plans', icon: IconCrown, c: '#E8A93C' },
 ];
@@ -53,6 +54,7 @@ const MASTER_NAV = [
   { to: '/quality', label: 'Question quality', icon: IconChart, c: '#2A55E5' },
   { to: '/full-mocks', label: 'Full Mocks', icon: IconDoc, c: '#C2410C' },
   { to: '/consultations', label: 'Consultations', icon: IconConsult, c: '#0E9F6E' },
+  { to: '/live', label: 'Live lessons', icon: IconLive, c: '#E2553D' },
   { to: '/leaderboard', label: 'Leaderboard', icon: IconTrophy, c: '#E8A93C' },
   { to: '/vocab', label: 'Word Vault', icon: IconBook, c: '#E8A93C' },
   { to: '/game', label: 'Word Arena', icon: IconGame, c: '#8E5CF7' },

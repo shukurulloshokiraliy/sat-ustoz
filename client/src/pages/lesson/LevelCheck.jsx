@@ -9,6 +9,7 @@ import { rich } from '../../components/Rich.jsx';
 import ReportMistake from '../../components/ReportMistake.jsx';
 import { sendWhenOnline, useOnReconnect } from '../../offline.js';
 import { FocusLine } from '../../components/Proctor.jsx';
+import { meter } from '../../usage.jsx';
 
 const L = ['A', 'B', 'C', 'D', 'E'];
 
@@ -60,7 +61,7 @@ function Runner({ c }) {
   useOnReconnect(resave);
   useEffect(() => { const t = setInterval(resave, 15000); return () => clearInterval(t); }, [resave]);
 
-  const pick = (i) => { dirty.current = true; setAnswers((a) => ({ ...a, [q.id]: i })); };
+  const pick = (i) => { meter(`lc:${c.id}:${q.id}`); dirty.current = true; setAnswers((a) => ({ ...a, [q.id]: i })); };
   const go = (i) => { if (i >= 0 && i < c.questions.length) { setCur(i); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
   const submit = async () => {
     setBusy(true);

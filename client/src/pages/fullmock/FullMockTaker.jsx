@@ -7,6 +7,7 @@ import { BBFooter, BBNavigator, BBOptions, BBQuestionBar, BBReview, BBShell, BBS
 import { Passage } from '../../components/Passage.jsx';
 import { rich } from '../../components/Rich.jsx';
 import { sendWhenOnline, useOnReconnect } from '../../offline.js';
+import { meter } from '../../usage.jsx';
 
 const L = ['A', 'B', 'C', 'D'];
 const DIRECTIONS = (
@@ -82,7 +83,7 @@ function Module({ a, onNext }) {
   useEffect(() => { if (left === 0 && !intro) { toast('Time is up for this module'); finishRef.current(); } }, [left, intro, toast]);
 
   const go = (i) => { setCur(Math.max(0, Math.min(qs.length - 1, i))); setView('q'); setNav2(false); };
-  const choose = (qid, k) => setAns((x) => { const i = L.indexOf(k); return { ...x, [qid]: x[qid] === i ? undefined : i }; });
+  const choose = (qid, k) => { meter(`fm:${a.id}:${qid}`); setAns((x) => { const i = L.indexOf(k); return { ...x, [qid]: x[qid] === i ? undefined : i }; }); };
   useEffect(() => {
     if (pdf) return undefined;
     const f = (e) => {

@@ -14,6 +14,7 @@ import { db, getSettings } from './db.js';
 import { moveBalance } from './tiers.js';
 import { notifyUser } from './tgbot.js';
 import { calibrateIfStale } from './calibrate.js';
+import { sweepLive } from './live.js';
 
 const SITE = process.env.SITE_URL || 'https://www.ustozsat.uz';
 const esc = (s) => String(s || '').replace(/[<>&]/g, '');
@@ -56,14 +57,14 @@ export function registerDrip(app, { h, bad, requireMaster, requireStudent, roadm
     try {
       const cut = String(Date.now() - 15 * 60e3);
       const claimed = await db.one("UPDATE settings SET value = ? WHERE key = '_drip_tick' AND (CASE WHEN value ~ '^[0-9]+$' THEN value::bigint ELSE 0 END) < ?::bigint RETURNING key", [String(Date.now()), cut]);
-      if (claimed) await sweepDrip(25);
+      if (claimed) { await sweepDrip(25); await sweepLive().catch((e) => console.error('[live]', e.message)); }
     } catch (e) { console.error('[drip]', e.message); }
     next();
   });
   // daily safety net (vercel.json → crons)
   app.get('/api/cron/drip', h(async (req, res) => {
     if (process.env.CRON_SECRET && req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) return res.status(401).end();
-    res.json({ sent: await sweepDrip(200), calibration: await calibrateIfStale(60).catch((e) => ({ error: e.message })) });
+    res.json({ sent: await sweepDrip(200), live: await sweepLive().catch((e) => ({ error: e.message })), calibration: await calibrateIfStale(60).catch((e) => ({ error: e.message })) });
   }));
 
   // student: open a waiting lesson now, paid from the wallet

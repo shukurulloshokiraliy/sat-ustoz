@@ -7,6 +7,7 @@ import { useAuth } from './context.jsx';
 import { Spinner } from './components/ui.jsx';
 import Layout from './components/Layout.jsx';
 import Dashboard from './pages/student/Dashboard.jsx';
+import { LimitWall } from './usage.jsx';
 
 // pages load on demand: a smaller first download on mobile data (each page is its own file).
 // After a new deploy an open tab may ask for an old file name: reload once to get the new version.
@@ -69,6 +70,7 @@ const GameHub = page(() => import('./pages/game/GameHub.jsx'));
 const Play = page(() => import('./pages/game/Play.jsx'));
 const JoinCode = page(() => import('./pages/game/Play.jsx').then((m) => ({ default: m.JoinCode })));
 const Login = page(() => import('./pages/Login.jsx'));
+const Live = page(() => import('./pages/student/Live.jsx'));
 const Overview = page(() => import('./pages/master/Overview.jsx'));
 const PublicLayout = page(() => import('./pages/public/PublicLayout.jsx'));
 const Landing = page(() => import('./pages/public/Landing.jsx'));
@@ -103,7 +105,7 @@ export default function App() {
   // the placement test is optional: new students see an invitation on the dashboard, nothing is blocked
 
   return (
-    <Suspense fallback={<Wait />}><OfflineBar /><UpdateBar />{user.role === 'student' && <ActivityTracker />}
+    <Suspense fallback={<Wait />}><OfflineBar /><UpdateBar />{user.role === 'student' && <><ActivityTracker /><LimitWall /></>}
     <Routes>
       {user.role === 'student' && <Route path="/quiz/:id" element={<QuizTaker />} />}
       {user.role === 'student' && <Route path="/placement/test" element={<PlacementTest />} />}
@@ -176,6 +178,7 @@ export default function App() {
         <Route path="placement/result/:id" element={<PlacementResult />} />
         <Route path="lesson/:id" element={<Lesson />} />
         <Route path="lesson-check/:id" element={<LevelCheckResult />} />
+        <Route path="live" element={<Live />} />
         <Route path="profile" element={<Profile />} />
         <Route path="question-bank" element={<QuestionBank />} />
         <Route path="login" element={<Navigate to="/" replace />} />

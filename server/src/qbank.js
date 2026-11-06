@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { penaltyOf, focusSummary } from './focus.js';
 import { db, getSettings } from './db.js';
-import { moveBalance } from './tiers.js';
+import { moveBalance, meterAnswers, meterMap, assertLeft, limitError } from './tiers.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIR = path.join(__dirname, 'content', 'qbank');
@@ -220,10 +220,8 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const q = await db.one('SELECT * FROM qbank_questions WHERE id = ? AND active AND NOT premium AND reserved_for IS NULL', [req.params.id]);
     if (!q) return bad(res, 'Question not found', 404);
     if (!(await openLevels(req.user)).includes(q.difficulty)) return bad(res, 'This question needs an active subscription', 402, { code: 'subscription_required' });
-    const cap = (await accessFor(req.user)).tier?.q_day || 0;
-    if (cap && req.user.role !== 'master' && !(await db.one('SELECT 1 AS x FROM qbank_answers WHERE user_id = ? AND question_id = ?', [req.user.id, q.id]))) {
-      if ((await usedToday(req.user.id)).questions >= cap) return bad(res, `Your plan includes ${cap} new questions a day. Come back tomorrow or upgrade your plan.`, 402, { code: 'daily_limit' });
-    }
+    const meter = await meterAnswers(req.user, [`qb:${q.id}`]);
+    if (meter.refused) throw limitError(meter.cap);
     const choice = Number(req.body?.choice);
     if (!Number.isInteger(choice) || choice < 0 || choice > 3) return bad(res, 'Choose an answer first');
     const correct = choice === q.answer;
@@ -268,6 +266,7 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
   app.post('/api/qbank/mock', requireStudent, h(async (req, res) => {
     const open = await db.one(`SELECT * FROM qbank_mocks WHERE user_id = ? AND item_id IS NULL AND finished_at IS NULL AND started_at > now() - interval '${MOCK_MINUTES} minutes' ORDER BY id DESC LIMIT 1`, [req.user.id]);
     if (open && !req.body?.fresh) return res.json(await mockState(open, false));
+    await assertLeft(req.user);
     const quota = await quizQuota(req.user);
     const paid = quota.limit > 0 && quota.left <= 0;
     // beyond the plan's daily quizzes: one more for a small price from the wallet, only when the student asks to pay
@@ -291,7 +290,11 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
   }));
 
   app.put('/api/qbank/mock/:id/progress', requireStudent, h(async (req, res) => {
-    await db.run('UPDATE qbank_mocks SET answers = ? WHERE id = ? AND user_id = ? AND finished_at IS NULL', [JSON.stringify(req.body?.answers || {}).slice(0, 20000), Number(req.params.id), req.user.id]);
+    const id = Number(req.params.id);
+    const save = (a) => db.run('UPDATE qbank_mocks SET answers = ? WHERE id = ? AND user_id = ? AND finished_at IS NULL', [JSON.stringify(a || {}).slice(0, 20000), id, req.user.id]);
+    // free daily limit: answers past it are not kept (what was allowed is saved, then the limit is reported)
+    const given = req.body?.answers && typeof req.body.answers === 'object' ? req.body.answers : {};
+    try { await save(await meterMap(req.user, `qz:${id}:`, given)); } catch (e) { if (e.kept) await save(e.kept); throw e; }
     res.json({ ok: true });
   }));
 
@@ -301,8 +304,9 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     if (!m) return bad(res, 'Quiz not found', 404);
     if (!m.finished_at) {
       const ids = JSON.parse(m.question_ids);
-      const answers = {};
+      let answers = {};
       for (const id of ids) { const c = Number(req.body?.answers?.[id]); if (Number.isInteger(c) && c >= 0 && c <= 3) answers[id] = c; }
+      answers = await meterMap(req.user, `qz:${m.id}:`, answers, { strict: false });
       const keys = await db.all('SELECT id, answer, difficulty FROM qbank_questions WHERE id = ANY(?::text[])', [ids]);
       let score = 0;
       for (const k of keys) {
@@ -335,6 +339,7 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const open = await db.one(`SELECT * FROM qbank_mocks WHERE user_id = ? AND item_id = ? AND finished_at IS NULL
       AND started_at > now() - (COALESCE(minutes, ${MOCK_MINUTES}) || ' minutes')::interval ORDER BY id DESC LIMIT 1`, [req.user.id, it.id]);
     if (open && !req.body?.fresh) return res.json(await mockState(open, false));
+    await assertLeft(req.user);
     const ids = await randomSet(req.user.id, cfg);
     if (ids.length < Math.min(5, cfg.count)) return bad(res, 'The Question Bank does not have enough questions for this exam yet');
     const m = await db.one('INSERT INTO qbank_mocks (user_id, question_ids, total, item_id, minutes) VALUES (?,?,?,?,?) RETURNING *', [req.user.id, JSON.stringify(ids), ids.length, it.id, cfg.minutes]);

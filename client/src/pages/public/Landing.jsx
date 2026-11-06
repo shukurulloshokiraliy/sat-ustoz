@@ -129,7 +129,7 @@ function Pricing({ cfg, trial }) {
   if (!cfg?.tiers) return null;
   const cur = cfg.prices?.currency || 'UZS';
   const cards = [
-    { id: 'free', name: 'Free', price: 0, perks: [[true, `${cfg.free.q_day} questions a day`], [true, 'Free practice tests'], [true, `${cfg.free.fm_week} full mock a week`], [true, 'First roadmap lessons']] },
+    { id: 'free', name: 'Free', price: 0, perks: [[true, `${cfg.free.q_day} questions a day across all tests`], [true, 'Free practice tests'], [true, `${cfg.free.fm_week} full mock a week`], [true, 'First roadmap lessons, then one a week']] },
     ...cfg.tiers.map((t) => ({ ...t, perks: tierPerks(t).filter(([on]) => on) })),
   ];
   const onScroll = () => {
@@ -149,7 +149,7 @@ function Pricing({ cfg, trial }) {
             {i === 3 && <span className="ribbon">Most popular</span>}
             <small className="pp-tag">{i === 0 ? 'Start' : `Plan ${i}`}</small>
             <h3 className="pp-name">{t.name}</h3>
-            <b>{t.price ? money(t.price) : '0'}</b><span>{t.price ? `${cur} / month` : 'forever'}</span>
+            <b>{t.price ? money(t.price) : '0'}</b><span>{t.price ? `${cur} / ${t.live ? '12 live lessons' : 'month'}` : 'forever'}</span>
             <ul>{t.perks.map(([, x]) => <li key={x}><IconCheck /> {x}</li>)}</ul>
             <Link className={`btn ${i === 3 ? 'sun' : 'ghost'} lg block`} to={i === 0 ? '/practice' : trial}>{i === 0 ? 'Take a free test' : 'Choose'}</Link>
           </div>

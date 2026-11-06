@@ -10,7 +10,7 @@
  * Weekly limit per student (settings fm_free / fm_month / fm_quarter), counted from Monday 00:00 Tashkent.
  */
 import { db, getSettings } from './db.js';
-import { tierOf, moveBalance } from './tiers.js';
+import { tierOf, moveBalance, meterMap, assertLeft } from './tiers.js';
 import { parseUpload } from './parse.js';
 import { ROUTE_CUT, satScore } from './scoring.js';
 import { MOCK_BLUEPRINT, DOMAINS } from './qbank.js';
@@ -128,11 +128,11 @@ async function scoreReport(review, answers, times) {
 export async function fmQuota(user) {
   const s = await getSettings();
   const tier = tierOf(user, s);
-  const limit = user.role === 'master' ? 999 : tier.fm_week;
+  const limit = user.role === 'master' || !tier.fm_week ? 999 : tier.fm_week; // 0 in a plan = unlimited
   const used = Number((await db.one(`SELECT COUNT(*) AS n FROM full_mock_attempts WHERE user_id = ? AND started_at >= ${WEEK} AND NOT paid`, [user.id])).n);
   const bal = await db.one('SELECT balance FROM users WHERE id = ?', [user.id]);
   const next = (await db.one(`SELECT (${WEEK}) + interval '7 days' AS t`)).t; // next Monday 00:00 Tashkent
-  return { limit, used, left: Math.max(0, limit - used), resets_at: next, plan: tier.id, plan_name: tier.name,
+  return { limit, used, left: Math.max(0, limit - used), unlimited: limit === 999, resets_at: next, plan: tier.id, plan_name: tier.name,
     extra_price: Number(s.fm_extra_price) || 0, balance: Number(bal?.balance || 0) };
 }
 
@@ -345,6 +345,7 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     const m = await systemMock();
     const open = await db.one("SELECT * FROM full_mock_attempts WHERE user_id = ? AND mock_id = ? AND stage <> 'done' ORDER BY id DESC LIMIT 1", [req.user.id, m.id]);
     if (open) return res.json(await advanceIfExpired(open, m, await moduleSets(m, open)));
+    await assertLeft(req.user);
     const gen = await generate(req.user.id);
     if ((gen['1']?.length || 0) < 20 || (gen['2h']?.length || 0) < 20 || (gen['2e']?.length || 0) < 20) return bad(res, 'The Question Bank does not have enough questions for a full mock yet');
     return startAttempt(req, res, m, gen);
@@ -357,6 +358,7 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     const sets = await moduleSets(mock);
     if (open) return res.json(await advanceIfExpired(open, mock, sets));
     if (!ready(sets)) return bad(res, 'This mock is not ready yet');
+    await assertLeft(req.user);
     const q = await fmQuota(req.user);
     let paid = false;
     if (q.left <= 0) {
@@ -440,8 +442,10 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
   app.put('/api/full-mocks/attempt/:aid', h(async (req, res) => {
     const x = await mine(req); if (!x) return bad(res, 'Not found', 404);
     if (x.a.stage === 'done') return res.json({ ok: true });
-    await db.run('UPDATE full_mock_attempts SET answers = ? WHERE id = ?', [JSON.stringify(keep(x.sets, x.a, req.body)), x.a.id]);
+    const save = (ans) => db.run('UPDATE full_mock_attempts SET answers = ? WHERE id = ?', [JSON.stringify(ans), x.a.id]);
     await keepTimes(x.sets, x.a, req.body);
+    // free daily limit: answers past it are not kept (what was allowed is saved, then the limit is reported)
+    try { await save(await meterMap(req.user, `fm:${x.a.id}:`, keep(x.sets, x.a, req.body))); } catch (e) { if (e.kept) await save(e.kept); throw e; }
     res.json({ ok: true });
   }));
   // finish the current module (Module 1 → Module 2, Module 2 → result)
@@ -449,7 +453,7 @@ export function registerFullMocks(app, { h, bad, requireMaster, requireStudent, 
     const x = await mine(req); if (!x) return bad(res, 'Not found', 404);
     if (x.a.stage === 'done') return res.json(await state(x.a, x.mock, x.sets));
     await keepTimes(x.sets, x.a, req.body);
-    const a = await advance(x.a, x.mock, x.sets, keep(x.sets, x.a, req.body));
+    const a = await advance(x.a, x.mock, x.sets, await meterMap(req.user, `fm:${x.a.id}:`, keep(x.sets, x.a, req.body), { strict: false }));
     res.json(await state(a, x.mock, x.sets));
   }));
   app.get('/api/full-mocks/:id/pdf', h(async (req, res) => {

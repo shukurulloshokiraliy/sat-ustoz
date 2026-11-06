@@ -356,7 +356,7 @@ const DEFAULT_SETTINGS = {
   lesson_unlock_price: '10000', // open a waiting lesson early from the wallet (0 = off)
   focus_penalty: '30', // exam mode: seconds taken off the clock for each exit from the test
   fm_extra_price: '20000', // one full mock beyond the weekly limit, paid from the balance
-  free_q_day: '20', // Question Bank answers per day without a subscription
+  free_q_day: '100', // answers per day without a subscription (every test on the platform)
   live_link: '',    // live online lessons (plan 4): meeting link
   live_note: '',    // ... and the schedule shown to students
   bunny_library_id: '', // Bunny Stream video library (video lessons)
