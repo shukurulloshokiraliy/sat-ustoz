@@ -5,7 +5,7 @@
  *  - pages: network first, the cached app shell when offline.
  *  - /api/* is never cached: answers and results always go to the server.
  */
-const VERSION = 'v1';
+const VERSION = 'v1-b';
 const STATIC = `static-${VERSION}`;
 const RUNTIME = `runtime-${VERSION}`;
 const SHELL = ['/app', '/favicon.svg', '/icon-192.png', '/site.webmanifest', '/theme.js'];
@@ -27,7 +27,9 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
 
   if (url.pathname.startsWith('/assets/')) {
-    e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => put(STATIC, req, res))));
+    // a file that is gone after a deploy comes back as the app page (HTML): never keep that as a script
+    const isAsset = (res) => res && res.ok && !(res.headers.get('content-type') || '').includes('text/html');
+    e.respondWith(caches.match(req).then((hit) => (isAsset(hit) ? hit : fetch(req).then((res) => (isAsset(res) ? put(STATIC, req, res) : res)))));
     return;
   }
   if (req.mode === 'navigate') {

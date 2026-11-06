@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { Component, lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { OfflineBar } from './offline.js';
 import { UpdateBar } from './updates.jsx';
@@ -106,7 +106,7 @@ export default function App() {
 
   return (
     <Suspense fallback={<Wait />}><OfflineBar /><UpdateBar />{user.role === 'student' && <><ActivityTracker /><LimitWall /></>}
-    <Routes>
+    <PageGuard path={loc.pathname}><Routes>
       {user.role === 'student' && <Route path="/quiz/:id" element={<QuizTaker />} />}
       {user.role === 'student' && <Route path="/placement/test" element={<PlacementTest />} />}
       {user.role === 'student' && <Route path="/lesson/:id/check" element={<LevelCheck />} />}
@@ -185,6 +185,28 @@ export default function App() {
         <Route path="signup" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
-    </Routes></Suspense>
+    </Routes></PageGuard></Suspense>
   );
+}
+
+/** A page that crashes shows what went wrong (and a way out) instead of a white screen. */
+class PageGuard extends Component {
+  constructor(p) { super(p); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  componentDidCatch(err) { console.error(err); }
+  componentDidUpdate(prev) { if (prev.path !== this.props.path && this.state.err) this.setState({ err: null }); }
+  render() {
+    if (!this.state.err) return this.props.children;
+    return (
+      <div className="crash">
+        <h2>This page could not open</h2>
+        <p className="muted">Reload it. If it happens again, send a screenshot of this message to the developer.</p>
+        <code>{String(this.state.err?.message || this.state.err).slice(0, 300)}</code>
+        <div className="row wrap" style={{ gap: 8 }}>
+          <button className="btn primary" onClick={() => window.location.reload()}>Reload</button>
+          <a className="btn ghost" href="/">Go to the dashboard</a>
+        </div>
+      </div>
+    );
+  }
 }
