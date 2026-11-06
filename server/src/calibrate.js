@@ -129,7 +129,7 @@ export async function calibrate() {
 
 /** Recalibrate if the last run is older than `minutes` (claims the slot so two servers don't run it at once). */
 export async function calibrateIfStale(minutes = 10) {
-  const claimed = await db.one("UPDATE settings SET value = ? WHERE key = '_calib_at' AND value::bigint < ?::bigint RETURNING key", [String(Date.now()), String(Date.now() - minutes * 60e3)]);
+  const claimed = await db.one("UPDATE settings SET value = ? WHERE key = '_calib_at' AND (CASE WHEN value ~ '^[0-9]+$' THEN value::bigint ELSE 0 END) < ?::bigint RETURNING key", [String(Date.now()), String(Date.now() - minutes * 60e3)]);
   if (claimed) return calibrate();
   return null;
 }

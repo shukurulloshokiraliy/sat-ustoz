@@ -55,7 +55,7 @@ export function registerDrip(app, { h, bad, requireMaster, requireStudent, roadm
     lastTry = Date.now();
     try {
       const cut = String(Date.now() - 15 * 60e3);
-      const claimed = await db.one("UPDATE settings SET value = ? WHERE key = '_drip_tick' AND value::bigint < ?::bigint RETURNING key", [String(Date.now()), cut]);
+      const claimed = await db.one("UPDATE settings SET value = ? WHERE key = '_drip_tick' AND (CASE WHEN value ~ '^[0-9]+$' THEN value::bigint ELSE 0 END) < ?::bigint RETURNING key", [String(Date.now()), cut]);
       if (claimed) await sweepDrip(25);
     } catch (e) { console.error('[drip]', e.message); }
     next();

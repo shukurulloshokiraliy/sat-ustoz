@@ -62,15 +62,20 @@ export function registerQuality(app, { h, bad, requireMaster }) {
       FROM qbank_questions q LEFT JOIN qbank_calib c ON c.question_id = q.id ORDER BY q.skill_id, q.position, q.id`);
     const at = await db.one("SELECT value FROM settings WHERE key = '_calib_at'");
     const list = rows.map((r) => {
-      const options = parse(r.options, []);
-      const checks = checkQuestion({ ...r, options });
-      const flags = parse(r.flags, []);
+      let options = parse(r.options, []);
+      if (!Array.isArray(options)) options = [];
+      options = [0, 1, 2, 3].map((i) => String(options[i] ?? ''));
+      let checks;
+      try { checks = checkQuestion({ ...r, passage: String(r.passage ?? ''), prompt: String(r.prompt ?? ''), explanation: String(r.explanation ?? ''), options }); }
+      catch (e) { checks = [{ level: 'warn', where: 'question', text: `Could not check this question (${e.message})` }]; }
+      let flags = parse(r.flags, []);
+      if (!Array.isArray(flags)) flags = [];
       return {
         id: r.id, skill: r.skill, skill_id: r.skill_id, label: r.difficulty, locked: r.diff_locked, active: r.active, src: r.src,
-        preview: `${String(r.passage || '').replace(/\*\*|\[\[|\]\]|<[^>]+>/g, '').slice(0, 150)}`, prompt: r.prompt,
+        preview: `${String(r.passage || r.prompt || '').replace(/\*\*|\[\[|\]\]|<[^>]+>/g, '').slice(0, 150)}`, prompt: r.prompt,
         options, answer: r.answer,
         n: Number(r.n || 0), pct: r.n ? Math.round((100 * r.right_n) / r.n) : null, b: r.b != null ? Number(r.b) : null, se: r.se != null ? Number(r.se) : null,
-        level: r.level || null, upper: r.upper_p, lower: r.lower_p, choices: parse(r.choices, [0, 0, 0, 0]), flags: flags.map((f) => ({ code: f, text: FLAG[f] || f })), checks,
+        level: r.level || null, upper: r.upper_p == null ? null : Number(r.upper_p), lower: r.lower_p == null ? null : Number(r.lower_p), choices: (() => { const c = parse(r.choices, null); return Array.isArray(c) && c.length === 4 ? c.map(Number) : [0, 0, 0, 0]; })(), flags: flags.map((f) => ({ code: f, text: FLAG[f] || f })), checks,
       };
     });
     res.json({

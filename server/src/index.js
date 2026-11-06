@@ -1376,7 +1376,8 @@ app.use((err, req, res, next) => {
   if (err?.code === 'LIMIT_FILE_SIZE') return bad(res, 'File is too large (max 15 MB)');
   if (err instanceof HttpError || Number.isInteger(err?.status)) return bad(res, err.message, err.status || 400);
   console.error(err);
-  res.status(500).json({ error: 'Server error' });
+  // the teacher sees the real reason (helps fixing it); students only a short message
+  res.status(500).json({ error: req.user?.role === 'master' ? `Server error: ${String(err?.message || err).slice(0, 300)}` : 'Server error' });
 });
 
 export default app;
