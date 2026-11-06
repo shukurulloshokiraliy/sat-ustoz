@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { api, fmtDate } from '../../api.js';
 import { Avatar, Bars, Card, CountUp, Empty, Gate, PageHeader, pctTone, useAsync } from '../../components/ui.jsx';
-import { IconArrow, IconCheck, IconCrown, IconGoogle, IconLayers, IconPlus, IconQuiz, IconUsers } from '../../components/icons.jsx';
+import { IconArrow, IconCheck, IconCrown, IconEye, IconGoogle, IconLayers, IconPlus, IconQuiz, IconUsers } from '../../components/icons.jsx';
 
 export default function Overview() {
   const st = useAsync(() => api.get('/master/overview'), []);
@@ -19,6 +19,7 @@ export default function Overview() {
             <Card className="stat"><div className="label"><IconQuiz /> {"Quizzes"}</div><div className="value"><CountUp value={o.quizzes} /></div></Card>
             <Card className="stat"><div className="label"><IconCheck /> {"Average accuracy"}</div><div className="value"><CountUp value={o.accuracy} suffix="%" /></div><div className="hint">{o.attempts} {"attempts"}</div></Card>
           </div>
+          <Visitors />
           <div className="grid g-main">
             <Card>
               <div className="card-title"><h2>{"Recent activity"}</h2></div>
@@ -62,5 +63,50 @@ export default function Overview() {
         </>
       )}</Gate>
     </div>
+  );
+}
+
+const SRC = { direct: 'Direct', google: 'Google', yandex: 'Yandex', instagram: 'Instagram', telegram: 'Telegram', facebook: 'Facebook', youtube: 'YouTube', tiktok: 'TikTok', bing: 'Bing' };
+const shortDay = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short' });
+
+/** Website visitors: every page counts, the home page too (guests and students; not teachers, not bots). */
+function Visitors() {
+  const st = useAsync(() => api.get('/visits/summary'), []);
+  const v = st.data;
+  if (!v) return null;
+  // last 14 days, days without visits included
+  const by = new Map(v.days.map((d) => [d.day, d]));
+  const days = Array.from({ length: 14 }, (_, i) => {
+    const t = new Date(`${v.date}T00:00:00Z`); t.setUTCDate(t.getUTCDate() - (13 - i));
+    const k = t.toISOString().slice(0, 10);
+    return { day: k, visitors: by.get(k)?.visitors || 0, views: by.get(k)?.views || 0 };
+  });
+  const max = Math.max(1, ...days.map((d) => d.visitors));
+  const total = v.sources.reduce((s, x) => s + x.n, 0) || 1;
+  const diff = v.today - v.yesterday;
+  return (
+    <Card className="vis">
+      <div className="vis-kpis">
+        <div className="vis-main"><small><IconEye width={16} height={16} /> Visitors today</small><b><CountUp value={v.today} /></b>
+          <span className={diff >= 0 ? 'good-text' : 'bad-text'}>{diff >= 0 ? '+' : ''}{diff} vs yesterday</span></div>
+        <div><small>Yesterday</small><b>{v.yesterday}</b></div>
+        <div><small>7 days</small><b>{v.week}</b></div>
+        <div><small>30 days</small><b>{v.month}</b></div>
+        <div><small>Views today</small><b>{v.views_today}</b></div>
+      </div>
+      <div className="vis-chart" role="img" aria-label="Visitors in the last 14 days">
+        {days.map((d) => (
+          <div key={d.day} className={d.day === v.date ? 'on' : ''} title={`${shortDay(d.day)}: ${d.visitors} visitors, ${d.views} page views`}>
+            <span className="vis-n">{d.visitors || ''}</span>
+            <i style={{ height: `${Math.max(3, (d.visitors / max) * 100)}%` }} />
+            <small>{new Date(`${d.day}T00:00:00Z`).getUTCDate()}</small>
+          </div>
+        ))}
+      </div>
+      <div className="vis-foot">
+        <span className="muted">Today: {v.today - v.guests_today} signed in · {v.guests_today} guests · {v.mobile_today} on phones</span>
+        {v.sources.length > 0 && <span className="vis-src">7 days: {v.sources.map((s) => <span key={s.source} className="chip">{SRC[s.source] || s.source} {Math.round((s.n / total) * 100)}%</span>)}</span>}
+      </div>
+    </Card>
   );
 }

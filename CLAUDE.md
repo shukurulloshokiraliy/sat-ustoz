@@ -102,6 +102,9 @@ and fix exactly what he points at. When a short Uzbek message can be read two wa
   (/auth/telegram/agree), shares the phone (request_contact) and gets an account (provider 'telegram', login = phone digits,
   users.phone, no password until they add one in Profile). The page polls /auth/telegram/poll (token handed out once);
   the bot also sends /login?tg=<code>. Teachers can't sign in this way.
+  Website visitors (visits.js + client/src/visit.js): every SPA page view posts /api/visit with an anonymous browser id;
+  one site_visits row per visitor per Tashkent day (views, source from referrer/utm, device, user_id if signed in).
+  Teachers, bots and automated browsers (navigator.webdriver, e.g. Playwright tests) are not counted. Overview shows it.
 - Not built yet: a shop for mock books (the wallet mentions "books"; ask what kind before building).
 - He must still: enter the GIPHY API key in Settings, fill company details in the oferta (Website → Pages),
   set GOOGLE_SITE_VERIFICATION / YANDEX_VERIFICATION in Vercel and submit the sitemap in Search Console.

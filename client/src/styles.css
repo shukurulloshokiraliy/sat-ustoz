@@ -3349,3 +3349,26 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .tg-dot { width: 8px; height: 8px; border-radius: 50%; background: #2AABEE; animation: tgpulse 1.2s ease-in-out infinite; }
 @keyframes tgpulse { 50% { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) { .tg-dot { animation: none; } }
+
+/* ---------- Website visitors (teacher Overview) ---------- */
+.vis { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 12px 20px; align-items: end; margin-bottom: 16px; }
+.vis-kpis { display: grid; grid-template-columns: 1.4fr repeat(4, minmax(0, 1fr)); gap: 10px; align-items: end; }
+.vis-kpis > div { display: grid; gap: 2px; min-width: 0; }
+.vis-kpis small { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: .78rem; white-space: nowrap; }
+.vis-kpis b { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.vis-main b { font-size: 2rem; line-height: 1.1; } .vis-main span { font-size: .8rem; font-weight: 600; }
+.vis-chart { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 4px; height: 110px; align-items: end; }
+.vis-chart > div { display: grid; grid-template-rows: 14px 1fr 14px; height: 100%; text-align: center; min-width: 0; }
+.vis-chart i { align-self: end; display: block; border-radius: 5px 5px 2px 2px; background: color-mix(in srgb, var(--primary) 35%, transparent); }
+.vis-chart > div.on i { background: var(--primary); }
+.vis-chart small, .vis-n { font-size: .66rem; color: var(--muted); line-height: 14px; font-variant-numeric: tabular-nums; }
+.vis-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; justify-content: space-between; font-size: .84rem; }
+.vis-src { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; } .vis-src .chip { font-size: .74rem; }
+@media (max-width: 900px) { .vis { grid-template-columns: 1fr; } }
+@media (max-width: 520px) {
+  .vis-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .vis-main { grid-column: 1 / -1; grid-template-columns: auto auto; justify-content: start; align-items: baseline; gap: 2px 12px !important; }
+  .vis-main small { grid-column: 1 / -1; }
+  .vis-kpis b { font-size: 1.05rem; } .vis-kpis small { font-size: .7rem; white-space: normal; }
+  .vis-chart { height: 90px; gap: 3px; }
+}

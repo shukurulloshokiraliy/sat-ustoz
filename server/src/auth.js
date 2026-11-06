@@ -35,6 +35,13 @@ export function publicUser(u) {
   return { ...rest, has_password: !!password_hash, sub_active: subActive(u) };
 }
 
+/** Who sent this request, if anyone (no database check: only for counting visits). */
+export async function userFrom(req) {
+  const h = req.headers.authorization || '';
+  if (!h.startsWith('Bearer ')) return null;
+  try { const p = jwt.verify(h.slice(7), SECRET, { algorithms: ['HS256'] }); return { id: p.id, role: p.role }; } catch { return null; }
+}
+
 export async function requireAuth(req, res, next) {
   const h = req.headers.authorization || '';
   const token = h.startsWith('Bearer ') ? h.slice(7) : null;

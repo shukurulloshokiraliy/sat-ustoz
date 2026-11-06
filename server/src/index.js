@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db, migrate, getSettings, setSettings, DB_KIND } from './db.js';
 import { notifyAdmins } from './tgbot.js';
-import { initSecret, signToken, publicUser, requireAuth, requireMaster, requireStudent, subActive, verifyGoogleCredential } from './auth.js';
+import { initSecret, signToken, publicUser, requireAuth, requireMaster, requireStudent, subActive, verifyGoogleCredential, userFrom } from './auth.js';
 import { parseUpload, buildTemplate, DEFAULT_PROMPT } from './parse.js';
 import { userAnalytics, estimateScore } from './analytics.js';
 import { SAT_DATES, isSatDate } from './satDates.js';
@@ -26,6 +26,7 @@ import { migrateFinance, registerFinance, keepPaymentRecords } from './finance.j
 import { migrateDrip, registerDrip, unlocksFor, dripDays } from './drip.js';
 import { migrateLive, registerLive } from './live.js';
 import { migrateReview, registerReview } from './review.js';
+import { migrateVisits, registerVisits } from './visits.js';
 import { migrateCalib } from './calibrate.js';
 import { registerQuality } from './quality.js';
 import { migrateAssignments, registerAssignments, assignedQuizOpen } from './assignments.js';
@@ -57,6 +58,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '5mb' }));
 // floods and scripted guessing: a general cap per IP, a tight one on sign-in / sign-up
 app.use('/api', rateLimit({ windowMs: 60e3, max: 600 }));
+app.use('/api/visit', rateLimit({ windowMs: 60e3, max: 120, message: 'Too many requests' }));
 app.use('/api/auth/telegram/start', rateLimit({ windowMs: 10 * 60e3, max: 30, message: 'Too many sign-in attempts from this network. Wait 10 minutes.' }));
 app.use(['/api/auth/login', '/api/auth/register', '/api/auth/google'], rateLimit({ windowMs: 10 * 60e3, max: 40, message: 'Too many sign-in attempts from this network. Wait 10 minutes.' }));
 app.use(['/api/me/password', '/api/plans/buy', '/api/full-mocks', '/api/students'], rateLimit({ windowMs: 60e3, max: 120 }));
@@ -103,6 +105,7 @@ await keepPaymentRecords();
 await migrateDrip();
 await migrateLive();
 await migrateReview();
+await migrateVisits();
 await migrateCalib();
 await migrateSecurity();
 await db.exec(`
@@ -298,7 +301,7 @@ app.get('/api/avatars/:id', h(async (req, res) => {
   res.send(Buffer.from(a.data));
 }));
 
-const PUBLIC = new Set(['/auth/login', '/auth/register', '/auth/google', '/auth/telegram/start', '/auth/telegram/poll', '/auth/telegram/agree', '/config', '/template.xlsx', '/cron/drip']);
+const PUBLIC = new Set(['/auth/login', '/auth/register', '/auth/google', '/auth/telegram/start', '/auth/telegram/poll', '/auth/telegram/agree', '/visit', '/config', '/template.xlsx', '/cron/drip']);
 app.use('/api', (req, res, next) => (PUBLIC.has(req.path) && req.path !== '/template.xlsx' ? next() : requireAuth(req, res, next)));
 // free daily limit: today's count, and counting one answer the moment it is picked inside a test
 app.get('/api/usage', h(async (req, res) => res.json(await usageOf(req.user))));
@@ -314,6 +317,7 @@ registerQuality(app, { h, bad, requireMaster });
 registerDrip(app, { h, bad, requireMaster, requireStudent, roadmapFor: (u) => roadmapFor(u), accessFor: (u) => accessFor(u) });
 registerLive(app, { h, bad, requireMaster, requireStudent });
 registerReview(app, { h, bad, requireMaster });
+registerVisits(app, { h, requireMaster, userFrom });
 registerBotAdmin(app, { h, bad, requireMaster, requireStudent });
 registerVocab(app, { h, bad, requireMaster, requireStudent, accessFor: (u) => accessFor(u) });
 

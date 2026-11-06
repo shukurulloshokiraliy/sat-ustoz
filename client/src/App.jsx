@@ -1,4 +1,5 @@
-import { Component, lazy, Suspense } from 'react';
+import { Component, lazy, Suspense, useEffect } from 'react';
+import { countVisit } from './visit.js';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { OfflineBar } from './offline.js';
 import { UpdateBar } from './updates.jsx';
@@ -80,6 +81,8 @@ const Wait = () => <div style={{ minHeight: '60vh', display: 'grid', placeItems:
 export default function App() {
   const { user, loading } = useAuth();
   const loc = useLocation();
+  // the teacher's Visitors count (teachers themselves are not counted)
+  useEffect(() => { if (!loading && user?.role !== 'master') countVisit(loc.pathname); }, [loc.pathname, loading, user?.role]);
   if (loading) return <div style={{ height: '100vh', display: 'grid', placeItems: 'center' }}><Spinner /></div>;
   // visitors: the website (home, free practice tests, guides) — sign-in only when they want it
   if (!user) return (
