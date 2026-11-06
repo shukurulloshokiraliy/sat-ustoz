@@ -122,23 +122,36 @@ function Choices({ r }) {
   );
 }
 
-function EditQuestion({ id, onClose, onSaved }) {
+export function EditQuestion({ id, onClose, onSaved, report = null }) {
   const toast = useToast();
   const st = useAsync(() => api.get(`/quality/q/${encodeURIComponent(id)}`), [id]);
   const [f, setF] = useState(null);
   const [busy, setBusy] = useState(false);
   const q = f || st.data;
+  const [close, setClose] = useState(true);
   const set = (k, v) => setF({ ...(f || st.data), [k]: v });
   const save = async () => {
     setBusy(true);
-    try { await api.put(`/qbank/admin/${encodeURIComponent(id)}`, { passage: q.passage, prompt: q.prompt, options: q.options, answer: q.answer, explanation: q.explanation, difficulty: q.difficulty }); toast('Saved. Students see the fixed question now.'); onSaved(); }
+    try {
+      if (f) await api.put(`/qbank/admin/${encodeURIComponent(id)}`, { passage: q.passage, prompt: q.prompt, options: q.options, answer: q.answer, explanation: q.explanation, difficulty: q.difficulty });
+      if (report && close) await api.put(`/question-reports/${report.id}`, { status: 'resolved' });
+      toast(f ? (report && close ? 'Saved and the report is closed. Students see the fixed question now.' : 'Saved. Students see the fixed question now.') : 'Report closed');
+      onSaved();
+    }
     catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); }
   };
   return (
     <Modal title="Edit question" wide onClose={onClose}
-      footer={<><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn primary" disabled={!f || busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button></>}>
+      footer={<><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn primary" disabled={(!f && !(report && close)) || busy} onClick={save}>{busy ? 'Saving…' : f ? 'Save' : 'Close report'}</button></>}>
       {!q ? <p className="muted">Loading…</p> : (
         <div className="stack">
+          {report && (
+            <div className="rp-box">
+              <div><b>{report.kind_label}</b> · {report.student || 'Student'}</div>
+              {report.note ? <p>“{report.note}”</p> : <p className="muted">No comment from the student.</p>}
+              {report.kind === 'key' && <small>Check the correct answer below: changing it re-scores answers already given.</small>}
+            </div>
+          )}
           <small className="muted">{q.skill} · {q.id}. Use ______ for a blank, **bold**, [[underline]].</small>
           <Field label="Text"><textarea rows={6} value={q.passage} onChange={(e) => set('passage', e.target.value)} /></Field>
           <Field label="Question"><input value={q.prompt} onChange={(e) => set('prompt', e.target.value)} /></Field>
@@ -150,6 +163,7 @@ function EditQuestion({ id, onClose, onSaved }) {
           ))}
           <Field label="Explanation"><textarea rows={3} value={q.explanation} onChange={(e) => set('explanation', e.target.value)} /></Field>
           <Field label="Difficulty label" hint="students' answers keep adjusting the real difficulty"><select value={q.difficulty} onChange={(e) => set('difficulty', e.target.value)}>{Object.entries(LV).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field>
+          {report && <label className="row" style={{ gap: 8, fontSize: '.9rem' }}><input type="checkbox" checked={close} onChange={(e) => setClose(e.target.checked)} /> Mark the report as fixed when I save</label>}
         </div>
       )}
     </Modal>

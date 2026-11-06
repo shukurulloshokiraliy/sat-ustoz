@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useToast } from '../../context.jsx';
 import { Card, Empty, Gate, PageHeader, Segmented, useAsync } from '../../components/ui.jsx';
-import { IconCheck, IconFlag, IconRefresh } from '../../components/icons.jsx';
+import { IconCheck, IconEdit, IconFlag, IconRefresh } from '../../components/icons.jsx';
+import { EditQuestion } from './Quality.jsx';
 
 const SRC = { qbank: 'Question Bank', quiz: 'Quiz', lesson: 'Level check', fullmock: 'Full mock' };
 const when = (iso) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -12,6 +14,7 @@ export default function Reports() {
   const [status, setStatus] = useState('open');
   const st = useAsync(() => api.get('/question-reports?status=' + status), [status]);
   const toast = useToast();
+  const [fix, setFix] = useState(null);
   const set = async (r, to) => {
     try { await api.put('/question-reports/' + r.id, { status: to }); toast(to === 'resolved' ? 'Marked as fixed' : 'Reopened'); st.reload(); }
     catch (e) { toast(e.message, 'bad'); }
@@ -35,9 +38,13 @@ export default function Reports() {
                         {rest.length > 0 && <code className="rp-ref">{rest.join(':')}</code>}
                         <small className="muted">№{r.id} · {r.student || 'Student'} · {when(r.created_at)}</small>
                       </div>
-                      {r.status === 'open'
-                        ? <button className="btn soft sm" onClick={() => set(r, 'resolved')}><IconCheck width={16} height={16} /> Mark as fixed</button>
-                        : <button className="btn ghost sm" onClick={() => set(r, 'open')}><IconRefresh width={16} height={16} /> Reopen</button>}
+                      <div className="row wrap" style={{ gap: 6 }}>
+                        {r.fix?.type === 'qbank' && <button className="btn primary sm" onClick={() => setFix(r)}><IconEdit width={16} height={16} /> Fix the question</button>}
+                        {r.fix?.type === 'link' && <Link className="btn primary sm" to={r.fix.to}><IconEdit width={16} height={16} /> {r.fix.label}</Link>}
+                        {r.status === 'open'
+                          ? <button className="btn soft sm" onClick={() => set(r, 'resolved')}><IconCheck width={16} height={16} /> Mark as fixed</button>
+                          : <button className="btn ghost sm" onClick={() => set(r, 'open')}><IconRefresh width={16} height={16} /> Reopen</button>}
+                      </div>
                     </div>
                     <p style={{ marginTop: 8 }}><b>{r.about}</b></p>
                     {r.note && <p className="muted">“{r.note}”</p>}
@@ -46,6 +53,7 @@ export default function Reports() {
               })}
             </div>
           )}
+          {fix && <EditQuestion id={fix.fix.id} report={fix.status === 'open' ? fix : null} onClose={() => setFix(null)} onSaved={() => { setFix(null); st.reload(); }} />}
         </>
       )}</Gate>
     </div>

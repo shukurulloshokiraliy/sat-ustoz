@@ -3290,3 +3290,7 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 @media (max-width: 760px) { .lv-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; } .lv-price b { font-size: 1.25rem; } .lv-price small { flex-basis: 100%; } }
 .lv-kpis > div:last-child b { font-size: 1.1rem; }
 @media (max-width: 760px) { .lv-mine-h { flex-wrap: wrap; } .lv-mine-h .grow { flex: 1 1 calc(100% - 64px); } .lv-mine-h > .btn { flex: 1 1 100%; } .lv-mine-t { font-size: 1.05rem; } }
+
+/* ---------- Fix a reported question (Reports → EditQuestion) ---------- */
+.rp-box { display: grid; gap: 4px; padding: 10px 12px; border-radius: 12px; background: var(--warn-soft); font-size: .9rem; }
+.rp-box p { margin: 0; } .rp-box small { color: var(--muted); }

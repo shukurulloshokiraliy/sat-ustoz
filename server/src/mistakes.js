@@ -239,7 +239,22 @@ export function registerMistakes(app, { h, bad, requireStudent, requireMaster })
     const rows = await db.all(`SELECT r.*, u.name AS student FROM question_reports r LEFT JOIN users u ON u.id = r.user_id
       ${status ? 'WHERE r.status = ?' : ''} ORDER BY r.created_at DESC LIMIT 300`, status ? [status] : []);
     const counts = await db.one("SELECT SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) AS open, COUNT(*) AS total FROM question_reports");
-    res.json({ reports: rows.map((r) => ({ ...r, kind_label: KINDS[r.kind] || 'Other' })), open: Number(counts.open || 0), total: Number(counts.total || 0) });
+    // where the teacher can fix each reported question: Question Bank questions (also in random full mocks) open
+    // right on this page; quiz, level check and uploaded-mock questions link to their editor
+    const parts = rows.map((r) => String(r.ref || '').split(':'));
+    const bankIds = [...new Set(parts.filter(([s]) => s === 'qbank' || s === 'fullmock').map((p) => p.slice(1).join(':')))];
+    const inBank = new Set(bankIds.length ? (await db.all('SELECT id FROM qbank_questions WHERE id = ANY(?::text[])', [bankIds])).map((x) => x.id) : []);
+    const quizIds = [...new Set(parts.filter(([s]) => s === 'quiz').map((p) => Number(p[1])).filter(Number.isInteger))];
+    const quizOf = new Map(quizIds.length ? (await db.all('SELECT id, quiz_id FROM questions WHERE id = ANY(?::int[])', [quizIds])).map((x) => [x.id, x.quiz_id]) : []);
+    const fixOf = ([src, ...rest]) => {
+      const id = rest.join(':');
+      if ((src === 'qbank' || src === 'fullmock') && inBank.has(id)) return { type: 'qbank', id };
+      if (src === 'fullmock') return { type: 'link', to: '/full-mocks', label: 'Open Full Mocks' };
+      if (src === 'quiz' && quizOf.has(Number(rest[0]))) return { type: 'link', to: `/quizzes/${quizOf.get(Number(rest[0]))}/edit`, label: 'Open the quiz' };
+      if (src === 'lesson' && rest[0]) return { type: 'link', to: `/lesson/${Number(rest[0])}`, label: 'Open the lesson' };
+      return null;
+    };
+    res.json({ reports: rows.map((r, i) => ({ ...r, kind_label: KINDS[r.kind] || 'Other', fix: fixOf(parts[i]) })), open: Number(counts.open || 0), total: Number(counts.total || 0) });
   }));
   app.put('/api/question-reports/:id', requireMaster, h(async (req, res) => {
     const st = req.body?.status === 'open' ? 'open' : 'resolved';
