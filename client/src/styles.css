@@ -3372,3 +3372,8 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
   .vis-kpis b { font-size: 1.05rem; } .vis-kpis small { font-size: .7rem; white-space: normal; }
   .vis-chart { height: 90px; gap: 3px; }
 }
+
+/* ---------- Practice: try a wrong answer again (Bluebook practice runner) ---------- */
+.bb-opt.wrong.tried .bb-opt-main { box-shadow: none; border-width: 1px; opacity: .72; cursor: not-allowed; }
+.bb-opt.wrong.tried .bb-t { text-decoration: line-through; text-decoration-color: color-mix(in srgb, #C0392B 60%, transparent); }
+.bb-retry h3 { margin-bottom: 2px; } .bb-retry p { margin: 0; }

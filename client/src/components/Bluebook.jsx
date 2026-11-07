@@ -233,22 +233,23 @@ export function BBQuestionBar({ n, marked, onMark, elim, onElim, extra }) {
  * Answer choices. `reveal` = { correct } turns on right/wrong colours (practice mode).
  * In elimination mode each choice gets a cross-out button; crossed-out choices can be undone.
  */
-export function BBOptions({ options, choice, eliminated = [], elim, onChoose, onEliminate, reveal, disabled }) {
+export function BBOptions({ options, choice, eliminated = [], elim, onChoose, onEliminate, reveal, disabled, tried = [] }) {
   return (
     <div className="bb-opts" role="radiogroup" aria-label="Answer choices">
       {options.map((o) => {
         const out = !reveal && eliminated.includes(o.key);
         const mine = choice === o.key;
-        const st = reveal ? (o.key === reveal.correct ? 'right' : mine ? 'wrong' : 'dim') : mine ? 'sel' : '';
+        const bad = tried.includes(o.key); // a wrong pick already tried (practice: try again)
+        const st = reveal ? (o.key === reveal.correct ? 'right' : mine || bad ? 'wrong' : 'dim') : bad ? 'wrong tried' : mine ? 'sel' : '';
         return (
           <div key={o.key} className={`bb-opt ${st} ${out ? 'out' : ''}`}>
-            <button type="button" role="radio" aria-checked={mine} className="bb-opt-main" disabled={disabled || !!reveal} onClick={() => onChoose(o.key)}>
+            <button type="button" role="radio" aria-checked={mine} className="bb-opt-main" disabled={disabled || !!reveal || bad} onClick={() => onChoose(o.key)}>
               <span className="bb-L">{o.label || o.key}</span>
               <span className="bb-t">{o.text}</span>
               {reveal && o.key === reveal.correct && <IconCheck className="bb-ok" width={20} height={20} />}
-              {reveal && mine && o.key !== reveal.correct && <IconX className="bb-no" width={20} height={20} />}
+              {((reveal && mine && o.key !== reveal.correct) || bad) && <IconX className="bb-no" width={20} height={20} />}
             </button>
-            {elim && !reveal && (
+            {elim && !reveal && !bad && (
               out
                 ? <button type="button" className="bb-undo" onClick={() => onEliminate(o.key)}>Undo</button>
                 : <button type="button" className="bb-x" onClick={() => onEliminate(o.key)} aria-label={`Cross out ${o.key}`}><span>{o.key}</span></button>
@@ -338,8 +339,9 @@ export function useElimination() {
  * Practice runner: the Bluebook screen with instant checking.
  * questions: [{ id, passage?, prompt, options: [{ key, text }], meta? }] (passage / prompt / text may be React nodes)
  * reveal(id) → null | { correct, ok, explanation?, tip?, note? } once the answer is checked.
+ * tried(id) → optional { keys: wrong picks so far, left: tries left } while a question can still be tried again.
  */
-export function BBPracticeRunner({ title, directions, questions, cur, setCur, choice, onChoose, reveal, onCheck, busy, seconds, countdown, onExit, onFinish, finishLabel = 'Finish' }) {
+export function BBPracticeRunner({ title, directions, questions, cur, setCur, choice, onChoose, reveal, tried = () => null, onCheck, busy, seconds, countdown, onExit, onFinish, finishLabel = 'Finish' }) {
   const [hl, setHl] = useState(false);
   const [nav, setNav] = useState(false);
   const [marked, setMarked] = useState({});
@@ -347,6 +349,7 @@ export function BBPracticeRunner({ title, directions, questions, cur, setCur, ch
   const q = questions[cur];
   const mine = choice(q.id);
   const rv = reveal(q.id);
+  const tr = rv ? null : tried(q.id);
   const last = cur === questions.length - 1;
   const checkedCount = questions.filter((x) => reveal(x.id)).length;
   const go = (i) => { setCur(Math.max(0, Math.min(questions.length - 1, i))); setNav(false); };
@@ -356,7 +359,7 @@ export function BBPracticeRunner({ title, directions, questions, cur, setCur, ch
     const f = (e) => {
       if (e.target.closest('input, textarea, select, [role=dialog]') || e.metaKey || e.ctrlKey || e.altKey) return;
       const k = e.key.toUpperCase();
-      if (!rv && ['A', 'B', 'C', 'D'].includes(k) && q.options.some((o) => o.key === k)) onChoose(q.id, k);
+      if (!rv && ['A', 'B', 'C', 'D'].includes(k) && q.options.some((o) => o.key === k) && !tr?.keys?.includes(k)) onChoose(q.id, k);
       else if (e.key === 'Enter') { e.preventDefault(); if (rv) next(); else if (mine) onCheck(q); }
       else if (e.key === 'ArrowRight') go(cur + 1);
       else if (e.key === 'ArrowLeft') go(cur - 1);
@@ -371,10 +374,16 @@ export function BBPracticeRunner({ title, directions, questions, cur, setCur, ch
       {q.meta && <div className="bb-meta">{q.meta}</div>}
       <div className="bb-prompt">{q.prompt}</div>
       <BBOptions options={q.options} choice={mine} eliminated={el.eliminated(q.id)} elim={el.elim}
-        onChoose={(k) => onChoose(q.id, k)} onEliminate={(k) => el.toggle(q.id, k)} reveal={rv ? { correct: rv.correct } : null} />
+        onChoose={(k) => onChoose(q.id, k)} onEliminate={(k) => el.toggle(q.id, k)} reveal={rv ? { correct: rv.correct } : null} tried={tr?.keys || rv?.tried || []} />
+      {tr?.keys?.length > 0 && (
+        <div className="bb-feedback no bb-retry" role="status">
+          <h3>Not this one. Try again.</h3>
+          <p>{tr.left === 1 ? '1 try left before the answer is shown.' : `${tr.left} tries left before the answer is shown.`}</p>
+        </div>
+      )}
       {rv && (
         <div className={`bb-feedback ${rv.ok ? 'ok' : 'no'}`} role="status">
-          <h3>{rv.ok ? 'Correct' : `Not quite. The answer is ${rv.correct}.`}{rv.note ? <span className="muted" style={{ fontWeight: 600 }}> · {rv.note}</span> : null}</h3>
+          <h3>{rv.ok ? (rv.attempt > 1 ? `Correct on try ${rv.attempt}` : 'Correct') : `Not quite. The answer is ${rv.correct}.`}{rv.note ? <span className="muted" style={{ fontWeight: 600 }}> · {rv.note}</span> : null}</h3>
           {rv.explanation && <p>{rv.explanation}</p>}
           {rv.tip && <div className="tip"><b>Ustoz tip:</b> {rv.tip}</div>}
         </div>

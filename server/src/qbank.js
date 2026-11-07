@@ -225,10 +225,16 @@ export function registerQbank(app, { h, bad, requireStudent, requireMaster, acce
     const choice = Number(req.body?.choice);
     if (!Number.isInteger(choice) || choice < 0 || choice > 3) return bad(res, 'Choose an answer first');
     const correct = choice === q.answer;
-    await db.run(`INSERT INTO qbank_answers (user_id, question_id, choice, correct, first_correct, first_choice, tries, answered_at) VALUES (?,?,?,?,?,?,1,now())
-      ON CONFLICT (user_id, question_id) DO UPDATE SET choice = EXCLUDED.choice, correct = EXCLUDED.correct, tries = qbank_answers.tries + 1, answered_at = now()`,
-    [req.user.id, q.id, choice, correct, correct, choice]);
-    res.json({ choice, answer: q.answer, correct, explanation: q.explanation, tip: q.tip });
+    // a wrong pick can be tried again (up to 3 wrong picks, then only the right one is left). The first pick of a round
+    // is what counts (score, mistakes notebook, difficulty); later picks in the same round only add to `tries`.
+    const attempt = Math.max(1, Math.min(3, Number(req.body?.attempt) || 1));
+    if (attempt === 1) {
+      await db.run(`INSERT INTO qbank_answers (user_id, question_id, choice, correct, first_correct, first_choice, tries, answered_at) VALUES (?,?,?,?,?,?,1,now())
+        ON CONFLICT (user_id, question_id) DO UPDATE SET choice = EXCLUDED.choice, correct = EXCLUDED.correct, tries = qbank_answers.tries + 1, answered_at = now()`,
+      [req.user.id, q.id, choice, correct, correct, choice]);
+    } else await db.run('UPDATE qbank_answers SET tries = tries + 1, answered_at = now() WHERE user_id = ? AND question_id = ?', [req.user.id, q.id]);
+    if (!correct && attempt < 3) return res.json({ choice, correct: false, done: false, left: 3 - attempt });
+    res.json({ choice, answer: q.answer, correct, done: true, attempt, explanation: q.explanation, tip: q.tip });
   }));
 
   // ---------- "Take a quiz": a random SAT-style module from the bank ----------

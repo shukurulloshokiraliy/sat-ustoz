@@ -48,7 +48,8 @@ function Runner({ questions, search }) {
   const toast = useToast();
   const [cur, setCur] = useState(0);
   const [sel, setSel] = useState({});       // id → choice index
-  const [rv, setRv] = useState({});         // id → result from the server
+  const [rv, setRv] = useState({});         // id → result from the server (once the answer is shown)
+  const [wrong, setWrong] = useState({});   // id → wrong picks so far (up to 3 tries before the answer is shown)
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [secs, setSecs] = useState(0);
@@ -58,7 +59,13 @@ function Runner({ questions, search }) {
   const check = async (q) => {
     if (sel[q.id] == null || rv[q.id]) return;
     setBusy(true);
-    try { const res = await api.post(`/qbank/questions/${encodeURIComponent(q.id)}/check`, { choice: sel[q.id] }); setRv((s) => ({ ...s, [q.id]: res })); }
+    const tried = wrong[q.id] || [];
+    try {
+      const res = await api.post(`/qbank/questions/${encodeURIComponent(q.id)}/check`, { choice: sel[q.id], attempt: tried.length + 1 });
+      if (!res.done) { setWrong((s) => ({ ...s, [q.id]: [...tried, res.choice] })); setSel((s) => ({ ...s, [q.id]: undefined })); return; }
+      // the score counts the first pick; `hit` = this pick was right
+      setRv((s) => ({ ...s, [q.id]: { ...res, hit: res.correct, correct: tried.length === 0 && res.correct, tried } }));
+    }
     catch (e) { toast(e.message, 'bad'); } finally { setBusy(false); }
   };
 
@@ -75,8 +82,9 @@ function Runner({ questions, search }) {
       title="Question Bank: Reading and Writing" directions={DIRECTIONS}
       questions={items} cur={cur} setCur={setCur} busy={busy} seconds={secs} countdown={false}
       choice={(id) => (sel[id] == null ? null : L[sel[id]])}
-      onChoose={(id, k) => !rv[id] && setSel((s) => ({ ...s, [id]: L.indexOf(k) }))}
-      reveal={(id) => { const r = rv[id]; return r ? { correct: L[r.answer], ok: r.correct, explanation: r.explanation ? rich(r.explanation) : null, tip: r.tip ? rich(r.tip) : null } : null; }}
+      onChoose={(id, k) => !rv[id] && !(wrong[id] || []).includes(L.indexOf(k)) && setSel((s) => ({ ...s, [id]: L.indexOf(k) }))}
+      tried={(id) => (wrong[id]?.length ? { keys: wrong[id].map((i) => L[i]), left: 3 - wrong[id].length } : null)}
+      reveal={(id) => { const r = rv[id]; return r ? { correct: L[r.answer], ok: r.hit, attempt: r.attempt, tried: r.tried.map((i) => L[i]), explanation: r.explanation ? rich(r.explanation) : null, tip: r.tip ? rich(r.tip) : null } : null; }}
       onCheck={(q) => check(questions.find((x) => x.id === q.id))}
       onExit={() => (checked ? setDone(true) : nav('/question-bank'))}
       onFinish={() => setDone(true)} finishLabel="See results"
@@ -88,7 +96,7 @@ const DIRECTIONS = (
   <>
     <p>The questions in this section address a number of important reading and writing skills. Each question includes one or more passages, which may include a table or graph. Read each passage and question carefully, and then choose the best answer to the question based on the passage(s).</p>
     <p>All questions in this section are multiple-choice with four answer choices. Each question has a single best answer.</p>
-    <p>In this practice set you check each answer right away and see the explanation. Keys: A–D choose, Enter checks, arrows move between questions.</p>
+    <p>In this practice set you check each answer right away. A wrong answer can be tried again (up to 3 times); then you see the right answer and the explanation. Your first answer is the one that counts. Keys: A–D choose, Enter checks, arrows move between questions.</p>
   </>
 );
 
