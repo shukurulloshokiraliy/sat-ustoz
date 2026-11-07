@@ -122,10 +122,30 @@ const seeded = await seed();
 const fingerprint = contentHash();
 const synced = await db.one("SELECT value FROM settings WHERE key = '_content_hash'");
 if (seeded || synced?.value !== fingerprint) {
-  await syncBundledModules();
-  await syncQbank();
-  await syncVocab();
-  await db.run("INSERT INTO settings (key, value) VALUES ('_content_hash', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [fingerprint]);
+  // after a deploy several serverless instances may start at once: only one updates the bundled content (the others
+  // serve right away), and a failed update never takes the site down (it is retried on the next start)
+  const claim = `syncing:${Date.now()}`;
+  await db.tx(async (t) => {
+    const lock = await t.one('SELECT pg_try_advisory_xact_lock(424242) AS ok').catch(() => ({ ok: true }));
+    if (!lock?.ok) { console.log('[content] another instance is updating the content'); return; }
+    const again = String((await t.one("SELECT value FROM settings WHERE key = '_content_hash'"))?.value || '');
+    if (!seeded && again === fingerprint) return;
+    const busy = again.match(/^syncing:(\d+)$/);
+    if (!seeded && busy && Date.now() - Number(busy[1]) < 120e3) return; // someone started less than 2 minutes ago
+    await t.run("INSERT INTO settings (key, value) VALUES ('_content_hash', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [claim]);
+  }).catch((e) => console.error('[content] lock', e.message));
+  const mine = await db.one("SELECT value FROM settings WHERE key = '_content_hash'");
+  if (mine?.value === claim || seeded) {
+    try {
+      await syncBundledModules();
+      await syncQbank();
+      await syncVocab();
+      await db.run("INSERT INTO settings (key, value) VALUES ('_content_hash', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [fingerprint]);
+    } catch (e) {
+      console.error('[content] update failed, will retry on the next start:', e.message);
+      await db.run("UPDATE settings SET value = '' WHERE key = '_content_hash'").catch(() => {});
+    }
+  }
 }
 if (seeded) console.log(`[seed] Teacher login: ${seeded.masterLogin}${process.env.VERCEL ? '' : ` / ${seeded.masterPass}  |  demo student: shukurullo / student123`}`);
 console.log(`[db] ${DB_KIND === 'postgres' ? 'PostgreSQL (DATABASE_URL)' : 'embedded PGlite (local)'}`);
