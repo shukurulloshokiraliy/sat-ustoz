@@ -57,6 +57,13 @@ export function cleanTiers(input) {
 export function tierOf(user, settings) {
   if (user?.role === 'master') return ALL;
   const tiers = readTiers(settings);
+  // free mode (teacher turned off "require a subscription"): every student gets everything self-paced (Pro Max level);
+  // live 1-on-1 lessons stay booked and paid
+  if (settings?.require_subscription !== 'true') {
+    const top = tiers.find((t) => t.id === 't3') || tiers[tiers.length - 1];
+    if (subActive(user) && user.sub_plan === 't4') return tiers.find((t) => t.id === 't4') || top;
+    return { ...top, id: 'open', name: 'Free access', price: 0, q_day: 0, quiz_day: 0, fm_week: 0 };
+  }
   if (subActive(user)) {
     const id = tiers.some((t) => t.id === user.sub_plan) ? user.sub_plan : LEGACY[user.sub_plan] || 't3';
     return tiers.find((t) => t.id === id);

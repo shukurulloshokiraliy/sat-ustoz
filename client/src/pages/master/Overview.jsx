@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth, useToast } from '../../context.jsx';
+import { Confirm } from '../../components/ui.jsx';
 import { api, fmtDate } from '../../api.js';
 import { Avatar, Bars, Card, CountUp, Empty, Gate, PageHeader, pctTone, useAsync } from '../../components/ui.jsx';
 import { IconArrow, IconCheck, IconCrown, IconEye, IconGoogle, IconLayers, IconPlus, IconQuiz, IconUsers } from '../../components/icons.jsx';
@@ -11,6 +14,7 @@ export default function Overview() {
         <Link className="btn ghost" to="/students"><IconUsers /> Students</Link>
         <Link className="btn primary" to="/quizzes/new"><IconPlus /> {"New quiz"}</Link>
       </PageHeader>
+      <FreeMode />
       <Gate state={st}>{(o) => (
         <>
           <div className="grid g4 keep2 stagger">
@@ -108,5 +112,32 @@ function Visitors() {
         {v.sources.length > 0 && <span className="vis-src">7 days: {v.sources.map((s) => <span key={s.source} className="chip">{SRC[s.source] || s.source} {Math.round((s.n / total) * 100)}%</span>)}</span>}
       </div>
     </Card>
+  );
+}
+
+/**
+ * One switch for the whole platform: Paid (plans and the free daily limit apply) or Free (every student gets everything
+ * self-paced, no limits; live 1-on-1 lessons stay paid). Same setting as Settings → "Require a subscription".
+ */
+function FreeMode() {
+  const { user, refresh } = useAuth();
+  const toast = useToast();
+  const [ask, setAsk] = useState(false);
+  const free = user?.access && !user.access.subscription_required;
+  const flip = async () => {
+    try { await api.put('/settings', { require_subscription: free }); await refresh(); toast(free ? 'Paid mode is on: plans and limits apply again' : 'Free mode is on: everything is open for every student'); }
+    catch (e) { toast(e.message, 'bad'); } finally { setAsk(false); }
+  };
+  return (
+    <div className={`fm-mode ${free ? 'on' : ''}`}>
+      <div>
+        <b>{free ? 'Free mode: everything is open' : 'Paid mode'}</b>
+        <span className="muted">{free ? 'Every student has all lessons, videos, mocks and practice with no limits. Live 1-on-1 lessons stay paid.' : 'Plans and the free daily limit apply. Switch to make the whole platform free for everyone.'}</span>
+      </div>
+      <button type="button" role="switch" aria-checked={!!free} className={`fm-switch ${free ? 'on' : ''}`} onClick={() => setAsk(true)}><span /></button>
+      {ask && <Confirm danger={false} title={free ? 'Turn paid mode back on?' : 'Make the platform free?'}
+        text={free ? 'Plans, the 100-questions-a-day limit for free accounts and weekly lessons apply again. Subscribers keep their plans.' : 'Every student gets all lessons, videos, full mocks and practice without limits, until you switch it back. Payments already made stay as they are.'}
+        confirmLabel={free ? 'Turn paid mode on' : 'Make it free'} onClose={() => setAsk(false)} onConfirm={flip} />}
+    </div>
   );
 }

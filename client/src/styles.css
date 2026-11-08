@@ -3383,3 +3383,12 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .speed > div { display: grid; gap: 2px; } .speed small { color: var(--muted); font-size: .78rem; } .speed b { font-size: 1rem; }
 .speed p { grid-column: 1 / -1; margin: 0; font-size: .86rem; }
 @media (max-width: 520px) { .speed { grid-template-columns: 1fr 1fr; } }
+
+/* ---------- Teacher Overview: free / paid mode switch ---------- */
+.fm-mode { display: flex; gap: 14px; align-items: center; justify-content: space-between; padding: 12px 16px; margin-bottom: 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); }
+.fm-mode > div { display: grid; gap: 2px; min-width: 0; } .fm-mode span { font-size: .86rem; }
+.fm-mode.on { border-color: var(--good); background: var(--good-soft); }
+.fm-switch { flex: none; width: 52px; height: 30px; border-radius: 99px; border: 0; background: var(--line); position: relative; cursor: pointer; transition: background .2s; }
+.fm-switch span { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .2s; }
+.fm-switch.on { background: var(--good); } .fm-switch.on span { transform: translateX(22px); }
+@media (prefers-reduced-motion: reduce) { .fm-switch, .fm-switch span { transition: none; } }
