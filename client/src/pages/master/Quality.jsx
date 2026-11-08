@@ -28,6 +28,7 @@ function Body({ d, reload, tab, setTab }) {
   const toast = useToast();
   const [skill, setSkill] = useState('');
   const [onlyDiff, setOnlyDiff] = useState(false);
+  const [order, setOrder] = useState('');
   const [edit, setEdit] = useState(null);
   const [busy, setBusy] = useState('');
   const skills = useMemo(() => [...new Map(d.rows.map((r) => [r.skill_id, r.skill])).entries()], [d.rows]);
@@ -38,9 +39,17 @@ function Body({ d, reload, tab, setTab }) {
   const applyAll = () => run('apply', async () => { const r = await api.post('/quality/apply', { min: 30 }); toast(r.updated ? `${r.updated} labels updated` : 'Nothing to change yet: labels already match'); reload(); });
   const applyOne = (r) => run(r.id, async () => { await api.post('/quality/apply', { ids: [r.id], min: 10 }); toast(`Now ${LV[r.level]}`); reload(); });
 
-  const list = tab === 'difficulty' ? rows.filter((r) => !onlyDiff || (r.level && r.level !== r.label && r.n >= 10))
+  const picked = tab === 'difficulty' ? rows.filter((r) => !onlyDiff || (r.level && r.level !== r.label && r.n >= 10))
     : tab === 'checks' ? rows.filter((r) => r.checks.some((c) => c.level !== 'info'))
       : rows.filter((r) => r.flags.some((f) => ['strong_miss', 'distractor', 'weak', 'very_hard'].includes(f.code)));
+  // order: most / least answered, hardest / easiest for students (questions without answers go last)
+  const SORT = {
+    most: (a, b) => b.n - a.n,
+    least: (a, b) => a.n - b.n,
+    hard: (a, b) => (a.pct ?? 101) - (b.pct ?? 101) || b.n - a.n,
+    easy: (a, b) => (b.pct ?? -1) - (a.pct ?? -1) || b.n - a.n,
+  };
+  const list = SORT[order] ? [...picked].sort(SORT[order]) : picked;
 
   return (
     <>
@@ -54,6 +63,7 @@ function Body({ d, reload, tab, setTab }) {
       <div className="ql-bar">
         <Segmented value={tab} onChange={setTab} options={TABS} />
         <select value={skill} onChange={(e) => setSkill(e.target.value)} aria-label="Question type"><option value="">All question types</option>{skills.map(([id, n]) => <option key={id} value={id}>{n}</option>)}</select>
+        <select value={order} onChange={(e) => setOrder(e.target.value)} aria-label="Order"><option value="">Bank order</option><option value="most">Most answered</option><option value="least">Least answered</option><option value="hard">Lowest % right</option><option value="easy">Highest % right</option></select>
         <span className="grow" />
         <small className="muted">{d.calibrated_at ? `Updated ${fmtDate(d.calibrated_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Not calculated yet'}</small>
         <button className="btn ghost sm" disabled={!!busy} onClick={recalc}>{busy === 'calc' ? 'Calculating…' : 'Recalculate now'}</button>
