@@ -2,17 +2,19 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth, useToast } from '../../context.jsx';
 import { Confirm } from '../../components/ui.jsx';
+import { canSee } from '../../components/Layout.jsx';
 import { api, fmtDate } from '../../api.js';
 import { Avatar, Bars, Card, CountUp, Empty, Gate, PageHeader, pctTone, useAsync } from '../../components/ui.jsx';
 import { IconArrow, IconCheck, IconCrown, IconEye, IconGoogle, IconLayers, IconPlus, IconQuiz, IconUsers } from '../../components/icons.jsx';
 
 export default function Overview() {
+  const { user } = useAuth();
   const st = useAsync(() => api.get('/master/overview'), []);
   return (
     <div className="page">
       <PageHeader title={"Overview"} sub={"Live statistics across all students, groups and quizzes."}>
-        <Link className="btn ghost" to="/students"><IconUsers /> Students</Link>
-        <Link className="btn primary" to="/quizzes/new"><IconPlus /> {"New quiz"}</Link>
+        {canSee(user, '/students') && <Link className="btn ghost" to="/students"><IconUsers /> Students</Link>}
+        {canSee(user, '/quizzes') && <Link className="btn primary" to="/quizzes/new"><IconPlus /> {"New quiz"}</Link>}
       </PageHeader>
       <FreeMode />
       <Gate state={st}>{(o) => (
@@ -124,6 +126,7 @@ function FreeMode() {
   const toast = useToast();
   const [ask, setAsk] = useState(false);
   const free = user?.access && !user.access.subscription_required;
+  if (!canSee(user, '/settings')) return null;
   const flip = async () => {
     try { await api.put('/settings', { require_subscription: free }); await refresh(); toast(free ? 'Paid mode is on: plans and limits apply again' : 'Free mode is on: everything is open for every student'); }
     catch (e) { toast(e.message, 'bad'); } finally { setAsk(false); }

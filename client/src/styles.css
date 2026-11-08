@@ -3392,3 +3392,19 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .fm-switch span { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .2s; }
 .fm-switch.on { background: var(--good); } .fm-switch.on span { transform: translateX(22px); }
 @media (prefers-reduced-motion: reduce) { .fm-switch, .fm-switch span { transition: none; } }
+
+/* ---------- Admins (pages/master/Admins.jsx) ---------- */
+.adm-list { display: grid; gap: 10px; margin-bottom: 16px; }
+.adm-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.adm-row.off { opacity: .6; }
+.adm-main { display: grid; gap: 6px; min-width: 0; }
+.adm-empty { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; } .adm-empty p { margin: 4px 0 0; }
+.adm-perms { display: grid; gap: 6px; }
+.adm-perm { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); cursor: pointer; }
+.adm-perm.on { border-color: var(--primary); background: var(--primary-soft); }
+.adm-perm input { margin-top: 3px; } .adm-perm span { display: grid; gap: 2px; } .adm-perm small { color: var(--muted); font-size: .8rem; }
+.adm-cred { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); white-space: pre-wrap; font-size: .9rem; user-select: all; }
+.adm-act { display: grid; gap: 10px; }
+.adm-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 420px; overflow: auto; }
+.adm-log li { display: grid; grid-template-columns: 130px 140px minmax(0, 1fr); gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: .88rem; }
+@media (max-width: 640px) { .adm-log li { grid-template-columns: 1fr; gap: 0; } }

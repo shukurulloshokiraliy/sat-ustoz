@@ -27,6 +27,7 @@ import { migrateDrip, registerDrip, unlocksFor, dripDays } from './drip.js';
 import { migrateLive, registerLive } from './live.js';
 import { migrateReview, registerReview } from './review.js';
 import { migrateVisits, registerVisits } from './visits.js';
+import { migrateAdmins, registerAdmins, adminGuard } from './admins.js';
 import { migrateCalib } from './calibrate.js';
 import { registerQuality } from './quality.js';
 import { migrateAssignments, registerAssignments, assignedQuizOpen } from './assignments.js';
@@ -124,6 +125,7 @@ if (schemaDone?.value !== schema) {
   await migrateLive();
   await migrateReview();
   await migrateVisits();
+  await migrateAdmins();
   await migrateCalib();
   await migrateSecurity();
   await db.exec(`
@@ -276,10 +278,11 @@ app.post('/api/auth/login', h(async (req, res) => {
     return bad(res, u && !u.password_hash ? 'This account uses Google — tap “Continue with Google”' : 'Incorrect login or password', 401);
   }
   await clearFails(failKey);
+  if (u.disabled) return bad(res, 'This account is turned off. Ask the teacher.', 403);
   if (u.role === 'master') {
     const seen = await db.one("SELECT 1 AS x FROM audit_log WHERE action = 'login' AND actor_id = ? AND ip = ? LIMIT 1", [u.id, clientIp(req)]);
     await audit({ ...req, user: u }, 'login', `teacher ${u.id}`);
-    if (!seen) notifyAdmins(`🔐 Teacher account signed in from a new network. IP: ${clientIp(req)}. If this was not you, change the password and press “Sign out everywhere”.`);
+    if (!seen) notifyAdmins(`🔐 ${u.admin_perms != null ? `Admin «${u.name}»` : 'Teacher account'} signed in from a new network. IP: ${clientIp(req)}. If this was not you, change the password and press “Sign out everywhere”.`);
   }
   await db.run('UPDATE users SET last_login_at = now() WHERE id = ?', [u.id]);
   res.json({ token: signToken(u) });
@@ -343,6 +346,8 @@ app.get('/api/avatars/:id', h(async (req, res) => {
 
 const PUBLIC = new Set(['/auth/login', '/auth/register', '/auth/google', '/auth/telegram/start', '/auth/telegram/poll', '/auth/telegram/agree', '/visit', '/config', '/template.xlsx', '/cron/drip']);
 app.use('/api', (req, res, next) => (PUBLIC.has(req.path) && req.path !== '/template.xlsx' ? next() : requireAuth(req, res, next)));
+// admin accounts: only their sections, and what they change goes to the activity log (admins.js)
+app.use('/api', adminGuard());
 // free daily limit: today's count, and counting one answer the moment it is picked inside a test
 app.get('/api/usage', h(async (req, res) => res.json(await usageOf(req.user))));
 app.post('/api/usage/answer', requireStudent, h(async (req, res) => {
@@ -358,6 +363,7 @@ registerDrip(app, { h, bad, requireMaster, requireStudent, roadmapFor: (u) => ro
 registerLive(app, { h, bad, requireMaster, requireStudent });
 registerReview(app, { h, bad, requireMaster });
 registerVisits(app, { h, requireMaster, userFrom });
+registerAdmins(app, { h, bad, requireMaster });
 registerBotAdmin(app, { h, bad, requireMaster, requireStudent });
 registerVocab(app, { h, bad, requireMaster, requireStudent, accessFor: (u) => accessFor(u) });
 

@@ -8,7 +8,7 @@ import { Avatar, Spinner } from './ui.jsx';
 import SupportChat from './ChatLater.jsx';
 import {
   IconBookmark, IconBriefcase, IconChats, IconChart, IconDashboard, IconLayers, IconLogout, IconMenu, IconMoon,
-  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconLive, IconConsult, IconVolume, IconMute, IconWallet, IconTask, IconFlag } from './icons.jsx';
+  IconQuiz, IconRoad, IconSun, IconUsers, IconCrown, IconKey, IconSettings, IconTarget, IconBolt, IconGlobe, IconSend, IconBook, IconGame, IconMore, Logo, IconTrophy, IconDoc, IconLive, IconConsult, IconVolume, IconMute, IconWallet, IconTask, IconFlag } from './icons.jsx';
 
 const STUDENT_NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, c: '#2A55E5' },
@@ -60,8 +60,17 @@ const MASTER_NAV = [
   { to: '/game', label: 'Word Arena', icon: IconGame, c: '#8E5CF7' },
   { to: '/website', label: 'Website', icon: IconGlobe, c: '#5C88FF' },
   { to: '/support', label: 'Support', icon: IconChats, c: '#E0569B' },
+  { to: '/admins', label: 'Admins', icon: IconKey, c: '#5B6380' },
   { to: '/settings', label: 'Settings', icon: IconSettings, c: '#5B6380' },
 ];
+// admin accounts see only the sections the teacher gave them (admins.js on the server checks the same)
+const SECTION = {
+  '/students': 'students', '/groups': 'students', '/assignments': 'students', '/consultations': 'students', '/live': 'students', '/leaderboard': 'students', '/progress': 'students',
+  '/quizzes': 'content', '/roadmap': 'content', '/question-bank/manage': 'content', '/reports': 'content', '/quality': 'content', '/full-mocks': 'content', '/vocab': 'content', '/game': 'content', '/website': 'content',
+  '/finance': 'finance', '/support': 'support', '/settings': 'settings', '/admins': 'owner',
+};
+export const staffPerms = (user) => { if (user?.role !== 'master' || user.admin_perms == null) return null; try { return JSON.parse(user.admin_perms); } catch { return []; } };
+export const canSee = (user, to) => { const p = staffPerms(user); const s = SECTION[to]; if (!s) return true; if (s === 'owner') return !p; return !p || p.includes(s); };
 
 function SoundToggle() {
   const [on, setOn] = useState(soundOn());
@@ -76,14 +85,14 @@ export default function Layout() {
   const loc = useLocation();
   const on = (n) => !!n.also?.some((pfx) => loc.pathname.startsWith(pfx));
   useEffect(() => { setOpen(false); window.scrollTo({ top: 0 }); }, [loc.pathname]);
-  const nav = user.role === 'master' ? MASTER_NAV : STUDENT_NAV;
+  const nav = user.role === 'master' ? MASTER_NAV.filter((n) => canSee(user, n.to)) : STUDENT_NAV;
   // open assignments (new / in progress / retake) as a badge in the menu
   const [todo, setTodo] = useState(0);
   useEffect(() => { if (user.role === 'student') api.get('/assignments').then((d) => setTodo(d.open || 0)).catch(() => {}); }, [user.role, loc.pathname]);
   // students: mistakes due today · teacher: open question reports
   const [badge2, setBadge2] = useState(0);
   useEffect(() => {
-    const t = setTimeout(() => (user.role === 'student' ? api.get('/goal').then((g) => setBadge2(g.mistakes.due || 0)) : api.get('/question-reports').then((d) => setBadge2(d.open || 0))).catch(() => {}), 400);
+    const t = setTimeout(() => (user.role === 'student' ? api.get('/goal').then((g) => setBadge2(g.mistakes.due || 0)) : (canSee(user, '/reports') ? api.get('/question-reports').then((d) => setBadge2(d.open || 0)) : Promise.resolve())).catch(() => {}), 400);
     return () => clearTimeout(t);
   }, [user.role, loc.pathname]);
 
@@ -93,7 +102,7 @@ export default function Layout() {
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <NavLink to="/" className="brand-tile" aria-label="SAT Ustoz — home">
           <Logo size={30} tone="white" />
-          <span className="brand-sub">{user.role === 'master' ? 'Teacher panel' : 'SAT Reading & Writing'}</span>
+          <span className="brand-sub">{user.role === 'master' ? (staffPerms(user) ? 'Admin panel' : 'Teacher panel') : 'SAT Reading & Writing'}</span>
           <span className="brand-track" aria-hidden="true"><b>200</b><i /><b className="end">800</b></span>
         </NavLink>
         <nav className="nav" aria-label={"Main menu"}>
@@ -114,7 +123,7 @@ export default function Layout() {
           </div>
           <NavLink to="/profile" className="user-chip">
             <Avatar name={user.name} src={user.avatar_url} />
-            <div className="grow"><b>{user.name}</b><small>{user.role === 'master' ? 'Teacher' : user.group?.name || (user.sub_active ? 'Subscriber' : 'Student')}</small></div>
+            <div className="grow"><b>{user.name}</b><small>{user.role === 'master' ? (staffPerms(user) ? 'Admin' : 'Teacher') : user.group?.name || (user.sub_active ? 'Subscriber' : 'Student')}</small></div>
           </NavLink>
           <button className="btn ghost sm block" onClick={logout}><IconLogout /> {"Log out"}</button>
         </div>
@@ -129,7 +138,7 @@ export default function Layout() {
         <main className="main"><Suspense fallback={<div style={{ minHeight: '50vh', display: 'grid', placeItems: 'center' }}><Spinner /></div>}><Outlet /></Suspense></main>
         {user.role === 'student' && <SupportChat />}
         <nav className="tabbar" aria-label="Quick menu">
-          {(user.role === 'master' ? MASTER_TABS : STUDENT_TABS).map((n) => (
+          {(user.role === 'master' ? MASTER_TABS.filter((n) => canSee(user, n.to)) : STUDENT_TABS).map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end} style={{ '--c': n.c || '#2A55E5' }} className={({ isActive }) => (isActive || on(n) ? 'active' : '')}>{({ isActive }) => (<><n.icon width={22} height={22} weight={isActive || on(n) ? 'fill' : 'duotone'} /><span>{n.label}</span></>)}</NavLink>
           ))}
           <button type="button" className={open ? 'active' : ''} onClick={() => setOpen(true)} aria-label="Open the full menu"><IconMore width={22} height={22} /><span>More</span></button>

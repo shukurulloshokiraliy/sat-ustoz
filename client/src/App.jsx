@@ -72,6 +72,7 @@ const Play = page(() => import('./pages/game/Play.jsx'));
 const JoinCode = page(() => import('./pages/game/Play.jsx').then((m) => ({ default: m.JoinCode })));
 const Login = page(() => import('./pages/Login.jsx'));
 const Live = page(() => import('./pages/student/Live.jsx'));
+const Admins = page(() => import('./pages/master/Admins.jsx'));
 const Overview = page(() => import('./pages/master/Overview.jsx'));
 const PublicLayout = page(() => import('./pages/public/PublicLayout.jsx'));
 const Landing = page(() => import('./pages/public/Landing.jsx'));
@@ -145,6 +146,7 @@ export default function App() {
             <Route path="quizzes/:id/edit" element={<QuizEditor />} />
             <Route path="roadmap" element={<RoadmapEditor />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="admins" element={<Admins />} />
             <Route path="question-bank/manage" element={<QbankAdmin />} />
             <Route path="full-mocks" element={<FullMockAdmin />} />
             <Route path="consultations" element={<ConsultationsAdmin />} />

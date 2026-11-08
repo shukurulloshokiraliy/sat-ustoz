@@ -109,6 +109,11 @@ and fix exactly what he points at. When a short Uzbek message can be read two wa
   once), getSettings is cached 5 s per instance (cleared on settings writes), pg pool max 8 with long idle keep-alive,
   the drip/live background sweep runs beside the request (never before it). Settings → speed card shows server region,
   database region and one DB round trip (far apart = slow; then set "regions" in vercel.json to match the database).
+  Admins (admins.js, page /admins, owner only): admin = role 'master' + users.admin_perms JSON (sections students /
+  content / finance / support / settings); owner has admin_perms NULL. adminGuard() (after requireAuth) maps each API path to
+  a section (sectionOf) and blocks the rest; staff writes are logged in audit_log (action 'staff', plain-words target).
+  users.disabled blocks sign-in. Client hides menu items with canSee(user, path) from Layout.jsx. New master-only API
+  routes MUST be added to sectionOf, otherwise every admin can use them.
 - Not built yet: a shop for mock books (the wallet mentions "books"; ask what kind before building).
 - He must still: enter the GIPHY API key in Settings, fill company details in the oferta (Website → Pages),
   set GOOGLE_SITE_VERIFICATION / YANDEX_VERIFICATION in Vercel and submit the sitemap in Search Console.
