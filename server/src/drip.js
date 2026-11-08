@@ -54,12 +54,13 @@ export function registerDrip(app, { h, bad, requireMaster, requireStudent, roadm
   app.use('/api', async (req, res, next) => {
     if (Date.now() - lastTry < 60e3) return next();
     lastTry = Date.now();
-    try {
+    // runs next to the request instead of before it: the student never waits for Telegram messages to go out
+    next();
+    (async () => {
       const cut = String(Date.now() - 15 * 60e3);
       const claimed = await db.one("UPDATE settings SET value = ? WHERE key = '_drip_tick' AND (CASE WHEN value ~ '^[0-9]+$' THEN value::bigint ELSE 0 END) < ?::bigint RETURNING key", [String(Date.now()), cut]);
       if (claimed) { await sweepDrip(25); await sweepLive().catch((e) => console.error('[live]', e.message)); }
-    } catch (e) { console.error('[drip]', e.message); }
-    next();
+    })().catch((e) => console.error('[drip]', e.message));
   });
   // daily safety net (vercel.json → crons)
   app.get('/api/cron/drip', h(async (req, res) => {

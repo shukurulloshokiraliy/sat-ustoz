@@ -105,6 +105,10 @@ and fix exactly what he points at. When a short Uzbek message can be read two wa
   Website visitors (visits.js + client/src/visit.js): every SPA page view posts /api/visit with an anonymous browser id;
   one site_visits row per visitor per Tashkent day (views, source from referrer/utm, device, user_id if signed in).
   Teachers, bots and automated browsers (navigator.webdriver, e.g. Playwright tests) are not counted. Overview shows it.
+  Speed: migrations run only when server code changes (settings._schema_hash; any .js change in server/src re-runs them
+  once), getSettings is cached 5 s per instance (cleared on settings writes), pg pool max 8 with long idle keep-alive,
+  the drip/live background sweep runs beside the request (never before it). Settings → speed card shows server region,
+  database region and one DB round trip (far apart = slow; then set "regions" in vercel.json to match the database).
 - Not built yet: a shop for mock books (the wallet mentions "books"; ask what kind before building).
 - He must still: enter the GIPHY API key in Settings, fill company details in the oferta (Website → Pages),
   set GOOGLE_SITE_VERIFICATION / YANDEX_VERIFICATION in Vercel and submit the sitemap in Search Console.

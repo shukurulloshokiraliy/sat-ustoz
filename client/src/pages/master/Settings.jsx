@@ -9,8 +9,27 @@ export default function Settings() {
   return (
     <div className="page" style={{ maxWidth: 860 }}>
       <PageHeader title="Settings" sub="Access rules, prices and integrations for the whole platform." />
+      <Speed />
       <Gate state={st}>{([s, p]) => <Form init={{ ...s, tiers: p.tiers }} />}</Gate>
     </div>
+  );
+}
+
+/** Where the server and the database run: far apart (e.g. USA and Europe) makes every page slow. */
+const REGION = { iad1: 'USA (Washington)', cle1: 'USA (Cleveland)', sfo1: 'USA (San Francisco)', pdx1: 'USA (Portland)', fra1: 'Germany (Frankfurt)', arn1: 'Sweden', cdg1: 'France (Paris)', dub1: 'Ireland', lhr1: 'UK (London)', bom1: 'India (Mumbai)', sin1: 'Singapore', hnd1: 'Japan', icn1: 'Korea', syd1: 'Australia', gru1: 'Brazil', cpt1: 'South Africa', hkg1: 'Hong Kong', kix1: 'Japan (Osaka)', dxb1: 'UAE (Dubai)',
+  'us-east-1': 'USA (Virginia)', 'us-east-2': 'USA (Ohio)', 'us-west-2': 'USA (Oregon)', 'eu-central-1': 'Germany (Frankfurt)', 'eu-west-2': 'UK (London)', 'eu-west-1': 'Ireland', 'ap-southeast-1': 'Singapore', 'ap-southeast-2': 'Australia', 'sa-east-1': 'Brazil' };
+function Speed() {
+  const st = useAsync(() => api.get('/speed'), []);
+  const s = st.data;
+  if (!s) return null;
+  const tone = s.ping <= 15 ? 'good' : s.ping <= 60 ? 'warn' : 'bad';
+  return (
+    <Card className="speed">
+      <div><small>Server</small><b>{REGION[s.server] || s.server}</b></div>
+      <div><small>Database</small><b>{REGION[s.database] || s.database || '—'}</b>{!s.pooled && s.database !== 'local' && <small className="muted">not pooled</small>}</div>
+      <div><small>One database trip</small><b className={`${tone}-text`}>{s.ping} ms</b></div>
+      <p className="muted">{tone === 'good' ? 'Fast: server and database are close together.' : 'Slow: the server and the database are far apart. Send this card to the developer.'}</p>
+    </Card>
   );
 }
 

@@ -20,6 +20,7 @@ const toPg = (sql) => {
 const iso = (v) => (v == null ? v : new Date(v).toISOString());
 
 let driver; // { query(sql, params) -> {rows, rowCount}, transaction(fn), exec(sql), close() }
+export let dbHost = '';
 export let DB_KIND = 'pglite';
 
 // Vercel's Neon / Postgres integrations provide POSTGRES_URL as well
@@ -33,7 +34,10 @@ if (process.env.DATABASE_URL) {
   pg.types.setTypeParser(1114, (v) => iso(v + 'Z')); // timestamp
   const url = process.env.DATABASE_URL;
   const local = /localhost|127\.0\.0\.1/.test(url);
-  const pool = new pg.Pool({ connectionString: url, ssl: local ? false : { rejectUnauthorized: false }, max: process.env.VERCEL ? 3 : 10, idleTimeoutMillis: 10000 });
+  // keep connections open between requests (a new TLS connection to the database costs several round trips) and allow
+  // enough at once for pages that load many things in parallel
+  const pool = new pg.Pool({ connectionString: url, ssl: local ? false : { rejectUnauthorized: false }, max: process.env.VERCEL ? 8 : 10, idleTimeoutMillis: 120000, keepAlive: true });
+  dbHost = (() => { try { return new URL(url).hostname; } catch { return ''; } })();
   driver = {
     query: (sql, params) => pool.query(sql, params),
     exec: (sql) => pool.query(sql),
@@ -364,11 +368,22 @@ const DEFAULT_SETTINGS = {
   giphy_key: '',        // secret: GIPHY API key (teacher GIF search)
   bunny_token_key: '',  // secret: embed token authentication key (signed player links)
 };
+// settings are read by almost every request: keep them for a few seconds per server instance. A change made on this
+// instance clears the copy at once; another instance sees it within SETTINGS_TTL.
+const SETTINGS_TTL = 5000;
+let settingsCache = null; let settingsAt = 0;
+export const clearSettingsCache = () => { settingsCache = null; };
+for (const k of ['all', 'one', 'run', 'exec']) {
+  const f = db[k];
+  db[k] = (sql, ...rest) => { if (/\b(insert|update|delete)\b[\s\S]*\bsettings\b/i.test(String(sql))) settingsCache = null; return f(sql, ...rest); };
+}
 export async function getSettings() {
+  if (settingsCache && Date.now() - settingsAt < SETTINGS_TTL) return { ...settingsCache };
   const rows = await db.all('SELECT key, value FROM settings');
   const out = { ...DEFAULT_SETTINGS };
   for (const r of rows) if (!r.key.startsWith('_')) out[r.key] = r.value; // '_' keys are internal (secret, content hash)
-  return out;
+  settingsCache = out; settingsAt = Date.now();
+  return { ...out };
 }
 export async function setSettings(obj) {
   for (const [k, v] of Object.entries(obj)) {

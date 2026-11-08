@@ -8,7 +8,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { db, migrate, getSettings, setSettings, DB_KIND } from './db.js';
+import { db, migrate, getSettings, setSettings, DB_KIND, dbHost } from './db.js';
 import { notifyAdmins } from './tgbot.js';
 import { initSecret, signToken, publicUser, requireAuth, requireMaster, requireStudent, subActive, verifyGoogleCredential, userFrom } from './auth.js';
 import { parseUpload, buildTemplate, DEFAULT_PROMPT } from './parse.js';
@@ -79,43 +79,63 @@ function contentHash() {
   hash.update(fs.readFileSync(path.join(__dirname, 'vocab.js')));
   return hash.digest('hex');
 }
-await migrate();
-await migrateSite();
-await migrateBot();
-await migrateVocab();
-await migrateQbankMocks();
-await migrateFullMocks();
-await migrateGifs();
-await migrateLessonEdits();
-await migrateFinance();
-await migrateAssignments();
-await migrateReserved();
-await migrateMistakes();
-await migrateFocus();
-await migratePictures();
-// roadmap history starts with today's roadmap, so even the first change can be undone
-if (!(await db.one('SELECT 1 AS x FROM roadmap_versions LIMIT 1'))) setTimeout(() => rmVersion({ user: { id: null, name: 'System' } }, 'Starting point'), 0);
-// keep exam questions out of practice: the first start scans every quiz and lesson check once
-if (!(await db.one("SELECT 1 AS x FROM settings WHERE key = '_reserved_v1'"))) {
-  await scanReserved().catch((e) => console.error('[reserved]', e.message));
-  await db.run("INSERT INTO settings (key, value) VALUES ('_reserved_v1', '1') ON CONFLICT (key) DO NOTHING");
+/**
+ * Fingerprint of the server code: migrations only run when it changed (the first start after a deploy). Every other
+ * cold start on Vercel skips ~70 database round trips, which made the first request of each instance slow.
+ */
+function schemaHash() {
+  const hash = crypto.createHash('sha1');
+  const walk = (dir) => {
+    for (const f of fs.readdirSync(dir, { withFileTypes: true }).sort((x, y) => x.name.localeCompare(y.name))) {
+      const p = path.join(dir, f.name);
+      if (f.isDirectory()) { if (f.name !== 'content') walk(p); } else if (f.name.endsWith('.js')) { hash.update(p.slice(dir.length)); hash.update(fs.readFileSync(p)); }
+    }
+  };
+  walk(__dirname);
+  return hash.digest('hex');
 }
-await migrateTiers();
-await keepPaymentRecords();
-await migrateDrip();
-await migrateLive();
-await migrateReview();
-await migrateVisits();
-await migrateCalib();
-await migrateSecurity();
-await db.exec(`
-CREATE TABLE IF NOT EXISTS user_activity (
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, day DATE NOT NULL, section TEXT NOT NULL,
-  seconds INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, day, section)
-);
-ALTER TABLE user_activity ENABLE ROW LEVEL SECURITY;
-`);
-await migrateGame();
+const schema = schemaHash();
+const schemaDone = await db.one("SELECT value FROM settings WHERE key = '_schema_hash'").catch(() => null);
+if (schemaDone?.value !== schema) {
+  await migrate();
+  await migrateSite();
+  await migrateBot();
+  await migrateVocab();
+  await migrateQbankMocks();
+  await migrateFullMocks();
+  await migrateGifs();
+  await migrateLessonEdits();
+  await migrateFinance();
+  await migrateAssignments();
+  await migrateReserved();
+  await migrateMistakes();
+  await migrateFocus();
+  await migratePictures();
+  // roadmap history starts with today's roadmap, so even the first change can be undone
+  if (!(await db.one('SELECT 1 AS x FROM roadmap_versions LIMIT 1'))) setTimeout(() => rmVersion({ user: { id: null, name: 'System' } }, 'Starting point'), 0);
+  // keep exam questions out of practice: the first start scans every quiz and lesson check once
+  if (!(await db.one("SELECT 1 AS x FROM settings WHERE key = '_reserved_v1'"))) {
+    await scanReserved().catch((e) => console.error('[reserved]', e.message));
+    await db.run("INSERT INTO settings (key, value) VALUES ('_reserved_v1', '1') ON CONFLICT (key) DO NOTHING");
+  }
+  await migrateTiers();
+  await keepPaymentRecords();
+  await migrateDrip();
+  await migrateLive();
+  await migrateReview();
+  await migrateVisits();
+  await migrateCalib();
+  await migrateSecurity();
+  await db.exec(`
+  CREATE TABLE IF NOT EXISTS user_activity (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, day DATE NOT NULL, section TEXT NOT NULL,
+    seconds INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, day, section)
+  );
+  ALTER TABLE user_activity ENABLE ROW LEVEL SECURITY;
+  `);
+  await migrateGame();
+  await db.run("INSERT INTO settings (key, value) VALUES ('_schema_hash', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [schema]);
+}
 await initSecret();
 await seedSite();
 const seeded = await seed();
@@ -479,6 +499,14 @@ app.get('/api/audit', requireMaster, h(async (req, res) => {
 }));
 
 // ---------- settings (teacher) ----------
+// teacher: where the server and the database run, and how long one database round trip takes (Settings → Speed)
+app.get('/api/speed', requireMaster, h(async (req, res) => {
+  const ms = [];
+  for (let i = 0; i < 4; i++) { const t = Date.now(); await db.one('SELECT 1 AS x'); ms.push(Date.now() - t); }
+  const region = (dbHost.match(/\.([a-z]{2}-[a-z]+-\d)\./) || [])[1] || '';
+  res.json({ server: process.env.VERCEL_REGION || 'local', database: region || (DB_KIND === 'postgres' ? dbHost.split('.').slice(1, 3).join('.') : 'local'),
+    pooled: /-pooler\./.test(dbHost), ping: Math.min(...ms.slice(1)), first: ms[0] });
+}));
 app.get('/api/settings', requireMaster, h(async (req, res) => {
   const st = await getSettings();
   const secret = (v) => (v ? `••••${String(v).slice(-4)}` : '');
