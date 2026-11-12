@@ -1505,6 +1505,13 @@ app.delete('/api/portfolio/:id', requireStudent, h(async (req, res) => {
 // ---------- static client ----------
 const dist = path.join(__dirname, '..', '..', 'client', 'dist');
 if (fs.existsSync(dist)) {
+  // a build made without the SEO step (no app.html / sitemap): write the search-engine pages now, once
+  if (!fs.existsSync(path.join(dist, 'app.html')) || !fs.existsSync(path.join(dist, 'sitemap.xml'))) {
+    try {
+      const { execFileSync } = await import('node:child_process');
+      execFileSync(process.execPath, [path.join(dist, '..', 'scripts', 'seo.mjs'), dist], { stdio: 'inherit', timeout: 30000 });
+    } catch (e) { console.error('[seo] could not write search pages:', e.message); }
+  }
   app.use('/assets', express.static(path.join(dist, 'assets'), { immutable: true, maxAge: '365d' })); // hashed build files
   app.use(express.static(dist, { extensions: ['html'], setHeaders: (res, file) => { if (/sw\.js$/.test(file)) res.setHeader('Cache-Control', 'no-cache'); } })); // /practice → practice.html (prerendered public pages)
   app.get(/^(?!\/api).*/, (req, res) => res.sendFile(path.join(dist, fs.existsSync(path.join(dist, 'app.html')) ? 'app.html' : 'index.html')));
