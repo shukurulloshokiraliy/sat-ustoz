@@ -6,6 +6,7 @@ import { Confetti, Spinner } from '../../components/ui.jsx';
 import Character, { CHARACTERS, CHARACTER_KEYS, CHARACTER_SETS, isVipCharacter } from '../../components/Character.jsx';
 import { Chips, DUEL_KEY, hostKey, playerKey, store, HERO_KEY } from './GameHub.jsx';
 import { BOT_LEVELS, ZONE, ZoneTrack, arenaTheme, isVip } from './zones.jsx';
+import { HitBanner, PasswordPick, RaidPanel } from './Raid.jsx';
 import { musicOn, sfxOn, setPref, startMusic, stopMusic, sfxRight, sfxWrong, sfxTick, sfxWin, sfxStart } from '../../components/gameAudio.js';
 
 const L = ['A', 'B', 'C', 'D'];
@@ -37,6 +38,7 @@ export default function Play() {
   }
   return (
     <Shell zone={room.zone}>
+      {room.raid && playing && room.status === 'playing' && <HitBanner hit={room.me.raid?.hit} />}
       {room.status === 'lobby' && <Lobby room={room} isHost={isHost} hostToken={hostToken} reload={load} />}
       {room.status === 'playing' && (playing && room.me.answered < room.total
         ? <Questions room={room} token={token} reload={load} />
@@ -79,14 +81,15 @@ function Join({ code, room, onJoined }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [set, setSet] = useState('All');
+  const [pw, setPw] = useState('');
   const join = async (e) => {
     e.preventDefault(); setBusy(true); setError('');
-    try { const r = await api.post(`/game/${code}/join`, { name, avatar }); onJoined(r.token); }
+    try { const r = await api.post(`/game/${code}/join`, { name, avatar, pw: room.raid ? pw : undefined }); onJoined(r.token); }
     catch (ex) { setError(ex.message); setBusy(false); }
   };
   return (
     <form className="arena-card arena-joinform" onSubmit={join}>
-      <small className="arena-label">GAME {code} · {room.mode === 'team' ? 'TEAM BATTLE' : room.mode === 'duel' ? 'DUEL' : 'CLASSIC'}</small>
+      <small className="arena-label">GAME {code} · {room.mode === 'team' ? 'TEAM BATTLE' : room.mode === 'duel' ? 'DUEL' : 'CLASSIC'}{room.raid ? ' · CIPHER RAID' : ''}</small>
       <div className={`arena-me r-${CHARACTERS[avatar].rarity}`} style={{ '--glow': CHARACTERS[avatar].body }}>
         <Character key={avatar} kind={avatar} size={128} mood="win" className="pop" />
         <b>{CHARACTERS[avatar].name}</b><span className="arena-rarity">{CHARACTERS[avatar].rarity}</span>
@@ -103,8 +106,9 @@ function Join({ code, room, onJoined }) {
         ))}
       </div>
       <button type="button" className="arena-random" onClick={() => { const pool = CHARACTER_KEYS.filter((k) => vipJoin || !isVipCharacter(k)); setAvatar(pool[Math.floor(Math.random() * pool.length)]); }}>Surprise me</button>
+      {room.raid && <PasswordPick code={code} value={pw} onChange={setPw} />}
       {error && <p className="arena-err">{error}</p>}
-      <button className="btn sun lg block" disabled={busy || name.trim().length < 2}>{busy ? 'Joining…' : 'Enter the arena'}</button>
+      <button className="btn sun lg block" disabled={busy || name.trim().length < 2 || (room.raid && pw.length < 3)}>{busy ? 'Joining…' : 'Enter the arena'}</button>
     </form>
   );
 }
@@ -176,7 +180,8 @@ function RoomLobby({ room, isHost, hostToken, reload }) {
       <div className="arena-code">
         <small>Join at <b>{url.replace(/\/play\/\d+$/, '/game')}</b> with code</small>
         <strong>{room.code.slice(0, 3)} {room.code.slice(3)}</strong>
-        <small>{room.total} questions · {room.minutes} min · {room.mode === 'team' ? 'Team battle' : room.mode === 'duel' ? 'Duel' : 'Classic'}{room.zone && room.zone !== 'classic' ? ` · ${ZONE[room.zone]?.name}` : ''}</small>
+        <small>{room.total} questions · {room.minutes} min · {room.mode === 'team' ? 'Team battle' : room.mode === 'duel' ? 'Duel' : 'Classic'}{room.zone && room.zone !== 'classic' ? ` · ${ZONE[room.zone]?.name}` : ''}{room.raid ? ' · Cipher Raid' : ''}</small>
+        {room.raid && room.me?.pw && <small className="raid-mypw">Your password: <b>{room.me.pw}</b></small>}
       </div>
       {room.zone !== 'classic' && room.players.length > 0 && <ZoneTrack room={room} />}
       {room.mode === 'team' ? (
@@ -218,7 +223,11 @@ function Questions({ room, token, reload }) {
   const [fb, setFb] = useState(null);
   const [me, setMe] = useState(room.me);
   const busy = useRef(false);
+  const [raid, setRaid] = useState(() => (room.raid && room.me.raid?.stage ? room.me.raid : null));
+  const lastLocal = useRef(0);
   const q = room.questions[qi];
+  // hits from other players change the score on the server
+  useEffect(() => { if (room.raid && !fb && !raid && Date.now() - lastLocal.current > 3000) setMe((m) => ({ ...m, score: room.me.score })); }, [room.me.score]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!fb && room.me.answered > qi) setQi(room.me.answered); }, [room.me.answered]); // eslint-disable-line react-hooks/exhaustive-deps
   // music while the questions are on screen (browsers allow sound only after a tap: the first tap starts it)
   useEffect(() => {
@@ -235,7 +244,8 @@ function Questions({ room, token, reload }) {
       const r = await api.post(`/game/${room.code}/answer`, { token, qi, choice: k });
       setFb({ pick: k, ...r });
       (r.correct ? sfxRight : sfxWrong)();
-      setMe((m) => ({ ...m, score: r.score, streak: r.streak, correct: (m.correct || 0) + (r.correct ? 1 : 0) }));
+      setMe((m) => ({ ...m, score: r.score, streak: r.streak, correct: (m.correct || 0) + (r.correct ? 1 : 0) })); lastLocal.current = Date.now();
+      if (r.raid) { setTimeout(() => setRaid({ stage: 'boxes' }), 650); return; }
       setTimeout(() => { setFb(null); setQi((i) => i + 1); busy.current = false; if (r.done) reload(); }, r.correct ? 700 : 1400);
     } catch { busy.current = false; reload(); }
   };
@@ -275,7 +285,8 @@ function Questions({ room, token, reload }) {
           return <button key={k} className={`arena-opt c${k} ${st}`} onClick={() => answer(k)} disabled={!!fb}><span>{L[k]}</span>{o}</button>;
         })}
       </div>
-      {fb && <div className={`arena-pop ${fb.correct ? 'ok' : 'no'}`}>{fb.correct ? `+${fb.gain}` : 'Missed'}</div>}
+      {raid && <RaidPanel code={room.code} token={token} init={raid} onDone={(sc) => { setRaid(null); if (sc != null) { setMe((m) => ({ ...m, score: sc })); lastLocal.current = Date.now(); } setFb(null); setQi((i) => i + 1); busy.current = false; }} />}
+      {fb && !raid && <div className={`arena-pop ${fb.correct ? 'ok' : 'no'}`}>{fb.correct ? `+${fb.gain}` : 'Missed'}</div>}
     </div>
   );
 }
@@ -304,7 +315,7 @@ function Board({ room, isHost, hostToken, reload }) {
             <span className="pos">{i + 1}</span><Character kind={p.avatar} size={40} />
             <b>{p.name}</b>{p.team && <span className={`arena-tag ${p.team.toLowerCase()}`}>{p.team}</span>}
             <span className="bar"><i style={{ width: `${(p.score / max) * 100}%` }} /></span>
-            <small>{p.answered}/{room.total}</small><strong>{p.score}</strong>
+            <small>{room.raid && p.hacks ? `${p.hacks} hack${p.hacks > 1 ? 's' : ''} · ` : ''}{p.answered}/{room.total}</small><strong>{p.score}</strong>
           </li>
         ))}
       </ol>
@@ -326,7 +337,7 @@ function Podium({ room }) {
     <div className="arena-end">
       <Confetti />
       <h1>{title}</h1>
-      {me && <p className="arena-mine">You: place {room.players.indexOf(me) + 1} · {me.score} points · {me.correct}/{room.total} correct · best streak {me.best_streak}</p>}
+      {me && <p className="arena-mine">You: place {room.players.indexOf(me) + 1} · {me.score} points · {me.correct}/{room.total} correct · best streak {me.best_streak}{room.raid ? ` · ${me.hacks || 0} hacks, ${me.stolen || 0} credits stolen` : ''}</p>}
       <div className="arena-podium">
         {order.map((p) => {
           const place = top.indexOf(p) + 1;

@@ -37,7 +37,55 @@ ALTER TABLE game_players ADD COLUMN IF NOT EXISTS is_bot BOOLEAN NOT NULL DEFAUL
 ALTER TABLE game_players ADD COLUMN IF NOT EXISTS bot_level REAL NOT NULL DEFAULT 0;
 ALTER TABLE game_players ADD COLUMN IF NOT EXISTS bot_speed REAL NOT NULL DEFAULT 1;
 ALTER TABLE game_rooms ADD COLUMN IF NOT EXISTS zone TEXT NOT NULL DEFAULT 'classic';
+ALTER TABLE game_rooms ADD COLUMN IF NOT EXISTS raid BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE game_players ADD COLUMN IF NOT EXISTS pw TEXT NOT NULL DEFAULT '';
+ALTER TABLE game_players ADD COLUMN IF NOT EXISTS pending TEXT NOT NULL DEFAULT '';
+ALTER TABLE game_players ADD COLUMN IF NOT EXISTS hacks INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE game_players ADD COLUMN IF NOT EXISTS hacked INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE game_players ADD COLUMN IF NOT EXISTS stolen INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE game_players ADD COLUMN IF NOT EXISTS hit_by TEXT NOT NULL DEFAULT '';
+ALTER TABLE game_players ADD COLUMN IF NOT EXISTS hit_amt INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE game_players ADD COLUMN IF NOT EXISTS hit_seq INTEGER NOT NULL DEFAULT 0;
 `);
+}
+
+// ---------- Cipher Raid: pick a password, open mystery boxes, hack other players' credits ----------
+const PW_A = ['swift', 'brave', 'lucky', 'mighty', 'silent', 'cosmic', 'wild', 'sunny', 'frosty', 'turbo', 'magic', 'rapid', 'clever', 'shiny', 'stormy', 'jolly'];
+const PW_B = ['fox', 'owl', 'tiger', 'comet', 'rocket', 'panda', 'wizard', 'falcon', 'dragon', 'pixel', 'ninja', 'koala', 'robot', 'shark', 'otter', 'lion'];
+const genPw = () => `${PW_A[crypto.randomInt(PW_A.length)]}-${PW_B[crypto.randomInt(PW_B.length)]}-${crypto.randomInt(10, 100)}`;
+const genPwList = (n) => { const s = new Set(); while (s.size < n) s.add(genPw()); return [...s]; };
+/** The real password plus two decoys: one shares its first letter, one does not. */
+function pwOptions(real) {
+  const out = new Set([real]);
+  for (let i = 0; i < 200 && out.size < 2; i++) { const d = genPw(); if (d[0] === real[0] && !out.has(d)) out.add(d); }
+  for (let i = 0; i < 200 && out.size < 3; i++) { const d = genPw(); if (d[0] !== real[0] && !out.has(d)) out.add(d); }
+  while (out.size < 3) out.add(genPw());
+  return shuffle([...out]);
+}
+/** Share of the victim's credits that a hacker takes: found fast 50-60%, slow 20-50%. */
+export function hackShare(seconds) {
+  if (seconds <= 6) return 0.6 - 0.1 * (seconds / 6);
+  if (seconds <= 20) return 0.5 - 0.3 * ((seconds - 6) / 14);
+  return 0.2;
+}
+/** Three mystery boxes after a right answer: credit gifts, a jackpot or a hack. */
+function rollBoxes() {
+  return Array.from({ length: 3 }, () => {
+    const r = crypto.randomInt(100);
+    if (r < 34) return { t: 'hack' };
+    if (r < 42) return { t: 'jackpot', amt: 300 };
+    return { t: 'bonus', amt: 50 + 10 * crypto.randomInt(0, 11) };
+  });
+}
+const parse = (s) => { try { return s ? JSON.parse(s) : null; } catch { return null; } };
+
+/** What a raid player may see of their pending box / hack step (never the real password). */
+function raidView(me) {
+  const pend = parse(me.pending);
+  const out = { hacks: me.hacks, hacked: me.hacked, stolen: me.stolen, hit: me.hit_seq ? { seq: me.hit_seq, by: me.hit_by, amt: me.hit_amt } : null, stage: null };
+  if (pend?.boxes) out.stage = 'boxes';
+  else if (pend?.hack) Object.assign(out, { stage: 'hack', victim: pend.hack.victim, options: pend.hack.options, hint: pend.hack.hint });
+  return out;
 }
 
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -138,8 +186,8 @@ async function addBot(room, avoid, level = 'medium') {
     const ps = await db.all('SELECT team FROM game_players WHERE code = ?', [room.code]);
     team = ps.filter((p) => p.team === TEAMS[0]).length <= ps.filter((p) => p.team === TEAMS[1]).length ? TEAMS[0] : TEAMS[1];
   }
-  await db.run('INSERT INTO game_players (code, token, name, avatar, team, is_bot, bot_level, bot_speed) VALUES (?,?,?,?,?, true, ?, ?)',
-    [room.code, 'bot-' + crypto.randomBytes(12).toString('hex'), name, avatar, team, L.acc, L.base]);
+  await db.run('INSERT INTO game_players (code, token, name, avatar, team, is_bot, bot_level, bot_speed, pw) VALUES (?,?,?,?,?, true, ?, ?, ?)',
+    [room.code, 'bot-' + crypto.randomBytes(12).toString('hex'), name, avatar, team, L.acc, L.base, genPw()]);
 }
 const startRoom = (code) => db.run("UPDATE game_rooms SET status = 'playing', started_at = now(), ends_at = now() + (minutes || ' minutes')::interval WHERE code = ? AND status = 'lobby'", [code]);
 
@@ -230,11 +278,11 @@ export function registerGame(app, { h, bad, accessFor }) {
     await db.run("DELETE FROM game_rooms WHERE created_at < now() - interval '2 days'");
     const code = await newCode();
     const host_token = crypto.randomBytes(18).toString('hex');
-    await db.run('INSERT INTO game_rooms (code, host_user, host_token, mode, minutes, questions, title, zone) VALUES (?,?,?,?,?,?,?,?)',
-      [code, me.id, host_token, mode, minutes, JSON.stringify(questions), String(req.body?.title || '').slice(0, 60), zone]);
+    await db.run('INSERT INTO game_rooms (code, host_user, host_token, mode, minutes, questions, title, zone, raid) VALUES (?,?,?,?,?,?,?,?,?)',
+      [code, me.id, host_token, mode, minutes, JSON.stringify(questions), String(req.body?.title || '').slice(0, 60), zone, !!req.body?.raid]);
     const room = await db.one('SELECT * FROM game_rooms WHERE code = ?', [code]);
     for (let i = 0; i < bots; i++) await addBot(room, null, botLevel);
-    res.json({ code, host_token, mode, questions: questions.length, minutes });
+    res.json({ code, host_token, mode, questions: questions.length, minutes, raid: !!req.body?.raid });
   }));
 
   // join with a nickname and a character
@@ -254,7 +302,8 @@ export function registerGame(app, { h, bad, accessFor }) {
     const token = crypto.randomBytes(18).toString('hex');
     const me = tokenUser(req);
     if (VIP_CHARACTERS.has(avatar) && !(me && (await isVip(me.id)))) avatar = 'owl';
-    await db.run('INSERT INTO game_players (code, token, user_id, name, avatar, team) VALUES (?,?,?,?,?,?)', [room.code, token, me?.id || null, name, avatar, team]);
+    const pw = String(req.body?.pw || '').replace(/[^a-z0-9-]/gi, '').slice(0, 24) || genPw();
+    await db.run('INSERT INTO game_players (code, token, user_id, name, avatar, team, pw) VALUES (?,?,?,?,?,?,?)', [room.code, token, me?.id || null, name, avatar, team, pw]);
     res.json({ token, team });
   }));
 
@@ -267,15 +316,15 @@ export function registerGame(app, { h, bad, accessFor }) {
     const token = String(req.query.token || '');
     const isHost = token && token === room.host_token;
     if (token && !isHost) await db.run('UPDATE game_players SET seen_at = now() WHERE token = ?', [token]);
-    const players = await db.all('SELECT id, token, name, avatar, team, score, correct, answered, streak, best_streak, is_bot FROM game_players WHERE code = ? ORDER BY score DESC, correct DESC, joined_at', [room.code]);
+    const players = await db.all('SELECT id, token, name, avatar, team, score, correct, answered, streak, best_streak, is_bot, hacks, hacked, stolen, pw, pending, hit_by, hit_amt, hit_seq FROM game_players WHERE code = ? ORDER BY score DESC, correct DESC, joined_at', [room.code]);
     const questions = JSON.parse(room.questions);
     const me = players.find((p) => p.token === token);
     const teams = room.mode === 'team' ? TEAMS.map((t) => { const ps = players.filter((p) => p.team === t); return { name: t, score: ps.reduce((s, p) => s + p.score, 0), players: ps.length }; }) : [];
     res.json({
-      code: room.code, mode: room.mode, quick: !!room.quick, zone: room.zone || 'classic', status: room.status, minutes: room.minutes, title: room.title, total: questions.length,
+      code: room.code, mode: room.mode, raid: !!room.raid, quick: !!room.quick, zone: room.zone || 'classic', status: room.status, minutes: room.minutes, title: room.title, total: questions.length,
       seconds_left: room.ends_at ? Math.max(0, Math.round((new Date(room.ends_at) - Date.now()) / 1000)) : room.minutes * 60,
-      host: isHost, players: players.map(({ token: _t, ...p }) => ({ ...p, me: p.id === me?.id })), teams,
-      me: me ? { id: me.id, name: me.name, avatar: me.avatar, team: me.team, score: me.score, answered: me.answered, correct: me.correct, streak: me.streak } : null,
+      host: isHost, players: players.map(({ token: _t, pw: _w, pending: _p, hit_by: _b, hit_amt: _a, hit_seq: _s, ...p }) => ({ ...p, me: p.id === me?.id })), teams,
+      me: me ? { id: me.id, name: me.name, avatar: me.avatar, team: me.team, score: me.score, answered: me.answered, correct: me.correct, streak: me.streak, pw: room.raid ? me.pw : undefined, raid: room.raid ? raidView(me) : undefined } : null,
       // questions go to players only while the game runs; answers are never included
       questions: me && room.status === 'playing' ? questions.map((q) => ({ kind: q.kind, prompt: q.prompt, uz: q.uz, options: q.options })) : undefined,
       review: room.status === 'finished' ? questions.map((q) => ({ kind: q.kind, prompt: q.prompt, answer: q.options[q.answer], word: q.word })) : undefined,
@@ -323,6 +372,70 @@ export function registerGame(app, { h, bad, accessFor }) {
     const gain = correct ? 100 + Math.min(p.streak, 5) * 20 : 0;
     await db.run('UPDATE game_players SET answered = answered + 1, correct = correct + ?, score = score + ?, streak = ?, best_streak = GREATEST(best_streak, ?), seen_at = now() WHERE id = ? AND answered = ?',
       [correct ? 1 : 0, gain, streak, streak, p.id, qi]);
-    res.json({ correct, answer: q.answer, gain, score: p.score + gain, streak, done: qi + 1 >= questions.length });
+    const done = qi + 1 >= questions.length;
+    // Cipher Raid: a right answer earns three mystery boxes (not on the very last question: nothing left to spend them on)
+    let raid = null;
+    if (room.raid) {
+      const boxes = correct && !done ? rollBoxes() : null;
+      await db.run('UPDATE game_players SET pending = ? WHERE id = ?', [boxes ? JSON.stringify({ boxes }) : '', p.id]);
+      if (boxes) raid = { stage: 'boxes' };
+    }
+    res.json({ correct, answer: q.answer, gain, score: p.score + gain, streak, done, raid });
+  }));
+
+  // Cipher Raid: five random passwords to pick from when joining
+  app.get('/api/game/:code/passwords', h(async (req, res) => { res.json({ passwords: genPwList(5) }); }));
+
+  // open one of the three boxes: credits, a jackpot or a hack
+  app.post('/api/game/:code/box', h(async (req, res) => {
+    const room = await db.one('SELECT * FROM game_rooms WHERE code = ?', [String(req.params.code)]);
+    if (!room || !room.raid || room.status !== 'playing') return bad(res, 'The game is not running', 409);
+    const p = await db.one('SELECT * FROM game_players WHERE code = ? AND token = ?', [room.code, String(req.body?.token || '')]);
+    if (!p) return bad(res, 'Join the game first', 403);
+    const pend = parse(p.pending);
+    const box = pend?.boxes?.[Number(req.body?.i)];
+    if (!box) return bad(res, 'No box to open', 409);
+    const claim = await db.run("UPDATE game_players SET pending = '' WHERE id = ? AND pending = ?", [p.id, p.pending]);
+    if (!claim.rowCount) return bad(res, 'Box already opened', 409);
+    const others = await db.all('SELECT id, name, avatar, team, score, pw FROM game_players WHERE code = ? AND id <> ?', [room.code, p.id]);
+    let pool = others.filter((o) => (room.mode === 'team' ? o.team !== p.team : true) && o.score > 0);
+    let kind = box.t;
+    if (kind === 'hack' && !pool.length) kind = 'bonus';
+    const all = pend.boxes.map((b, i) => (i === Number(req.body.i) ? { ...b, t: kind, amt: kind === 'bonus' && !b.amt ? 100 : b.amt } : b));
+    if (kind === 'hack') {
+      const v = pool[crypto.randomInt(pool.length)];
+      const options = pwOptions(v.pw || genPw());
+      const hack = { victim_id: v.id, victim: { name: v.name, avatar: v.avatar }, options, hint: (v.pw || '?')[0], t: Date.now() };
+      await db.run('UPDATE game_players SET pending = ? WHERE id = ?', [JSON.stringify({ hack }), p.id]);
+      return res.json({ kind: 'hack', victim: hack.victim, options, hint: hack.hint, boxes: all.map((b) => b.t) });
+    }
+    const amt = box.t === 'hack' ? 100 : box.amt;
+    await db.run('UPDATE game_players SET score = score + ? WHERE id = ?', [amt, p.id]);
+    res.json({ kind, amt, score: p.score + amt, boxes: all.map((b) => b.t) });
+  }));
+
+  // guess the victim's real password; faster = a bigger share of their credits
+  app.post('/api/game/:code/hack', h(async (req, res) => {
+    const room = await db.one('SELECT * FROM game_rooms WHERE code = ?', [String(req.params.code)]);
+    if (!room || !room.raid || room.status !== 'playing') return bad(res, 'The game is not running', 409);
+    const p = await db.one('SELECT * FROM game_players WHERE code = ? AND token = ?', [room.code, String(req.body?.token || '')]);
+    if (!p) return bad(res, 'Join the game first', 403);
+    const hack = parse(p.pending)?.hack;
+    if (!hack) return bad(res, 'No hack in progress', 409);
+    const claim = await db.run("UPDATE game_players SET pending = '' WHERE id = ? AND pending = ?", [p.id, p.pending]);
+    if (!claim.rowCount) return bad(res, 'Already done', 409);
+    const v = await db.one('SELECT * FROM game_players WHERE id = ? AND code = ?', [hack.victim_id, room.code]);
+    const found = !!v && hack.options[Number(req.body?.choice)] === v.pw;
+    const seconds = (Date.now() - hack.t) / 1000;
+    let amt = 0; let pct = 0;
+    if (found) {
+      pct = hackShare(seconds);
+      amt = Math.min(v.score, Math.floor(v.score * pct));
+      if (amt > 0) {
+        await db.run('UPDATE game_players SET score = GREATEST(score - ?, 0), hacked = hacked + 1, hit_by = ?, hit_amt = ?, hit_seq = hit_seq + 1 WHERE id = ?', [amt, p.name, amt, v.id]);
+        await db.run('UPDATE game_players SET score = score + ?, hacks = hacks + 1, stolen = stolen + ? WHERE id = ?', [amt, amt, p.id]);
+      }
+    }
+    res.json({ found, amt, pct: Math.round(pct * 100), seconds: Math.round(seconds * 10) / 10, victim: hack.victim, score: p.score + amt });
   }));
 }

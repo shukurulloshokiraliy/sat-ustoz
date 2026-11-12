@@ -3408,3 +3408,43 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .adm-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 420px; overflow: auto; }
 .adm-log li { display: grid; grid-template-columns: 130px 140px minmax(0, 1fr); gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: .88rem; }
 @media (max-width: 640px) { .adm-log li { grid-template-columns: 1fr; gap: 0; } }
+
+/* ===== Word Arena: Cipher Raid ===== */
+.raid-pw { display: grid; gap: 8px; text-align: left; }
+.raid-hint { margin: 0; font-size: .85rem; color: #5B6275; }
+.raid-pw-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.raid-pw-list button { font: 700 .88rem ui-monospace, SFMono-Regular, Menlo, monospace; padding: 9px 12px; border-radius: 12px; border: 2px solid #D9DEE5; background: #F5F7F8; color: var(--night); cursor: pointer; }
+.raid-pw-list button.on { border-color: var(--signal); background: var(--sky-50); }
+.raid-pw input { font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important; font-size: .95rem !important; padding: 11px !important; }
+.raid-mypw { display: block; margin-top: 6px; }
+.raid-mypw b { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--sun); }
+.raid-layer { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(10, 13, 36, .82); }
+.raid-card { width: min(440px, 100%); background: #0F1430; color: #E8ECFF; border: 1px solid #2B3470; border-radius: 22px; padding: 20px 18px; display: grid; gap: 14px; text-align: center; font-family: var(--font); }
+.raid-card h3 { margin: 0; font-size: 1.3rem; }
+.raid-tag { font: 800 .72rem ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .14em; color: var(--mint); }
+.raid-tag.hot { color: var(--coral); }
+.raid-boxes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.raid-box { aspect-ratio: 1; border-radius: 16px; border: 2px solid #2B3470; background: #171E4D; color: #E8ECFF; display: grid; place-items: center; align-content: center; gap: 8px; cursor: pointer; font: 700 .85rem var(--font); transition: transform .12s; }
+.raid-box:hover:not(:disabled) { transform: translateY(-3px); border-color: var(--sun); }
+.raid-box:disabled { cursor: default; }
+.raid-box.on { border-color: var(--sun); }
+.raid-box.t-hack { background: #4A1F2B; border-color: var(--coral); }
+.raid-box.t-jackpot { background: #4A3C10; border-color: var(--sun); }
+.raid-box.t-bonus { background: #123D33; border-color: var(--mint); }
+.raid-lock { width: 22px; height: 18px; border-radius: 5px; background: var(--sun); position: relative; margin-top: 8px; }
+.raid-lock::before { content: ''; position: absolute; left: 4px; top: -10px; width: 10px; height: 12px; border: 3px solid var(--sun); border-bottom: 0; border-radius: 8px 8px 0 0; }
+.raid-gain { margin: 0; font-weight: 800; font-size: 1.1rem; color: var(--mint); }
+.raid-gain.miss { color: var(--coral); }
+.raid-target { display: flex; align-items: center; gap: 12px; text-align: left; }
+.raid-target b { display: block; font-size: 1.05rem; }
+.raid-target small { color: #A9B3E6; }
+.raid-opts { display: grid; gap: 8px; }
+.raid-opt { font: 700 1rem ui-monospace, SFMono-Regular, Menlo, monospace; padding: 14px; border-radius: 14px; border: 2px solid #2B3470; background: #171E4D; color: #E8ECFF; cursor: pointer; }
+.raid-opt:hover:not(:disabled) { border-color: var(--sun); }
+.raid-opt.right { background: #123D33; border-color: var(--mint); }
+.raid-opt.wrong { background: #4A1F2B; border-color: var(--coral); }
+.raid-opt.dim { opacity: .45; }
+.raid-meter { margin: 0; font-size: .9rem; color: #A9B3E6; }
+.raid-meter b { color: var(--sun); font-size: 1.1rem; }
+.raid-hit { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 70; max-width: calc(100% - 32px); background: #4A1F2B; color: #fff; border: 1px solid var(--coral); border-radius: 14px; padding: 10px 16px; font-size: .92rem; box-shadow: 0 8px 24px rgba(0,0,0,.35); text-align: center; }
+@media (prefers-reduced-motion: reduce) { .raid-box { transition: none; } }

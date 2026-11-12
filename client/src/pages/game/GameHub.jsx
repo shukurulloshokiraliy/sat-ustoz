@@ -51,6 +51,7 @@ function Hub({ d }) {
   const [minutes, setMinutes] = useState(3);
   const vip = isVip(user);
   const [zone, setZone] = useState('classic');
+  const [raid, setRaid] = useState(false);
   const [bots, setBots] = useState(0);
   const [botLevel, setBotLevel] = useState('easy');
   const pickZone = (z) => (z.free || vip ? setZone(z.id) : nav('/subscribe'));
@@ -79,7 +80,7 @@ function Hub({ d }) {
   const host = async () => {
     setBusy(true);
     try {
-      const r = await api.post('/game/rooms', { mode, questions: count, minutes, set_ids: [...chosen], zone, bots: mode === 'duel' ? Math.min(1, bots) : bots, bot_level: botLevel });
+      const r = await api.post('/game/rooms', { mode, questions: count, minutes, set_ids: [...chosen], zone, raid, bots: mode === 'duel' ? Math.min(1, bots) : bots, bot_level: botLevel });
       store.set(hostKey(r.code), r.host_token);
       // students and duel hosts play too; a teacher usually just shows the board
       nav(`/play/${r.code}${user.role === 'master' && mode !== 'duel' ? '?screen=1' : ''}`);
@@ -212,9 +213,10 @@ function Hub({ d }) {
               </div>
               <div className="arena-nums">
                 <div><b>Questions</b><Chips label="Questions" value={count} onChange={setCount} options={[10, 15, 20, 30].map((n) => ({ value: n, label: String(n) }))} /></div>
+                <div><b>Cipher Raid</b><Chips label="Cipher Raid" value={raid} onChange={setRaid} options={[{ value: false, label: 'Off' }, { value: true, label: 'On' }]} /><small className="muted">Right answers open mystery boxes. A hack lets a player steal credits by guessing another player’s password.</small></div>
                 <div><b>Time</b><Chips label="Time" value={minutes} onChange={setMinutes} options={[2, 3, 5, 8].map((n) => ({ value: n, label: `${n} min` }))} /></div>
               </div>
-              <p className="ar-summary">{MODES.find((m) => m.id === mode)?.title} · {ZONES.find((z) => z.id === zone)?.name}{bots ? ` · ${bots} ${BOT_LEVELS.find((l) => l.id === botLevel)?.name.toLowerCase()} bot${bots > 1 ? 's' : ''}` : ''} · {count} questions · {minutes} min</p>
+              <p className="ar-summary">{MODES.find((m) => m.id === mode)?.title} · {ZONES.find((z) => z.id === zone)?.name}{bots ? ` · ${bots} ${BOT_LEVELS.find((l) => l.id === botLevel)?.name.toLowerCase()} bot${bots > 1 ? 's' : ''}` : ''} · {count} questions · {minutes} min{raid ? ' · Cipher Raid' : ''}</p>
               <div className="row between"><button className="btn ghost" onClick={() => setStep(2)}>Back</button>
                 <button className="btn primary lg" disabled={busy || !chosen.size} onClick={host}>{busy ? 'Creating…' : 'Create game'} <IconArrow /></button></div>
             </>
