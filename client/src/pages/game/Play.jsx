@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth } from '../../context.jsx';
-import { Confetti, Spinner } from '../../components/ui.jsx';
+import { Confetti, Modal, Spinner } from '../../components/ui.jsx';
 import Character, { CHARACTERS, CHARACTER_KEYS, CHARACTER_SETS, isVipCharacter } from '../../components/Character.jsx';
 import { Chips, DUEL_KEY, hostKey, playerKey, store, HERO_KEY } from './GameHub.jsx';
 import { BOT_LEVELS, ZONE, ZoneTrack, arenaTheme, isVip } from './zones.jsx';
@@ -81,6 +81,7 @@ function Join({ code, room, onJoined }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [set, setSet] = useState('All');
+  const [picking, setPicking] = useState(false);
   const [pw, setPw] = useState('');
   const join = async (e) => {
     e.preventDefault(); setBusy(true); setError('');
@@ -90,22 +91,27 @@ function Join({ code, room, onJoined }) {
   return (
     <form className="arena-card arena-joinform" onSubmit={join}>
       <small className="arena-label">GAME {code} · {room.mode === 'team' ? 'TEAM BATTLE' : room.mode === 'duel' ? 'DUEL' : 'CLASSIC'}{room.raid ? ' · CIPHER RAID' : ''}</small>
-      <div className={`arena-me r-${CHARACTERS[avatar].rarity}`} style={{ '--glow': CHARACTERS[avatar].body }}>
-        <Character key={avatar} kind={avatar} size={128} mood="win" className="pop" />
+      <button type="button" className={`arena-me tap r-${CHARACTERS[avatar].rarity}`} style={{ '--glow': CHARACTERS[avatar].body }} onClick={() => setPicking(true)} aria-label="Change your character">
+        <Character key={avatar} kind={avatar} size={104} mood="win" className="pop" />
         <b>{CHARACTERS[avatar].name}</b><span className="arena-rarity">{CHARACTERS[avatar].rarity}</span>
-      </div>
+        <em>Tap to change</em>
+      </button>
       <input value={name} onChange={(e) => setName(e.target.value.slice(0, 18))} placeholder="Your nickname" aria-label="Nickname" required minLength={2} />
-      <div className="arena-groups" role="tablist" aria-label="Character groups">
-        {['All', ...CHARACTER_SETS].map((x) => <button type="button" key={x} role="tab" aria-selected={set === x} className={set === x ? 'on' : ''} onClick={() => setSet(x)}>{x}</button>)}
-      </div>
-      <div className="arena-pick" role="radiogroup" aria-label="Choose your character">
-        {CHARACTER_KEYS.filter((k) => set === 'All' || CHARACTERS[k].set === set).map((k) => (
-          <button type="button" key={k} role="radio" aria-checked={avatar === k} title={CHARACTERS[k].name} className={`r-${CHARACTERS[k].rarity} ${avatar === k ? 'on' : ''} ${isVipCharacter(k) && !vipJoin ? 'locked' : ''}`} onClick={() => { if (isVipCharacter(k) && !vipJoin) return; setAvatar(k); store.set(HERO_KEY, k); }}>
-            <Character kind={k} size={52} />
-          </button>
-        ))}
-      </div>
-      <button type="button" className="arena-random" onClick={() => { const pool = CHARACTER_KEYS.filter((k) => vipJoin || !isVipCharacter(k)); setAvatar(pool[Math.floor(Math.random() * pool.length)]); }}>Surprise me</button>
+      {picking && (
+        <Modal title="Choose your character" onClose={() => setPicking(false)} wide>
+          <div className="arena-groups" role="tablist" aria-label="Character groups">
+            {['All', ...CHARACTER_SETS].map((x) => <button type="button" key={x} role="tab" aria-selected={set === x} className={set === x ? 'on' : ''} onClick={() => setSet(x)}>{x}</button>)}
+          </div>
+          <div className="arena-pick sheet" role="radiogroup" aria-label="Choose your character">
+            {CHARACTER_KEYS.filter((k) => set === 'All' || CHARACTERS[k].set === set).map((k) => (
+              <button type="button" key={k} role="radio" aria-checked={avatar === k} title={CHARACTERS[k].name} className={`r-${CHARACTERS[k].rarity} ${avatar === k ? 'on' : ''} ${isVipCharacter(k) && !vipJoin ? 'locked' : ''}`} onClick={() => { if (isVipCharacter(k) && !vipJoin) return; setAvatar(k); store.set(HERO_KEY, k); setPicking(false); }}>
+                <Character kind={k} size={56} />
+              </button>
+            ))}
+          </div>
+          <button type="button" className="arena-random" onClick={() => { const pool = CHARACTER_KEYS.filter((k) => vipJoin || !isVipCharacter(k)); setAvatar(pool[Math.floor(Math.random() * pool.length)]); setPicking(false); }}>Surprise me</button>
+        </Modal>
+      )}
       {room.raid && <PasswordPick code={code} value={pw} onChange={setPw} />}
       {error && <p className="arena-err">{error}</p>}
       <button className="btn sun lg block" disabled={busy || name.trim().length < 2 || (room.raid && pw.length < 3)}>{busy ? 'Joining…' : 'Enter the arena'}</button>
@@ -246,7 +252,7 @@ function Questions({ room, token, reload }) {
       (r.correct ? sfxRight : sfxWrong)();
       setMe((m) => ({ ...m, score: r.score, streak: r.streak, correct: (m.correct || 0) + (r.correct ? 1 : 0) })); lastLocal.current = Date.now();
       if (r.raid) { setTimeout(() => setRaid({ stage: 'boxes' }), 650); return; }
-      setTimeout(() => { setFb(null); setQi((i) => i + 1); busy.current = false; if (r.done) reload(); }, r.correct ? 700 : 1400);
+      setTimeout(() => { setFb(null); setQi((i) => i + 1); busy.current = false; if (r.done) reload(); }, r.correct ? 700 : 3000);
     } catch { busy.current = false; reload(); }
   };
   useEffect(() => {
@@ -324,6 +330,39 @@ function Board({ room, isHost, hostToken, reload }) {
   );
 }
 
+/** Full results after the game: accuracy, right and wrong answers and credits for every player. */
+function Results({ room }) {
+  const rows = room.players;
+  if (!rows.length) return null;
+  return (
+    <section className="arena-results" aria-label="Results">
+      <h2>Results</h2>
+      <ol>
+        {rows.map((p, i) => {
+          const wrong = Math.max(0, p.answered - p.correct);
+          const pct = p.answered ? Math.round((p.correct / p.answered) * 100) : 0;
+          const tone = pct >= 80 ? 'good' : pct >= 60 ? 'mid' : 'low';
+          return (
+            <li key={p.id} className={p.me ? 'me' : ''}>
+              <span className="pos">{i + 1}</span>
+              <Character kind={p.avatar} size={38} />
+              <b className="nm">{p.name}{p.team && <span className={`arena-tag ${p.team.toLowerCase()}`}>{p.team}</span>}</b>
+              <span className={`ring ${tone}`} style={{ '--p': pct }}><i>{pct}%</i></span>
+              <strong className="cr">{p.score}<small>credits</small></strong>
+              <span className="split" aria-label={`${p.correct} right, ${wrong} wrong`}>
+                {p.answered > 0 ? (<>
+                  <span className="ok" style={{ flexGrow: p.correct || 0.001 }}>{p.correct > 0 ? `✓ ${p.correct}` : ''}</span>
+                  <span className="no" style={{ flexGrow: wrong || 0.001 }}>{wrong > 0 ? `✗ ${wrong}` : ''}</span>
+                </>) : <span className="none">no answers</span>}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
 function Podium({ room }) {
   useEffect(() => { stopMusic(); sfxWin(); }, []);
   const top = room.players.slice(0, 3);
@@ -350,6 +389,7 @@ function Podium({ room }) {
           );
         })}
       </div>
+      <Results room={room} />
       {room.review && (
         <details className="arena-review">
           <summary>See the answers</summary>

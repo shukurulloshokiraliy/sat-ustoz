@@ -3501,3 +3501,51 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .arena-numbox input { width: 52px !important; height: auto !important; min-height: 0 !important; border: 0 !important; box-shadow: none !important; background: transparent !important; color: var(--ink); font: 700 .9rem var(--font); text-align: center; outline: 0; padding: 0 !important; margin: 0; -moz-appearance: textfield; }
 .arena-numbox input::-webkit-outer-spin-button, .arena-numbox input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .arena-deck { display: grid; gap: 4px; margin-bottom: 6px; }
+
+/* join screen: the character is one tap away, not a long grid */
+.arena-joinform .arena-me.tap { border: 0; background: none; cursor: pointer; font: inherit; color: inherit; display: grid; justify-items: center; gap: 2px; padding: 0; }
+.arena-joinform .arena-me.tap em { font-style: normal; font-size: .78rem; color: #5B6275; }
+.arena-joinform .arena-me.tap:hover em { color: var(--signal); }
+.arena-pick.sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 8px; max-height: none; overflow: visible; }
+@media (max-width: 760px) {
+  .arena-joinform { margin-top: 8px; gap: 10px; padding: 16px; }
+  /* Word Arena home: short on a phone */
+  .ar-stage { padding: 16px; gap: 10px; }
+  .ar-copy p, .ar-fighter em, .ar-look-note { display: none; }
+  .ar-copy h1 { font-size: 1.6rem; margin: 4px 0 0; }
+  .ar-fighter .char, .ar-q { width: 72px !important; height: 72px !important; } .ar-ring { width: 88px; height: 88px; }
+  .ar-fighter b { font-size: .88rem; }
+  .ar-vs-badge { font-size: 1.4rem; }
+  .ar-bgs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; } .ar-bgs::-webkit-scrollbar { display: none; }
+  .ar-bg { flex: none; width: 92px; height: 48px; }
+  .ar-look { gap: 10px; }
+}
+
+/* results table after a game (accuracy, right / wrong, credits) */
+.arena-results { width: min(760px, 100%); margin: 18px auto 6px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 22px; padding: 14px 14px 8px; color: #fff; text-align: left; }
+.arena-results h2 { font-size: 1.05rem; margin: 0 0 8px 4px; }
+.arena-results ol { list-style: none; margin: 0; padding: 0; display: grid; }
+.arena-results li { display: grid; grid-template-columns: 24px 38px minmax(0, 1fr) 46px auto; grid-template-areas: 'pos av nm ring cr' '. . split split split'; align-items: center; gap: 4px 10px; padding: 10px 6px; border-top: 1px solid rgba(255,255,255,.1); }
+.arena-results li:first-child { border-top: 0; }
+.arena-results li.me { background: rgba(255,203,61,.12); border-radius: 14px; }
+.arena-results .pos { grid-area: pos; font-weight: 800; color: #B9C1E6; text-align: center; }
+.arena-results .char { grid-area: av; }
+.arena-results .nm { grid-area: nm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .95rem; }
+.arena-results .nm .arena-tag { margin-left: 6px; }
+.arena-results .ring { grid-area: ring; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--rc) calc(var(--p) * 1%), rgba(255,255,255,.14) 0); --rc: #3CCB9A; }
+.arena-results .ring.mid { --rc: #FFCB3D; } .arena-results .ring.low { --rc: #F28B6E; }
+.arena-results .ring i { font-style: normal; font: 800 .68rem var(--font); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: #1B2150; }
+.arena-results .cr { grid-area: cr; text-align: right; font: 800 1rem var(--font); }
+.arena-results .cr small { display: block; font: 600 .62rem var(--font); color: #B9C1E6; }
+.arena-results .split { grid-area: split; display: flex; height: 22px; border-radius: 8px; overflow: hidden; gap: 2px; font: 800 .72rem var(--font); }
+.arena-results .split span { display: flex; align-items: center; padding: 0 8px; min-width: 0; white-space: nowrap; }
+.arena-results .ok { background: #2FA04E; } .arena-results .no { background: #C0392B; justify-content: flex-end; } .arena-results .none { background: rgba(255,255,255,.12); color: #B9C1E6; flex: 1; }
+@media (max-width: 760px) { .arena-results { padding: 12px 10px 4px; border-radius: 18px; } .arena-results li { grid-template-columns: 20px 34px minmax(0, 1fr) 42px auto; gap: 4px 8px; } .arena-results .ring { width: 40px; height: 40px; } .arena-results .ring i { width: 30px; height: 30px; font-size: .62rem; } }
+
+/* phone: shorter join screen, readable character sheet */
+.arena-groups button { color: inherit; }
+.modal .arena-groups { background: var(--surface-2, #F1F3F6); } .modal .arena-groups button { color: var(--ink, #161B3D); } .modal .arena-groups button.on { background: var(--primary, #2A55E5); color: #fff; }
+.raid-pw-list { display: grid; grid-template-columns: 1fr 1fr; } .raid-pw-list button { font-size: .8rem; padding: 9px 8px; text-align: center; }
+@media (max-width: 560px) { .arena-joinform .arena-me.tap .char { width: 84px !important; height: 84px !important; } .arena-joinform .arena-label { font-size: .7rem; } .arena.is-raid .arena-brand b::after { display: none; } }
+.modal .arena-groups { flex: 0 0 auto; min-height: 44px; align-items: stretch; margin-bottom: 12px; }
+.modal .arena-groups button { flex: 0 0 auto; min-height: 36px; line-height: 1.2; padding: 8px 14px; }

@@ -16,11 +16,11 @@ export function PasswordPick({ code, value, onChange }) {
   return (
     <div className="raid-pw">
       <small className="arena-label">YOUR SECRET PASSWORD</small>
-      <p className="raid-hint">Other players will try to guess it to steal your credits. Pick one and remember it.</p>
+      <p className="raid-hint">Others try to guess it to steal your credits. Remember it.</p>
       <div className="raid-pw-list" role="radiogroup" aria-label="Choose a password">
         {list.map((p) => <button type="button" key={p} role="radio" aria-checked={value === p} className={value === p ? 'on' : ''} onClick={() => onChange(p)}>{p}</button>)}
       </div>
-      <input value={value} onChange={(e) => onChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24))} placeholder="or type your own" aria-label="Your own password" maxLength={24} />
+      <input value={list.includes(value) ? '' : value} onChange={(e) => onChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24))} placeholder="or type your own" aria-label="Your own password" maxLength={24} />
     </div>
   );
 }
