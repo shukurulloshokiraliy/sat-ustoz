@@ -3,7 +3,7 @@ import { useAuth, useTheme } from '../context.jsx';
 import { getConfig } from '../config.js';
 import GoogleButton from '../components/GoogleButton.jsx';
 import TelegramLogin from '../components/TelegramLogin.jsx';
-import { IconMoon, IconSun, Logo } from '../components/icons.jsx';
+import { IconDashboard, IconMoon, IconSun, Logo } from '../components/icons.jsx';
 import { Segmented } from '../components/ui.jsx';
 
 export default function Login() {
@@ -56,9 +56,13 @@ export default function Login() {
           <h2>Every student needs an <em>ustoz.</em></h2>
           <p>SAT Reading &amp; Writing from 200 to 800: a step-by-step roadmap, video lessons, practice with instant feedback and timed mock tests.</p>
         </div>
+        <figure className="login-ustoz">
+          <span className="disc"><img src="/founder.jpg" alt="Axror Alimjon, your SAT teacher" width="96" height="96" /></span>
+          <figcaption><b>Axror Alimjon</b><span>Your SAT teacher. Every lesson here is his method.</span></figcaption>
+        </figure>
       </div>
       <div className="login-form">
-        <div className="login-top row" style={{ gap: 8 }}><a className="btn ghost sm" href="/">← Home</a><button className="icon-btn" onClick={toggle} aria-label="Toggle theme">{theme === 'dark' ? <IconSun /> : <IconMoon />}</button></div>
+        <div className="login-top row" style={{ gap: 8 }}><a className="icon-btn" href="/" aria-label="Home" title="Home"><IconDashboard /></a><button className="icon-btn theme-btn" onClick={toggle} aria-label="Toggle theme" title="Toggle theme"><span key={theme} className="spin-in">{theme === 'dark' ? <IconSun /> : <IconMoon />}</span></button></div>
         <form className="login-card" onSubmit={submit}>
           <div className="login-mark"><Logo size={30} /></div>
           <div>
