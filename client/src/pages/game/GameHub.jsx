@@ -31,7 +31,7 @@ export const store = {
 // one list of games: every game has its own look, so there is no separate "world" step
 const GAMES = [
   { id: 'classic', title: 'Classic', text: 'Leaderboard with points and streaks.', mode: 'classic', zone: 'classic', runner: 'owl' },
-  { id: 'raid', title: 'Cipher Raid', text: 'Hacking mode: open boxes, guess passwords, steal credits.', mode: 'classic', zone: 'classic', raid: true, runner: 'robot' },
+  { id: 'raid', title: 'Hacking Mode', text: 'Cipher Raid: answer right, open boxes, guess passwords, steal credits.', mode: 'classic', zone: 'classic', raid: true, runner: 'robot' },
   { id: 'race', title: 'Race Track', text: 'Every right answer is a sprint to the finish.', mode: 'classic', zone: 'race', runner: 'fox' },
   { id: 'space', title: 'Space Race', text: 'Fly past the planets to the moon base.', mode: 'classic', zone: 'space', runner: 'robot' },
   { id: 'ocean', title: 'Deep Dive', text: 'Swim through the reef to the sunken treasure.', mode: 'classic', zone: 'ocean', runner: 'axolotl' },
