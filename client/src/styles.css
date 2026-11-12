@@ -3492,3 +3492,12 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .w-duel .ar-world-scene i { display: none; }
 .w-duel .ar-world-runner { left: 50%; transform: translateX(-50%); animation: ar-bounce 1.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .w-raid .ar-world-scene i { animation: none; } }
+
+/* host setup: free number boxes and grouped word sets */
+.arena-numpick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.arena-numbox { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; height: 36px; border: 1.5px solid var(--line); border-radius: 99px; background: var(--surface); color: var(--muted); font: 700 .82rem var(--font); }
+.arena-numbox.on { border-color: var(--primary); color: var(--primary); }
+.arena-nums .arena-numbox, .arena-numbox { display: inline-flex; flex-direction: row; align-items: center; white-space: nowrap; }
+.arena-numbox input { width: 52px !important; height: auto !important; min-height: 0 !important; border: 0 !important; box-shadow: none !important; background: transparent !important; color: var(--ink); font: 700 .9rem var(--font); text-align: center; outline: 0; padding: 0 !important; margin: 0; -moz-appearance: textfield; }
+.arena-numbox input::-webkit-outer-spin-button, .arena-numbox input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.arena-deck { display: grid; gap: 4px; margin-bottom: 6px; }

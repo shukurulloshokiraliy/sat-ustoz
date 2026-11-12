@@ -39,6 +39,21 @@ const GAMES = [
   { id: 'duel', title: 'Duel', text: 'One on one, same questions, same clock.', mode: 'duel', zone: 'classic', runner: 'dragon' },
 ];
 
+/** Preset chips plus a box to type any number (time up to 60 min, questions up to 100). */
+function NumPick({ value, onChange, presets, min, max, unit, label }) {
+  const custom = !presets.includes(value);
+  return (
+    <div className="arena-numpick">
+      <Chips label={label} value={value} onChange={onChange} options={presets.map((n) => ({ value: n, label: `${n}${unit}` }))} />
+      <label className={`arena-numbox ${custom ? 'on' : ''}`}>
+        <input type="number" inputMode="numeric" min={min} max={max} value={custom ? value : ''} placeholder="other" aria-label={`${label}, type a number`}
+          onChange={(e) => { const n = Math.round(Number(e.target.value)); if (!e.target.value) onChange(presets[0]); else onChange(Math.min(max, Math.max(min, n || min))); }} />
+        <span>{unit.trim()}</span>
+      </label>
+    </div>
+  );
+}
+
 /** Word Arena lobby: host a game or join one with a code. */
 export default function GameHub() {
   const st = useAsync(() => api.get('/vocab'), []);
@@ -202,12 +217,14 @@ function Hub({ d }) {
               <p className="ar-summary"><b>{G.title}</b> — {G.text}</p>
               <div className="arena-field">
                 <b>Words from</b>
-                <div className="arena-sets">{sets.map((s) => <button key={s.id} type="button" className={chosen.has(s.id) ? 'on' : ''} onClick={() => toggle(s.id)}>{s.title}</button>)}</div>
+                {d.decks.map((k) => { const ss = k.sets.filter((x) => x.open); return ss.length ? (
+                  <div key={k.id} className="arena-deck"><small className="muted">{k.title || k.name}</small>
+                    <div className="arena-sets">{ss.map((s) => <button key={s.id} type="button" className={chosen.has(s.id) ? 'on' : ''} onClick={() => toggle(s.id)}>{s.title}</button>)}</div></div>) : null; })}
                 {!d.full && <small className="muted">Subscribe to play with all sets.</small>}
               </div>
               <div className="arena-nums">
-                <div><b>Questions</b><Chips label="Questions" value={count} onChange={setCount} options={[10, 15, 20, 30].map((n) => ({ value: n, label: String(n) }))} /></div>
-                <div><b>Time</b><Chips label="Time" value={minutes} onChange={setMinutes} options={[2, 3, 5, 8].map((n) => ({ value: n, label: `${n} min` }))} /></div>
+                <div><b>Questions</b><NumPick label="Questions" value={count} onChange={setCount} presets={[10, 15, 20, 30, 50]} min={5} max={100} unit="" /></div>
+                <div><b>Time</b><NumPick label="Time" value={minutes} onChange={setMinutes} presets={[3, 5, 10, 20, 30, 60]} min={1} max={60} unit=" min" /></div>
                 {mode !== 'duel' && <div><b>Play as</b><Chips label="Play as" value={teams} onChange={setTeams} options={[{ value: false, label: 'Solo' }, { value: true, label: 'Two teams' }]} /></div>}
                 <div><b>Bots</b><Chips label="Number of bots" value={bots} onChange={setBots} options={(mode === 'duel' ? [0, 1] : [0, 2, 4, 6]).map((n) => ({ value: n, label: n === 0 ? 'None' : String(n) }))} />
                   {bots > 0 && <Chips label="Bot level" value={botLevel} onChange={(v) => pickLevel(BOT_LEVELS.find((l) => l.id === v))} options={levelOpts} />}</div>

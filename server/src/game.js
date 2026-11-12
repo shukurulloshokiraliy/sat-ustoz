@@ -265,8 +265,8 @@ export function registerGame(app, { h, bad, accessFor }) {
     const me = tokenUser(req);
     if (!me) return bad(res, 'Please sign in to host a game', 401);
     const mode = MODES.includes(req.body?.mode) ? req.body.mode : 'classic';
-    const count = Math.min(30, Math.max(5, Number(req.body?.questions) || 15));
-    const minutes = Math.min(15, Math.max(1, Number(req.body?.minutes) || 3));
+    const count = Math.min(100, Math.max(5, Number(req.body?.questions) || 15));
+    const minutes = Math.min(60, Math.max(1, Math.round(Number(req.body?.minutes)) || 3));
     const setIds = (Array.isArray(req.body?.set_ids) ? req.body.set_ids : []).map(Number).filter(Boolean).slice(0, 20);
     const zone = ZONES.includes(req.body?.zone) ? req.body.zone : 'classic';
     const botLevel = BOT_LEVELS[req.body?.bot_level] ? req.body.bot_level : FREE_BOT;
