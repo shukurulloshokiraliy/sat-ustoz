@@ -9,6 +9,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db } from './db.js';
 import { gifMap } from './gifs.js';
+import multer from 'multer';
+import { parseWordFile } from './vocabImport.js';
 import { migrateVocabReading, registerVocabReading } from './vocabReading.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -340,6 +342,15 @@ export function registerVocab(app, { h, bad, requireMaster, requireStudent, acce
       added += r.rowCount ? 1 : 0;
     }
     res.json({ added });
+  }));
+  // upload a word list (Excel, CSV, Word, PDF, text): returns the rows so the teacher can check them before saving
+  const wordFile = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
+  app.post('/api/vocab/units/:id/import', requireMaster, wordFile.single('file'), h(async (req, res) => {
+    if (!req.file) return bad(res, 'Choose a file');
+    let rows;
+    try { rows = await parseWordFile(req.file); } catch (e) { return bad(res, e.message || 'Could not read this file'); }
+    if (!rows.length) return bad(res, 'No words found. Use one word per row or line: word | definition | Uzbek | Russian | example');
+    res.json({ rows });
   }));
   app.put('/api/vocab/words/:id', requireMaster, h(async (req, res) => {
     const w = wordBody(req.body);

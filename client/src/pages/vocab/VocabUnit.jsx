@@ -141,7 +141,7 @@ function WordEditor({ u, reload }) {
     <>
       <div className="row wrap" style={{ gap: 8 }}>
         <button className="btn primary sm" onClick={() => setEdit({ ...BLANK })}><IconPlus width={16} height={16} /> Add word</button>
-        <button className="btn soft sm" onClick={() => setImp(true)}><IconUpload width={16} height={16} /> Import CSV / Excel</button>
+        <button className="btn soft sm" onClick={() => setImp(true)}><IconUpload width={16} height={16} /> Import from file</button>
         <button className="btn ghost sm" onClick={() => setBulk(true)}>Paste many words</button>
       </div>
       <div className="v-words">

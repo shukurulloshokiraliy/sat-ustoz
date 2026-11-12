@@ -63,11 +63,13 @@ export default function ImportWords({ unitId, setId, units = [], onClose, onSave
     if (!file) return;
     setErr(''); setName(file.name);
     try {
-      const w = toWords(await readFile(file), withUnit);
+      let w;
+      if (!withUnit && /\.(docx|pdf|txt|md)$/i.test(file.name)) { const fd = new FormData(); fd.append('file', file); w = (await api.upload(`/vocab/units/${unitId}/import`, fd)).rows; }
+      else w = toWords(await readFile(file), withUnit);
       if (!w.length) setErr('No words found. The first column (or a column called “word”) must contain the words.');
       else if (withUnit && w.some((x) => !x.unit)) setErr('Some rows have no unit. Add a “unit” column with the unit title for every word.');
       setWords(w);
-    } catch { setErr('Could not read this file. Save it as .xlsx or .csv and try again.'); setWords(null); }
+    } catch (ex) { setErr(ex?.message && /words found|Supported|Choose/.test(ex.message) ? ex.message : 'Could not read this file. Save it as .xlsx or .csv and try again.'); setWords(null); }
   };
 
   const save = async () => {
@@ -96,12 +98,12 @@ export default function ImportWords({ unitId, setId, units = [], onClose, onSave
       footer={<><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn primary" disabled={!words?.length || !!err || busy} onClick={save}>{busy ? 'Importing…' : `Import ${words?.length || ''} words`}</button></>}>
       <div className="stack">
         <p className="muted">
-          Excel (.xlsx, .xls) or CSV. Columns: {withUnit && <><b>unit</b>, </>}<b>word</b>, definition, uz, ru, example. A header row with these names can be in any order; without a header the columns are read in this order.
+          {withUnit ? 'Excel (.xlsx, .xls) or CSV.' : 'Excel, CSV, Word (.docx), PDF or text.'} Columns: {withUnit && <><b>unit</b>, </>}<b>word</b>, definition, uz, ru, example. A header row with these names can be in any order; without a header the columns are read in this order.{!withUnit && ' In Word, PDF and text files write one word per line: word - definition (or a table with the same columns).'}
           {' '}Existing words with the same spelling are updated, not duplicated.
         </p>
         <div className="row wrap" style={{ gap: 8 }}>
           <label className="btn primary"><IconUpload width={18} height={18} /> Choose file
-            <input type="file" hidden accept=".csv,.xlsx,.xls,.ods,.tsv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onChange={(e) => pick(e.target.files?.[0])} />
+            <input type="file" hidden accept={`.csv,.xlsx,.xls,.ods,.tsv,${!withUnit ? '.docx,.pdf,.txt,' : ''}text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel`} onChange={(e) => pick(e.target.files?.[0])} />
           </label>
           <button type="button" className="btn ghost" onClick={() => downloadTemplate(withUnit)}><IconDownload width={18} height={18} /> Download template</button>
           {name && <span className="muted">{name}</span>}
