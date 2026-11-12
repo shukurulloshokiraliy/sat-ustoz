@@ -190,7 +190,7 @@ function Hub({ d }) {
                 return (
                   <button key={g.id} type="button" className={`ar-world w-${g.raid ? 'raid' : g.id === 'duel' ? 'duel' : g.zone} ${game === g.id ? 'on' : ''} ${locked ? 'locked' : ''}`} onClick={() => pickGame(g)} aria-pressed={game === g.id}>
                     <span className="ar-world-scene" aria-hidden="true"><i /><i /><i /><span className="ar-world-runner"><Character kind={g.runner} size={46} /></span></span>
-                    {locked && <span className="vip">VIP · locked</span>}
+                    {z && !z.free && <span className="vip">VIP</span>}
                     <b>{g.title}</b><small>{g.text}</small>
                   </button>
                 );

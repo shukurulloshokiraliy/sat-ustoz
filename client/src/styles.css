@@ -2669,7 +2669,7 @@ button.ar-fighter:hover em { color: var(--sun); }
 .ar-world:hover { transform: translateY(-3px); } .ar-world.on { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft); }
 .ar-world.locked { opacity: .75; }
 .ar-world b, .ar-world small { padding: 0 12px; } .ar-world small { color: var(--muted); font-size: .8rem; }
-.ar-world .vip { position: absolute; top: 8px; right: 8px; z-index: 3; }
+.ar-world .vip { position: absolute; top: 8px; right: 8px; z-index: 3; padding: 1px 7px; border-radius: 99px; background: linear-gradient(90deg, #FFCB3D, #FF9A3D); color: #161B3D; font: 800 .6rem var(--font); letter-spacing: .06em; }
 .ar-world-scene { position: relative; display: block; height: 96px; overflow: hidden; margin-bottom: 6px; }
 .ar-world-scene i { position: absolute; display: block; }
 .ar-world-runner { position: absolute; bottom: 6px; left: 8%; animation: ar-run-across 4.5s linear infinite; }
