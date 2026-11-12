@@ -26,11 +26,23 @@ export default function ActivityTracker() {
     const touch = () => { lastInput.current = Date.now(); };
     const evs = ['pointerdown', 'pointermove', 'keydown', 'scroll', 'touchstart', 'wheel'];
     evs.forEach((e) => window.addEventListener(e, touch, { passive: true }));
+    // counted every 30 s, sent every 5 minutes per section (and when the tab is hidden): fewer requests keep the
+    // database asleep more often
+    const acc = {};
+    const flush = () => {
+      for (const [section, seconds] of Object.entries(acc)) { if (seconds) api.post('/activity', { section, seconds }).catch(() => {}); delete acc[section]; }
+    };
+    let n = 0;
     const t = setInterval(() => {
       if (document.visibilityState !== 'visible' || Date.now() - lastInput.current > IDLE) return;
-      api.post('/activity', { section: sectionOf(path.current), seconds: TICK }).catch(() => {});
+      const sec = sectionOf(path.current);
+      acc[sec] = (acc[sec] || 0) + TICK;
+      if (++n % 10 === 0) flush();
     }, TICK * 1000);
-    return () => { clearInterval(t); evs.forEach((e) => window.removeEventListener(e, touch)); };
+    const hide = () => { if (document.visibilityState === 'hidden') flush(); };
+    document.addEventListener('visibilitychange', hide);
+    window.addEventListener('pagehide', flush);
+    return () => { clearInterval(t); flush(); document.removeEventListener('visibilitychange', hide); window.removeEventListener('pagehide', flush); evs.forEach((e) => window.removeEventListener(e, touch)); };
   }, []);
   return null;
 }

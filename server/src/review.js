@@ -50,29 +50,32 @@ export async function applyCheckEdits(itemId, content) {
 const fingerprint = (q) => crypto.createHash('sha1').update(JSON.stringify([q.passage || '', q.prompt || '', q.options || [], q.answer, q.explanation || ''])).digest('hex').slice(0, 16);
 
 /** Every reviewable question, in one shape: { src, ref, where, type, passage, prompt, options, answer, explanation, … }. */
-async function allQuestions() {
+async function allQuestions(only = null) {
+  // `only` = { src, ref }: load just that question (one click in Review must not read the whole bank)
+  const want = (s) => !only || only.src === s;
   const out = [];
-  const bank = await db.all(`SELECT q.id, q.skill_id, q.skill, q.difficulty, q.passage, q.prompt, q.options, q.answer, q.explanation, q.active, q.position,
-      c.n, c.right_n, c.flags FROM qbank_questions q LEFT JOIN qbank_calib c ON c.question_id = q.id ORDER BY q.skill_id, q.position, q.id`);
+  const bank = !want('qbank') ? [] : await db.all(`SELECT q.id, q.skill_id, q.skill, q.difficulty, q.passage, q.prompt, q.options, q.answer, q.explanation, q.active, q.position,
+      c.n, c.right_n, c.flags FROM qbank_questions q LEFT JOIN qbank_calib c ON c.question_id = q.id ${only ? 'WHERE q.id = ?' : ''} ORDER BY q.skill_id, q.position, q.id`, only ? [only.ref] : []);
   for (const q of bank) {
     const o = parse(q.options, []);
     out.push({ src: 'qbank', ref: q.id, where: `Question Bank · ${q.skill}`, type: q.skill, skill_id: q.skill_id, label: q.difficulty, hidden: !q.active,
       passage: q.passage || '', prompt: q.prompt || '', options: [0, 1, 2, 3].map((i) => String(o?.[i] ?? '')), answer: q.answer, explanation: q.explanation || '',
       n: Number(q.n || 0), pct: q.n ? Math.round((100 * q.right_n) / q.n) : null, flags: (parse(q.flags, []) || []).filter((f) => PROBLEM_FLAGS.includes(f)) });
   }
-  const quiz = await db.all('SELECT q.*, z.title FROM questions q JOIN quizzes z ON z.id = q.quiz_id ORDER BY z.id, q.position, q.id');
+  const quiz = !want('quiz') ? [] : await db.all(`SELECT q.*, z.title FROM questions q JOIN quizzes z ON z.id = q.quiz_id ${only ? 'WHERE q.id = ?' : ''} ORDER BY z.id, q.position, q.id`, only ? [Number(only.ref) || 0] : []);
   for (const q of quiz) {
     out.push({ src: 'quiz', ref: String(q.id), where: `Quiz · ${q.title}`, type: q.topic || 'Quiz', quiz_id: q.quiz_id,
       passage: q.passage || '', prompt: q.prompt || '', options: [q.opt_a, q.opt_b, q.opt_c, q.opt_d].map((x) => String(x ?? '')), answer: L.indexOf(String(q.correct || '').toUpperCase()), explanation: q.explanation || '', flags: [] });
   }
-  const fm = await db.all("SELECT q.*, m.title FROM full_mock_questions q JOIN full_mocks m ON m.id = q.mock_id WHERE m.mode <> 'qbank' ORDER BY m.id, q.module, q.position, q.id").catch(() => []);
+  const fm = !want('fullmock') ? [] : await db.all(`SELECT q.*, m.title FROM full_mock_questions q JOIN full_mocks m ON m.id = q.mock_id WHERE m.mode <> 'qbank' ${only ? 'AND q.id = ?' : ''} ORDER BY m.id, q.module, q.position, q.id`, only ? [Number(only.ref) || 0] : []).catch(() => []);
   for (const q of fm) {
     out.push({ src: 'fullmock', ref: String(q.id), where: `Full mock · ${q.title} · Module ${q.module}`, type: q.topic || 'Full mock', mock_id: q.mock_id,
       passage: q.passage || '', prompt: q.prompt || '', options: [q.opt_a, q.opt_b, q.opt_c, q.opt_d].map((x) => String(x ?? '')), answer: L.indexOf(String(q.correct || '').toUpperCase()), explanation: q.explanation || '', flags: [] });
   }
-  const items = await db.all(`SELECT i.id, i.title, i.content, s.title AS step FROM roadmap_items i LEFT JOIN roadmap_steps s ON s.id = i.step_id
-    WHERE i.kind = 'lesson' ORDER BY s.position, i.position, i.id`);
-  const edits = await db.all('SELECT item_id, version, qid, data FROM check_edits').catch(() => []);
+  const itemId = only?.src === 'check' ? Number(String(only.ref).split(':')[0]) || 0 : null;
+  const items = !want('check') ? [] : await db.all(`SELECT i.id, i.title, i.content, s.title AS step FROM roadmap_items i LEFT JOIN roadmap_steps s ON s.id = i.step_id
+    WHERE i.kind = 'lesson' ${itemId != null ? 'AND i.id = ?' : ''} ORDER BY s.position, i.position, i.id`, itemId != null ? [itemId] : []);
+  const edits = !items.length ? [] : await db.all(`SELECT item_id, version, qid, data FROM check_edits ${itemId != null ? 'WHERE item_id = ?' : ''}`, itemId != null ? [itemId] : []).catch(() => []);
   const ed = new Map(edits.map((r) => [`${r.item_id}:${r.version}:${r.qid}`, parse(r.data, {})]));
   for (const it of items) {
     const c = parse(it.content, {});
@@ -87,7 +90,7 @@ async function allQuestions() {
       });
     }
   }
-  return out;
+  return only ? out.filter((x) => x.ref === String(only.ref)) : out;
 }
 
 /** Reports that point at each question (refs from "Report a problem": qbank:ID, fullmock:ID, quiz:ID, lesson:ITEM:QID). */
@@ -110,9 +113,9 @@ async function reportsBy(items) {
 }
 
 /** Everything with its review state; `pending` = still to review. */
-async function reviewState() {
-  const items = await allQuestions();
-  const appr = new Map((await db.all('SELECT * FROM question_approvals')).map((a) => [`${a.src}|${a.ref}`, a]));
+async function reviewState(only = null) {
+  const items = await allQuestions(only);
+  const appr = new Map((await db.all(`SELECT * FROM question_approvals ${only ? 'WHERE src = ? AND ref = ?' : ''}`, only ? [only.src, String(only.ref)] : [])).map((a) => [`${a.src}|${a.ref}`, a]));
   const reps = await reportsBy(items);
   for (const x of items) {
     const key = `${x.src}|${x.ref}`;
@@ -173,8 +176,7 @@ export function registerReview(app, { h, bad, requireMaster }) {
 
   app.get('/api/review/item', requireMaster, h(async (req, res) => {
     const src = String(req.query.src || ''); const ref = String(req.query.ref || '');
-    const items = await reviewState();
-    const x = items.find((i) => i.src === src && i.ref === ref);
+    const x = (await reviewState({ src, ref }))[0];
     if (!x) return bad(res, 'This question no longer exists', 404);
     const names = new Map((await db.all('SELECT id, name FROM users WHERE id = ANY(?::int[])', [[...new Set(x.reports.map((r) => r.user_id).filter(Boolean))]])).map((u) => [u.id, u.name]));
     res.json({
@@ -188,7 +190,7 @@ export function registerReview(app, { h, bad, requireMaster }) {
 
   app.post('/api/review/approve', requireMaster, h(async (req, res) => {
     const src = String(req.body?.src || ''); const ref = String(req.body?.ref || '');
-    const x = (await reviewState()).find((i) => i.src === src && i.ref === ref);
+    const x = (await reviewState({ src, ref }))[0];
     if (!x) return bad(res, 'This question no longer exists', 404);
     await db.run(`INSERT INTO question_approvals (src, ref, hash, flags, approved_by, approved_at) VALUES (?,?,?,?,?, now())
       ON CONFLICT (src, ref) DO UPDATE SET hash = EXCLUDED.hash, flags = EXCLUDED.flags, approved_by = EXCLUDED.approved_by, approved_at = now()`,

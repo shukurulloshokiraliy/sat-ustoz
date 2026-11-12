@@ -603,7 +603,7 @@ const SECTIONS = ['home', 'lessons', 'quiz', 'practice', 'qbank', 'mock', 'vocab
 app.post('/api/activity', h(async (req, res) => {
   if (req.user.role !== 'student') return res.json({ ok: true });
   const section = SECTIONS.includes(req.body?.section) ? req.body.section : 'other';
-  const seconds = Math.max(0, Math.min(60, Math.round(Number(req.body?.seconds) || 0)));
+  const seconds = Math.max(0, Math.min(600, Math.round(Number(req.body?.seconds) || 0)));
   if (seconds) await db.run(`INSERT INTO user_activity (user_id, day, section, seconds) VALUES (?, (now() AT TIME ZONE 'Asia/Tashkent')::date, ?, ?)
     ON CONFLICT (user_id, day, section) DO UPDATE SET seconds = user_activity.seconds + EXCLUDED.seconds`, [req.user.id, section, seconds]);
   res.json({ ok: true });
