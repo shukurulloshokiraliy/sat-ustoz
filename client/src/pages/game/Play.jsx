@@ -38,9 +38,9 @@ export default function Play() {
   }
   return (
     <Shell zone={room.zone} raid={room.raid}>
-      {room.raid && playing && room.status === 'playing' && <HitBanner hit={room.me.raid?.hit} />}
+      {playing && room.status === 'playing' && <HitBanner hit={room.me.raid?.hit} />}
       {room.status === 'lobby' && <Lobby room={room} isHost={isHost} hostToken={hostToken} reload={load} />}
-      {room.status === 'playing' && (playing && room.me.answered < room.total
+      {room.status === 'playing' && (playing
         ? <Questions room={room} token={token} reload={load} />
         : <Board room={room} isHost={isHost} hostToken={hostToken} reload={load} />)}
       {room.status === 'finished' && <Podium room={room} isHost={isHost} />}
@@ -186,7 +186,7 @@ function RoomLobby({ room, isHost, hostToken, reload }) {
       <div className="arena-code">
         <small>Join at <b>{url.replace(/\/play\/\d+$/, '/game')}</b> with code</small>
         <strong>{room.code.slice(0, 3)} {room.code.slice(3)}</strong>
-        <small>{room.total} questions · {room.minutes} min · {room.mode === 'team' ? 'Team battle' : room.mode === 'duel' ? 'Duel' : 'Classic'}{room.zone && room.zone !== 'classic' ? ` · ${ZONE[room.zone]?.name}` : ''}{room.raid ? ' · Cipher Raid' : ''}</small>
+        <small>{room.timer ? `${room.minutes} min` : 'No time limit'}{room.goal ? ` · first to ${room.goal.toLocaleString('en-US')} points` : ''} · {room.mode === 'team' ? 'Team battle' : room.mode === 'duel' ? 'Duel' : 'Classic'}{room.zone && room.zone !== 'classic' ? ` · ${ZONE[room.zone]?.name}` : ''}{room.raid ? ' · Cipher Raid' : ''}</small>
         {room.raid && room.me?.pw && <small className="raid-mypw">Your password: <b>{room.me.pw}</b></small>}
       </div>
       {room.zone !== 'classic' && room.players.length > 0 && <ZoneTrack room={room} />}
@@ -229,11 +229,18 @@ function Questions({ room, token, reload }) {
   const [fb, setFb] = useState(null);
   const [me, setMe] = useState(room.me);
   const busy = useRef(false);
-  const [raid, setRaid] = useState(() => (room.raid && room.me.raid?.stage ? room.me.raid : null));
+  const [raid, setRaid] = useState(() => (room.me.raid?.stage ? room.me.raid : null));
+  const others = room.players.filter((p) => !p.me && (room.mode !== 'team' || p.team !== room.me.team));
+  // frozen by someone: wait out the seconds (the server refuses answers meanwhile)
+  const [frozen, setFrozen] = useState(0);
+  useEffect(() => { if (room.me.frozen_ms > 0) setFrozen(Date.now() + room.me.frozen_ms); }, [room.me.frozen_ms > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [, tick] = useState(0);
+  useEffect(() => { if (!frozen) return undefined; const t = setInterval(() => { tick((x) => x + 1); if (Date.now() >= frozen) setFrozen(0); }, 250); return () => clearInterval(t); }, [frozen]);
+  const frozenLeft = frozen ? Math.max(0, Math.ceil((frozen - Date.now()) / 1000)) : 0;
   const lastLocal = useRef(0);
   const q = room.questions[qi];
   // hits from other players change the score on the server
-  useEffect(() => { if (room.raid && !fb && !raid && Date.now() - lastLocal.current > 3000) setMe((m) => ({ ...m, score: room.me.score })); }, [room.me.score]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!fb && !raid && Date.now() - lastLocal.current > 3000) setMe((m) => ({ ...m, score: room.me.score })); }, [room.me.score]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!fb && room.me.answered > qi) setQi(room.me.answered); }, [room.me.answered]); // eslint-disable-line react-hooks/exhaustive-deps
   // music while the questions are on screen (browsers allow sound only after a tap: the first tap starts it)
   useEffect(() => {
@@ -244,7 +251,7 @@ function Questions({ room, token, reload }) {
   }, []);
   useEffect(() => { if (room.seconds_left > 0 && room.seconds_left <= 10) sfxTick(); }, [room.seconds_left]);
   const answer = async (k) => {
-    if (busy.current || fb) return;
+    if (busy.current || fb || frozenLeft) return;
     busy.current = true;
     try {
       const r = await api.post(`/game/${room.code}/answer`, { token, qi, choice: k });
@@ -253,18 +260,21 @@ function Questions({ room, token, reload }) {
       setMe((m) => ({ ...m, score: r.score, streak: r.streak, correct: (m.correct || 0) + (r.correct ? 1 : 0) })); lastLocal.current = Date.now();
       if (r.raid) { setTimeout(() => setRaid({ stage: 'boxes' }), 650); return; }
       setTimeout(() => { setFb(null); setQi((i) => i + 1); busy.current = false; if (r.done) reload(); }, r.correct ? 700 : 3000);
-    } catch { busy.current = false; reload(); }
+    } catch (e) { busy.current = false; if (e.data?.code === 'frozen') setFrozen(Date.now() + (e.data.ms || 3000)); reload(); }
   };
   useEffect(() => {
     const f = (e) => { const k = ['1', '2', '3', '4'].indexOf(e.key); if (k >= 0 && q) answer(k); };
     window.addEventListener('keydown', f); return () => window.removeEventListener('keydown', f);
   });
-  if (!q) return <Spinner label="Counting your points…" />;
+  // more questions are added on the server as the game goes on: fetch them when we reach the end of ours
+  useEffect(() => { if (!q) { const t = setTimeout(reload, 400); return () => clearTimeout(t); } return undefined; }, [q, room.total]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!q) return <Spinner label="Next questions…" />;
   return (
     <div className="arena-play">
       <div className="arena-hud">
-        <span className="arena-time">{clock(room.seconds_left)}</span>
-        <span className="arena-progress">{qi + 1} / {room.total}</span>
+        {room.timer ? <span className="arena-time">{clock(room.seconds_left)}</span> : <span className="arena-time">Q{qi + 1}</span>}
+        {room.goal ? <span className="arena-progress">Goal {room.goal.toLocaleString('en-US')}</span> : room.timer ? <span className="arena-progress">Q{qi + 1}</span> : null}
+        {me.shield && <span className="arena-shield" title="Your next attack is blocked">Shield</span>}
         <span className={`arena-streak ${me.streak >= 2 ? 'hot' : ''}`}>{me.streak >= 2 ? `${me.streak} in a row` : 'Streak 0'}</span>
         <span className="arena-score"><Character kind={me.avatar} size={30} /> {me.score}</span>
       </div>
@@ -276,7 +286,7 @@ function Questions({ room, token, reload }) {
         return (
           <div className="arena-duelbar" aria-label={`You ${me.score}, ${opp.name} ${opp.score}`}>
             <span className="you"><b>You</b><i style={{ width: `${(me.score / max) * 100}%` }} /><em>{me.score}</em></span>
-            <span className="them"><Character kind={opp.avatar} size={28} /><b>{opp.name}</b><i style={{ width: `${(opp.score / max) * 100}%` }} /><em>{opp.score} · {opp.answered}/{room.total}</em></span>
+            <span className="them"><Character kind={opp.avatar} size={28} /><b>{opp.name}</b><i style={{ width: `${(opp.score / max) * 100}%` }} /><em>{opp.score}</em></span>
           </div>
         );
       })()}
@@ -291,7 +301,8 @@ function Questions({ room, token, reload }) {
           return <button key={k} className={`arena-opt c${k} ${st}`} onClick={() => answer(k)} disabled={!!fb}><span>{L[k]}</span>{o}</button>;
         })}
       </div>
-      {raid && <RaidPanel code={room.code} token={token} init={raid} onDone={(sc) => { setRaid(null); if (sc != null) { setMe((m) => ({ ...m, score: sc })); lastLocal.current = Date.now(); } setFb(null); setQi((i) => i + 1); busy.current = false; }} />}
+      {frozenLeft > 0 && !raid && <div className="arena-frozen" role="status"><b>Frozen</b><span>{frozenLeft}</span><small>Someone froze you. Wait…</small></div>}
+      {raid && <RaidPanel code={room.code} token={token} init={raid} others={others} onDone={(sc) => { setRaid(null); if (sc != null) { setMe((m) => ({ ...m, score: sc })); lastLocal.current = Date.now(); } setFb(null); setQi((i) => i + 1); busy.current = false; }} />}
       {fb && !raid && <div className={`arena-pop ${fb.correct ? 'ok' : 'no'}`}>{fb.correct ? `+${fb.gain}` : 'Missed'}</div>}
     </div>
   );
@@ -303,8 +314,8 @@ function Board({ room, isHost, hostToken, reload }) {
   return (
     <div className="arena-board">
       <div className="arena-hud center">
-        <span className="arena-time big">{clock(room.seconds_left)}</span>
-        {room.me && <span className="arena-wait">You finished — watch the board!</span>}
+        {room.timer ? <span className="arena-time big">{clock(room.seconds_left)}</span> : <span className="arena-time big">No time limit</span>}
+        {room.goal > 0 && <span className="arena-wait">First to {room.goal.toLocaleString('en-US')} points wins</span>}
       </div>
       {room.mode === 'team' && (
         <div className="arena-teambars">
@@ -321,11 +332,12 @@ function Board({ room, isHost, hostToken, reload }) {
             <span className="pos">{i + 1}</span><Character kind={p.avatar} size={40} />
             <b>{p.name}</b>{p.team && <span className={`arena-tag ${p.team.toLowerCase()}`}>{p.team}</span>}
             <span className="bar"><i style={{ width: `${(p.score / max) * 100}%` }} /></span>
-            <small>{room.raid && p.hacks ? `${p.hacks} hack${p.hacks > 1 ? 's' : ''} · ` : ''}{p.answered}/{room.total}</small><strong>{p.score}</strong>
+            <small>{p.frozen ? 'frozen · ' : ''}{p.shield ? 'shield · ' : ''}{room.raid && p.hacks ? `${p.hacks} hack${p.hacks > 1 ? 's' : ''} · ` : ''}{p.correct} right</small><strong>{p.score}</strong>
           </li>
         ))}
       </ol>
-      {isHost && <button className="btn ghost" onClick={end}>End the game now</button>}
+      {room.feed?.length > 0 && <ul className="arena-feed" aria-label="What happened">{room.feed.map((e) => <li key={e.id}>{e.text}</li>)}</ul>}
+      {isHost && <button className="btn sun lg" onClick={end}>End the game</button>}
     </div>
   );
 }
@@ -377,7 +389,7 @@ function Podium({ room, isHost }) {
     <div className="arena-end">
       <Confetti />
       <h1>{title}</h1>
-      {me && <p className="arena-mine">You: place {room.players.indexOf(me) + 1} · {me.score} points · {me.correct}/{room.total} correct · best streak {me.best_streak}{room.raid ? ` · ${me.hacks || 0} hacks, ${me.stolen || 0} credits stolen` : ''}</p>}
+      {me && <p className="arena-mine">You: place {room.players.indexOf(me) + 1} · {me.score} points · {me.correct} correct · best streak {me.best_streak}{room.raid ? ` · ${me.hacks || 0} hacks, ${me.stolen || 0} credits stolen` : ''}</p>}
       <div className="arena-podium">
         {order.map((p) => {
           const place = top.indexOf(p) + 1;

@@ -40,11 +40,11 @@ const GAMES = [
 ];
 
 /** Preset chips plus a box to type any number (time up to 60 min, questions up to 100). */
-function NumPick({ value, onChange, presets, min, max, unit, label }) {
+function NumPick({ value, onChange, presets, min, max, unit, label, zero }) {
   const custom = !presets.includes(value);
   return (
     <div className="arena-numpick">
-      <Chips label={label} value={value} onChange={onChange} options={presets.map((n) => ({ value: n, label: `${n}${unit}` }))} />
+      <Chips label={label} value={value} onChange={onChange} options={presets.map((n) => ({ value: n, label: n === 0 && zero ? zero : `${n >= 1000 ? `${n / 1000}k` : n}${unit}` }))} />
       <label className={`arena-numbox ${custom ? 'on' : ''}`}>
         <input type="number" inputMode="numeric" min={min} max={max} value={custom ? value : ''} placeholder="other" aria-label={`${label}, type a number`}
           onChange={(e) => { const n = Math.round(Number(e.target.value)); if (!e.target.value) onChange(presets[0]); else onChange(Math.min(max, Math.max(min, n || min))); }} />
@@ -69,8 +69,8 @@ function Hub({ d }) {
   const G = GAMES.find((g) => g.id === game);
   const mode = G.mode;
   const [chosen, setChosen] = useState(() => new Set(sets.slice(0, 1).map((s) => s.id)));
-  const [count, setCount] = useState(15);
-  const [minutes, setMinutes] = useState(3);
+  const [minutes, setMinutes] = useState(0); // 0 = no time limit (the host ends the game)
+  const [goal, setGoal] = useState(0); // 0 = no goal score
   const vip = isVip(user);
   const zone = G.zone;
   const [teams, setTeams] = useState(false);
@@ -102,7 +102,7 @@ function Hub({ d }) {
   const host = async () => {
     setBusy(true);
     try {
-      const r = await api.post('/game/rooms', { mode: mode === 'duel' ? 'duel' : teams ? 'team' : 'classic', questions: count, minutes, set_ids: [...chosen], zone, raid: !!G.raid, bots: mode === 'duel' ? Math.min(1, bots) : bots, bot_level: botLevel });
+      const r = await api.post('/game/rooms', { mode: mode === 'duel' ? 'duel' : teams ? 'team' : 'classic', minutes, goal, set_ids: [...chosen], zone, raid: !!G.raid, bots: mode === 'duel' ? Math.min(1, bots) : bots, bot_level: botLevel });
       store.set(hostKey(r.code), r.host_token);
       // students and duel hosts play too; a teacher usually just shows the board
       nav(`/play/${r.code}${user.role === 'master' && mode !== 'duel' ? '?screen=1' : ''}`);
@@ -223,8 +223,9 @@ function Hub({ d }) {
                 {!d.full && <small className="muted">Subscribe to play with all sets.</small>}
               </div>
               <div className="arena-nums">
-                <div><b>Questions</b><NumPick label="Questions" value={count} onChange={setCount} presets={[10, 15, 20, 30, 50]} min={5} max={100} unit="" /></div>
-                <div><b>Time</b><NumPick label="Time" value={minutes} onChange={setMinutes} presets={[3, 5, 10, 20, 30, 60]} min={1} max={60} unit=" min" /></div>
+                <div><b>Time</b><NumPick label="Time" value={minutes} onChange={setMinutes} presets={[0, 5, 10, 20, 30]} min={0} max={120} unit=" min" zero="No limit" /></div>
+                <div><b>Goal</b><NumPick label="Goal score" value={goal} onChange={setGoal} presets={[0, 2000, 5000, 10000]} min={0} max={1000000} unit="" zero="None" /></div>
+                <small className="muted arena-endnote">Questions never run out. The game ends when you press End{minutes ? ', when the time is up' : ''}{goal ? ', or when someone reaches the goal' : ''}. Every right answer opens 3 mystery boxes: Double, Triple, Steal, Swap, Shield, Freeze and more.</small>
                 {mode !== 'duel' && <div><b>Play as</b><Chips label="Play as" value={teams} onChange={setTeams} options={[{ value: false, label: 'Solo' }, { value: true, label: 'Two teams' }]} /></div>}
                 <div><b>Bots</b><Chips label="Number of bots" value={bots} onChange={setBots} options={(mode === 'duel' ? [0, 1] : [0, 2, 4, 6]).map((n) => ({ value: n, label: n === 0 ? 'None' : String(n) }))} />
                   {bots > 0 && <Chips label="Bot level" value={botLevel} onChange={(v) => pickLevel(BOT_LEVELS.find((l) => l.id === v))} options={levelOpts} />}</div>

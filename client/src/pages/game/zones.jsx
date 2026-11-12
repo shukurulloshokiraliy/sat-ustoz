@@ -41,13 +41,15 @@ export function ZoneTrack({ room, limit = 12, compact = false }) {
   const me = room.players.find((p) => p.me);
   let lanes = [...room.players].sort((a, b) => b.correct - a.correct || b.score - a.score).slice(0, limit);
   if (me && !lanes.includes(me)) lanes = [...lanes.slice(0, limit - 1), me];
-  const total = Math.max(1, room.total);
+  // finish line: the goal score if there is one, else just ahead of the leader (games have no fixed question count)
+  const best = Math.max(0, ...room.players.map((p) => p.correct));
+  const total = Math.max(10, Math.ceil(best * 1.15) + 1);
   return (
     <div className={`zt zt-${zone} ${compact ? 'compact' : ''}`} aria-label={`${ZONE[zone]?.name}: race positions`}>
       <div className="zt-scenery" aria-hidden="true"><i /><i /><i /><i /><i /></div>
       <div className="zt-goal" aria-hidden="true"><span /></div>
       {lanes.map((p, i) => {
-        const pct = Math.min(1, p.correct / total);
+        const pct = Math.min(1, room.goal ? p.score / room.goal : p.correct / total);
         return (
           <div key={p.id} className={`zt-lane ${p.me ? 'me' : ''} ${p.team ? `t-${p.team.toLowerCase()}` : ''}`}>
             <span className="zt-place">{i + 1}</span>
