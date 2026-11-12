@@ -30,6 +30,19 @@ export function playUrl(url, s, hours = 4) {
   return `https://player.mediadelivery.net/embed/${lib}/${id}?token=${sha(token + id + exp)}&expires=${exp}&rememberPosition=true&preload=true`;
 }
 
+/** System check: are video uploads ready? { ok, detail } */
+export async function bunnyCheck() {
+  const { lib, key, token } = cfg(await getSettings());
+  if (!lib || !key) return { ok: false, detail: 'Not set up: add the Bunny Stream library ID and API key below (Videos)' };
+  try {
+    const r = await fetch(`https://video.bunnycdn.com/library/${lib}/videos?page=1&itemsPerPage=1`, { headers: { AccessKey: key, accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+    if (r.status === 401) return { ok: false, detail: 'Bunny rejected the API key: check it below (Videos)' };
+    if (!r.ok) return { ok: false, detail: `Bunny answered with error ${r.status}` };
+    const j = await r.json().catch(() => ({}));
+    return { ok: true, detail: `Uploads work · ${j.totalItems ?? 0} video${j.totalItems === 1 ? '' : 's'} in the library${token ? ' · links are signed' : ' · add the token key to protect links'}` };
+  } catch { return { ok: false, detail: 'Could not reach Bunny Stream right now' }; }
+}
+
 export function registerVideo(app, { h, bad, requireMaster }) {
   const bunny = async (path, opts = {}) => {
     const { lib, key } = cfg(await getSettings());

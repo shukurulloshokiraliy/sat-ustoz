@@ -20,7 +20,7 @@ import { lessonSummary, syncBundledModules } from './course/modules.js';
 import { registerLessons, migrateLessonEdits } from './course/lessons.js';
 import { registerQbank, syncQbank, migrateQbankMocks, randomCfg } from './qbank.js';
 import { registerFullMocks, migrateFullMocks } from './fullmock.js';
-import { registerVideo, playUrl, isBunny } from './video.js';
+import { registerVideo, playUrl, isBunny, bunnyCheck } from './video.js';
 import { migrateGifs, registerGifs } from './gifs.js';
 import { migrateFinance, registerFinance, keepPaymentRecords } from './finance.js';
 import { migrateDrip, registerDrip, unlocksFor, dripDays } from './drip.js';
@@ -562,6 +562,8 @@ app.get('/api/health', requireMaster, h(async (req, res) => {
       add('Telegram bot', ok, !w.url ? 'Webhook is not set' : w.last_error_message ? `Telegram says: ${w.last_error_message}` : where !== host && !host.startsWith('localhost') ? `Messages go to ${where}, this site is ${host}` : `Messages arrive at ${where}`, ok ? null : 'webhook');
     }
   } catch (e) { add('Telegram bot', false, e.message, 'webhook'); }
+  const v = await bunnyCheck();
+  add('Video uploads (Bunny Stream)', v.ok, v.detail);
   const site = (await db.one("SELECT value FROM settings WHERE key = '_site_url'"))?.value || '';
   add('Site address', !site || host.startsWith('localhost') || site.includes(host), site ? `Links in messages use ${site}` : 'Not set yet', null);
   res.json({ checks, server: process.env.VERCEL_REGION || 'local' });
