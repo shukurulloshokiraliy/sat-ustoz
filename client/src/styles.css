@@ -3549,3 +3549,33 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 @media (max-width: 560px) { .arena-joinform .arena-me.tap .char { width: 84px !important; height: 84px !important; } .arena-joinform .arena-label { font-size: .7rem; } .arena.is-raid .arena-brand b::after { display: none; } }
 .modal .arena-groups { flex: 0 0 auto; min-height: 44px; align-items: stretch; margin-bottom: 12px; }
 .modal .arena-groups button { flex: 0 0 auto; min-height: 36px; line-height: 1.2; padding: 8px 14px; }
+
+/* Word Vault hero: the highlight covers the whole word */
+.v-hero mark { background: var(--sun); color: var(--night); padding: .02em .16em .06em; border-radius: .14em; display: inline-block; transform: rotate(-1deg); line-height: 1.1; }
+
+/* Hacking Mode: matrix-green backdrop */
+.arena.is-raid { position: relative; background: radial-gradient(90% 60% at 50% -10%, rgba(34,255,120,.22), transparent 70%), linear-gradient(180deg, #03140B 0%, #020A06 100%); }
+.arena.is-raid::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .5;
+  background: repeating-linear-gradient(90deg, rgba(57,255,140,.0) 0 22px, rgba(57,255,140,.10) 22px 24px),
+              repeating-linear-gradient(180deg, rgba(57,255,140,.0) 0 3px, rgba(0,0,0,.28) 3px 4px);
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent 85%); mask-image: linear-gradient(180deg, #000, transparent 85%);
+  animation: raid-drift 14s linear infinite; }
+.arena.is-raid::after { content: ''; position: fixed; left: 0; right: 0; top: 0; height: 40%; pointer-events: none; z-index: 0; background: linear-gradient(180deg, rgba(57,255,140,.10), transparent); animation: raid-scan 7s ease-in-out infinite; }
+.arena.is-raid > * { position: relative; z-index: 1; }
+@keyframes raid-drift { to { background-position: 0 0, 0 40px; } }
+@keyframes raid-scan { 0%,100% { transform: translateY(-30%); opacity: .5; } 50% { transform: translateY(160%); opacity: .15; } }
+.arena.is-raid .arena-brand b::after, .arena.is-raid .raid-mypw b { color: #39FF8C; }
+.arena.is-raid .arena-results, .arena.is-raid .arena-review { background: rgba(5,30,16,.72); border-color: rgba(57,255,140,.28); }
+.arena.is-raid .btn.sun { background: #39FF8C; color: #02110A; }
+@media (prefers-reduced-motion: reduce) { .arena.is-raid::before, .arena.is-raid::after { animation: none; } }
+
+/* Shorter pages on phones */
+.arena-results ol { max-height: min(52vh, 460px); overflow-y: auto; }
+@media (max-width: 560px) {
+  .arena-end { gap: 10px; padding-top: 8px; }
+  .arena-step.s1 .arena-block { height: 96px; } .arena-step.s2 .arena-block { height: 70px; } .arena-step.s3 .arena-block { height: 54px; }
+  .arena-step .char { width: 64px !important; height: 64px !important; }
+  .arena-step.s1 .char { width: 84px !important; height: 84px !important; }
+  .arena-results { margin-top: 6px; }
+}
+body:has(.arena.is-raid) { background: #020A06; }

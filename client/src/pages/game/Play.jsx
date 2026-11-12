@@ -43,7 +43,7 @@ export default function Play() {
       {room.status === 'playing' && (playing && room.me.answered < room.total
         ? <Questions room={room} token={token} reload={load} />
         : <Board room={room} isHost={isHost} hostToken={hostToken} reload={load} />)}
-      {room.status === 'finished' && <Podium room={room} />}
+      {room.status === 'finished' && <Podium room={room} isHost={isHost} />}
     </Shell>
   );
 }
@@ -331,12 +331,13 @@ function Board({ room, isHost, hostToken, reload }) {
 }
 
 /** Full results after the game: accuracy, right and wrong answers and credits for every player. */
-function Results({ room }) {
-  const rows = room.players;
+function Results({ room, isHost }) {
+  // The teacher sees everyone; a student only sees their own result.
+  const rows = isHost ? room.players : room.players.filter((p) => p.me);
   if (!rows.length) return null;
   return (
     <section className="arena-results" aria-label="Results">
-      <h2>Results</h2>
+      <h2>{isHost ? 'Results' : 'Your result'}</h2>
       <ol>
         {rows.map((p, i) => {
           const wrong = Math.max(0, p.answered - p.correct);
@@ -363,7 +364,7 @@ function Results({ room }) {
   );
 }
 
-function Podium({ room }) {
+function Podium({ room, isHost }) {
   useEffect(() => { stopMusic(); sfxWin(); }, []);
   const top = room.players.slice(0, 3);
   const order = [top[1], top[0], top[2]].filter(Boolean);
@@ -389,7 +390,7 @@ function Podium({ room }) {
           );
         })}
       </div>
-      <Results room={room} />
+      <Results room={room} isHost={isHost} />
       {room.review && (
         <details className="arena-review">
           <summary>See the answers</summary>
