@@ -57,8 +57,13 @@ export default function Login() {
           <p>SAT Reading &amp; Writing from 200 to 800: a step-by-step roadmap, video lessons, practice with instant feedback and timed mock tests.</p>
         </div>
         <figure className="login-ustoz">
-          <span className="disc"><img src="/founder.jpg" alt="Axror Alimjon, your SAT teacher" width="96" height="96" /></span>
-          <figcaption><b>Axror Alimjon</b><span>Your SAT teacher. Every lesson here is his method.</span></figcaption>
+          <span className="disc"><img src="/founder.jpg" alt="Axror Alimjon, your SAT teacher" width="180" height="180" /></span>
+          <figcaption>
+            <small>YOUR TEACHER</small>
+            <b>Axror Alimjon</b>
+            <em>SAT teacher and founder of SAT Ustoz</em>
+            <p>Every point on the SAT is earned one question at a time. Sign in, do today’s lesson, and let me take you from where you are to 800.</p>
+          </figcaption>
         </figure>
       </div>
       <div className="login-form">
