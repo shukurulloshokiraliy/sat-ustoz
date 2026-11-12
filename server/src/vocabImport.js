@@ -1,7 +1,6 @@
 // Teacher uploads a word list (CSV, Excel, Word, PDF or text) → rows { word, definition, uz, ru, example } to review and save.
 import * as XLSX from 'xlsx';
-import mammoth from 'mammoth';
-import pdf from 'pdf-parse/lib/pdf-parse.js';
+// Word and PDF readers are big: loaded only when such a file is uploaded (keeps every server start fast)
 
 const COLS = ['word', 'definition', 'uz', 'ru', 'example'];
 const HEAD = { word: /^(word|term|vocab(ulary)?|english)$/i, definition: /^(def(inition)?|meaning|explanation)$/i, uz: /^(uz|uzbek|o.?zbek(cha)?)$/i, ru: /^(ru|russian|ruscha|рус\w*)$/i, example: /^(example|sentence|example sentence|context)$/i };
@@ -43,11 +42,13 @@ export async function parseWordFile(file) {
     const wb = XLSX.read(file.buffer, { type: 'buffer', raw: false });
     rows = fromGrid(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '', raw: false }));
   } else if (name.endsWith('.docx')) {
+    const mammoth = (await import('mammoth')).default;
     const { value: html } = await mammoth.convertToHtml({ buffer: file.buffer });
     const trs = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)];
     if (trs.length) rows = fromGrid(trs.map((t) => [...t[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)].map((c) => decode(c[1]))));
     else rows = fromText(decode(html.replace(/<\/(p|li|h\d)>/g, '\n')));
   } else if (name.endsWith('.pdf')) {
+    const pdf = (await import('pdf-parse/lib/pdf-parse.js')).default;
     rows = fromText((await pdf(file.buffer)).text);
   } else if (/\.(txt|md)$/.test(name)) {
     rows = fromText(file.buffer.toString('utf8'));

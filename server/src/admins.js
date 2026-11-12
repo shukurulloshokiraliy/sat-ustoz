@@ -39,7 +39,7 @@ export function sectionOf(method, path) {
   if (/^\/telegram\/requests/.test(p)) return 'finance';
   if (/^\/students\/\d+\/(balance|subscription|sub|plan)(\/|$)/.test(p) && write) return 'finance';
   if (/^\/live\/bookings\/\d+\/cancel/.test(p)) return 'finance';
-  if (/^\/(settings|speed)(\/|$)/.test(p)) return write || p.startsWith('/speed') ? 'settings' : null;
+  if (/^\/(settings|speed|health)(\/|$)/.test(p)) return write || !p.startsWith('/settings') ? 'settings' : null;
   if (/^\/telegram(\/|$)/.test(p) && !/^\/telegram\/(webhook|link)/.test(p)) return 'settings';
   if (/^\/(plans|tiers)(\/|$)/.test(p) && write) return 'settings';
   if (/^\/(support|tg-support|asks?)(\/|$)/.test(p)) return 'support';

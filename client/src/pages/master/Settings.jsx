@@ -10,6 +10,7 @@ export default function Settings() {
     <div className="page" style={{ maxWidth: 860 }}>
       <PageHeader title="Settings" sub="Access rules, prices and integrations for the whole platform." />
       <Speed />
+      <SystemCheck />
       <Gate state={st}>{([s, p]) => <Form init={{ ...s, tiers: p.tiers }} />}</Gate>
     </div>
   );
@@ -314,6 +315,40 @@ function SecurityLog() {
             <td>{ACTIONS[r.action] || r.action}</td><td>{r.actor || '—'}</td><td className="muted">{[r.target, r.detail].filter(Boolean).join(' · ')}</td><td className="nowrap muted">{r.ip}</td></tr>)}</tbody>
         </table></div>
       ))}</Gate>
+    </Card>
+  );
+}
+
+/** After moving the database or the server: what works, what doesn't, and one-tap fixes. */
+function SystemCheck() {
+  const toast = useToast();
+  const st = useAsync(() => api.get('/health'), []);
+  const [busy, setBusy] = useState('');
+  const fix = async (c) => {
+    setBusy(c.name);
+    try {
+      if (c.fix === 'webhook') await api.post('/telegram/connect', {});
+      else { const r = await api.post('/health/fix', { what: c.fix }); if (r.note) toast(r.note); }
+      st.reload();
+    } catch (e) { toast(e.message, 'bad'); } finally { setBusy(''); }
+  };
+  if (!st.data) return null;
+  const bad = st.data.checks.filter((c) => !c.ok).length;
+  return (
+    <Card className="syscheck">
+      <div className="row between wrap" style={{ gap: 8 }}>
+        <b>System check</b>
+        <span className={bad ? 'bad-text' : 'good-text'}>{bad ? `${bad} problem${bad > 1 ? 's' : ''}` : 'Everything works'}</span>
+      </div>
+      <ul>
+        {st.data.checks.map((c) => (
+          <li key={c.name} className={c.ok ? 'ok' : 'no'}>
+            <span className="dot" aria-hidden="true" />
+            <div><b>{c.name}</b><small>{c.detail}</small></div>
+            {!c.ok && c.fix && <button className="btn soft sm" disabled={busy === c.name} onClick={() => fix(c)}>{busy === c.name ? 'Fixing…' : 'Fix'}</button>}
+          </li>
+        ))}
+      </ul>
     </Card>
   );
 }

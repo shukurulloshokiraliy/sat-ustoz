@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db, migrate, getSettings, setSettings, DB_KIND, dbHost } from './db.js';
-import { notifyAdmins } from './tgbot.js';
+import { notifyAdmins, webhookInfo } from './tgbot.js';
 import { initSecret, signToken, publicUser, requireAuth, requireMaster, requireStudent, subActive, verifyGoogleCredential, userFrom } from './auth.js';
 import { parseUpload, buildTemplate, DEFAULT_PROMPT } from './parse.js';
 import { userAnalytics, estimateScore } from './analytics.js';
@@ -97,7 +97,11 @@ function schemaHash() {
 }
 const schema = schemaHash();
 const schemaDone = await db.one("SELECT value FROM settings WHERE key = '_schema_hash'").catch(() => null);
-if (schemaDone?.value !== schema) {
+// a database moved or restored from a copy may say "migrated" but miss newer tables or columns: check a few, else migrate
+const schemaOk = schemaDone?.value === schema && await db.one(`SELECT (to_regclass('public.site_visits') IS NOT NULL AND to_regclass('public.question_approvals') IS NOT NULL
+    AND to_regclass('public.live_bookings') IS NOT NULL AND to_regclass('public.tg_logins') IS NOT NULL
+    AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'admin_perms')) AS ok`).then((r) => !!r?.ok).catch(() => false);
+if (!schemaOk) {
   await migrate();
   await migrateSite();
   await migrateBot();
@@ -136,6 +140,16 @@ if (schemaDone?.value !== schema) {
   ALTER TABLE user_activity ENABLE ROW LEVEL SECURITY;
   `);
   await migrateGame();
+  // after a database is copied, the id counters can stay behind the rows (new inserts then fail with "duplicate key"):
+  // move every id counter past the highest id in its table
+  try {
+    const seqs = await db.all(`SELECT c.table_name AS t, c.column_name AS col, pg_get_serial_sequence(quote_ident(c.table_name), c.column_name) AS seq
+      FROM information_schema.columns c WHERE c.table_schema = 'public' AND c.column_default LIKE 'nextval(%'`);
+    for (const q of seqs) {
+      if (!q.seq) continue;
+      await db.one(`SELECT setval('${q.seq.replace(/'/g, "''")}', GREATEST((SELECT COALESCE(MAX("${q.col.replace(/"/g, '')}"), 0) FROM "${q.t.replace(/"/g, '')}"), 1), true) AS v`).catch((e) => console.error('[seq]', q.t, e.message));
+    }
+  } catch (e) { console.error('[seq]', e.message); }
   await db.run("INSERT INTO settings (key, value) VALUES ('_schema_hash', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [schema]);
 }
 await initSecret();
@@ -512,6 +526,54 @@ app.get('/api/speed', requireMaster, h(async (req, res) => {
   const region = (dbHost.match(/\.([a-z]{2}-[a-z]+-\d)\./) || [])[1] || '';
   res.json({ server: process.env.VERCEL_REGION || 'local', database: region || (DB_KIND === 'postgres' ? dbHost.split('.').slice(1, 3).join('.') : 'local'),
     pooled: /-pooler\./.test(dbHost), ping: Math.min(...ms.slice(1)), first: ms[0] });
+}));
+// teacher: system check after moving the database or the server (Settings → System check)
+async function idCounters() {
+  const seqs = await db.all(`SELECT c.table_name AS t, c.column_name AS col, pg_get_serial_sequence(quote_ident(c.table_name), c.column_name) AS seq
+    FROM information_schema.columns c WHERE c.table_schema = 'public' AND c.column_default LIKE 'nextval(%'`);
+  const out = [];
+  for (const q of seqs) {
+    if (!q.seq) continue;
+    const r = await db.one(`SELECT (SELECT last_value FROM ${q.seq}) AS last, (SELECT COALESCE(MAX("${q.col.replace(/"/g, '')}"), 0) FROM "${q.t.replace(/"/g, '')}") AS max`).catch(() => null);
+    if (r) out.push({ ...q, last: Number(r.last), max: Number(r.max) });
+  }
+  return out;
+}
+app.get('/api/health', requireMaster, h(async (req, res) => {
+  const checks = [];
+  const add = (name, ok, detail, fix) => checks.push({ name, ok, detail, fix: fix || null });
+  const t = Date.now(); await db.one('SELECT 1 AS x'); const ping = Date.now() - t;
+  add('Database', true, `Connected (${DB_KIND === 'postgres' ? dbHost.split('.').slice(1, 3).join('.') || 'postgres' : 'local'}), ${ping} ms`);
+  const need = ['users', 'settings', 'qbank_questions', 'qbank_answers', 'roadmap_items', 'balance_ledger', 'tg_requests', 'full_mock_attempts', 'live_bookings', 'site_visits', 'question_approvals', 'tg_logins', 'check_edits', 'usage_answers'];
+  const have = new Set((await db.all("SELECT table_name AS t FROM information_schema.tables WHERE table_schema = 'public'")).map((r) => r.t));
+  const missing = need.filter((x) => !have.has(x));
+  add('Tables', !missing.length, missing.length ? `Missing: ${missing.join(', ')}` : `${have.size} tables, all present`, missing.length ? 'migrate' : null);
+  const bad = (await idCounters()).filter((q) => q.last < q.max);
+  add('Id counters', !bad.length, bad.length ? `Behind in ${bad.map((q) => q.t).join(', ')}: new rows there would fail` : 'All ahead of the data', bad.length ? 'counters' : null);
+  const content = (await db.one("SELECT value FROM settings WHERE key = '_content_hash'"))?.value || '';
+  add('Bundled content', !!content && !content.startsWith('syncing'), content.startsWith('syncing') ? 'An update is running or stopped half way' : content ? 'Up to date' : 'Not loaded yet', content ? null : 'migrate');
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '');
+  try {
+    const w = await webhookInfo();
+    if (!w) add('Telegram bot', false, 'Not connected (Settings → Telegram bot)');
+    else {
+      const where = (() => { try { return new URL(w.url).host; } catch { return ''; } })();
+      const ok = !!w.url && !w.last_error_message && (!host || host.startsWith('localhost') || where === host);
+      add('Telegram bot', ok, !w.url ? 'Webhook is not set' : w.last_error_message ? `Telegram says: ${w.last_error_message}` : where !== host && !host.startsWith('localhost') ? `Messages go to ${where}, this site is ${host}` : `Messages arrive at ${where}`, ok ? null : 'webhook');
+    }
+  } catch (e) { add('Telegram bot', false, e.message, 'webhook'); }
+  const site = (await db.one("SELECT value FROM settings WHERE key = '_site_url'"))?.value || '';
+  add('Site address', !site || host.startsWith('localhost') || site.includes(host), site ? `Links in messages use ${site}` : 'Not set yet', null);
+  res.json({ checks, server: process.env.VERCEL_REGION || 'local' });
+}));
+app.post('/api/health/fix', requireMaster, h(async (req, res) => {
+  const what = String(req.body?.what || '');
+  if (what === 'counters') {
+    for (const q of (await idCounters()).filter((x) => x.last < x.max)) await db.one(`SELECT setval('${q.seq.replace(/'/g, "''")}', ${q.max}, true) AS v`);
+  } else if (what === 'migrate') {
+    await db.run("UPDATE settings SET value = '' WHERE key IN ('_schema_hash', '_content_hash')");
+  } else return bad(res, 'Unknown fix');
+  res.json({ ok: true, note: what === 'migrate' ? 'The next server start repairs tables and content (within a few minutes, or after the next deploy)' : 'Fixed' });
 }));
 app.get('/api/settings', requireMaster, h(async (req, res) => {
   const st = await getSettings();

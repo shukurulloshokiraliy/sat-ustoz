@@ -3466,3 +3466,10 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .icon-btn .spin-in { display: inline-grid; animation: icon-spin .45s cubic-bezier(.3,1.3,.5,1); }
 @keyframes icon-spin { from { opacity: 0; transform: rotate(-120deg) scale(.5); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .login-ustoz, .login-ustoz .disc, .icon-btn .spin-in { animation: none; } .icon-btn svg { transition: none; } .icon-btn:hover svg { transform: none; } }
+
+/* ---------- Settings → system check ---------- */
+.syscheck { display: grid; gap: 8px; margin-bottom: 16px; }
+.syscheck ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.syscheck li { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); }
+.syscheck li > div { display: grid; gap: 1px; flex: 1; min-width: 0; } .syscheck small { color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
+.syscheck .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--good); } .syscheck li.no .dot { background: var(--bad); }
