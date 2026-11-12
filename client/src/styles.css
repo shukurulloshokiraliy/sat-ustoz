@@ -1161,7 +1161,7 @@ input[type='checkbox'], input[type='radio'] { width: auto; }
 .arena-parade span { animation: bob 2.6s ease-in-out infinite; }
 @media (max-width: 860px) { .arena-hero { grid-template-columns: 1fr; } .arena-parade { order: -1; } }
 .arena-host { display: grid; gap: 16px; }
-.arena-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.arena-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
 @media (max-width: 760px) { .arena-modes { grid-template-columns: 1fr; } }
 .arena-mode { display: grid; justify-items: start; gap: 6px; text-align: left; padding: 16px; border-radius: 18px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; transition: transform .15s, border-color .15s; }
 .arena-mode:hover { transform: translateY(-2px); } .arena-mode.on { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 6px 0 -2px var(--primary); }
@@ -3473,3 +3473,22 @@ button.ar-fighter:hover .char { transform: translateY(-6px); transition: transfo
 .syscheck li { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); }
 .syscheck li > div { display: grid; gap: 1px; flex: 1; min-width: 0; } .syscheck small { color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
 .syscheck .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--good); } .syscheck li.no .dot { background: var(--bad); }
+
+/* Cipher Raid: terminal look for the mode card and the whole arena */
+.arena-mode.m-raid { background: #0F1430; border-color: #2B3470; color: #E8ECFF; }
+.arena-mode.m-raid small { color: #A9B3E6; }
+.arena-mode.m-raid b::before { content: '> '; color: var(--mint); font-family: ui-monospace, Menlo, monospace; }
+.arena-mode.m-raid.on { border-color: var(--mint); background: #0F1430; box-shadow: 0 6px 0 -2px var(--mint); }
+.arena.is-raid { background-image: linear-gradient(rgba(60,203,154,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(60,203,154,.07) 1px, transparent 1px), radial-gradient(120% 80% at 50% 0%, #14224B 0%, #0A0D24 70%); background-size: 36px 36px, 36px 36px, auto; }
+.arena.is-raid .arena-brand b::after { content: ' · Cipher Raid'; color: var(--mint); font-weight: 700; font-size: .8em; }
+
+/* host cards: Cipher Raid and Duel scenes */
+.w-raid .ar-world-scene { background: linear-gradient(rgba(60,203,154,.16) 1px, transparent 1px) 0 0 / 100% 14px, linear-gradient(90deg, rgba(60,203,154,.16) 1px, transparent 1px) 0 0 / 14px 100%, linear-gradient(135deg, #0F1430, #14224B); }
+.w-raid .ar-world-scene i { top: 0; width: 2px; height: 22px; background: linear-gradient(#3CCB9A, transparent); animation: ar-rain 2.4s linear infinite; }
+.w-raid .ar-world-scene i:nth-child(1) { left: 18%; } .w-raid .ar-world-scene i:nth-child(2) { left: 52%; animation-delay: -1s; } .w-raid .ar-world-scene i:nth-child(3) { left: 84%; animation-delay: -1.7s; }
+.w-raid .ar-world-runner { left: 50%; transform: translateX(-50%); animation: ar-bounce 1.6s ease-in-out infinite; }
+@keyframes ar-rain { from { transform: translateY(-30px); } to { transform: translateY(110px); } }
+.w-duel .ar-world-scene { background: linear-gradient(100deg, #2A55E5 0 50%, #FFCB3D 50% 100%); }
+.w-duel .ar-world-scene i { display: none; }
+.w-duel .ar-world-runner { left: 50%; transform: translateX(-50%); animation: ar-bounce 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .w-raid .ar-world-scene i { animation: none; } }

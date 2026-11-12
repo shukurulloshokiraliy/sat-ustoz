@@ -34,10 +34,10 @@ export default function Play() {
   const isHost = !!hostToken;
   const playing = !!room.me;
   if (!playing && !(isHost && screen) && room.status !== 'finished') {
-    return <Shell zone={room.zone}><Join code={code} room={room} onJoined={(t) => { store.set(playerKey(code), t); setToken(t); }} /></Shell>;
+    return <Shell zone={room.zone} raid={room.raid}><Join code={code} room={room} onJoined={(t) => { store.set(playerKey(code), t); setToken(t); }} /></Shell>;
   }
   return (
-    <Shell zone={room.zone}>
+    <Shell zone={room.zone} raid={room.raid}>
       {room.raid && playing && room.status === 'playing' && <HitBanner hit={room.me.raid?.hit} />}
       {room.status === 'lobby' && <Lobby room={room} isHost={isHost} hostToken={hostToken} reload={load} />}
       {room.status === 'playing' && (playing && room.me.answered < room.total
@@ -63,10 +63,10 @@ function SoundButtons() {
   );
 }
 
-function Shell({ children, zone = 'classic' }) {
+function Shell({ children, zone = 'classic', raid = false }) {
   const { user } = useAuth();
   return (
-    <div className={`arena z-${zone} bg-${arenaTheme(user)}`}>
+    <div className={`arena z-${zone} bg-${arenaTheme(user)} ${raid ? 'is-raid' : ''}`}>
       <header className="arena-top"><Link to="/game" className="arena-brand"><Character kind="owl" size={34} /> <b>Word Arena</b></Link><SoundButtons /></header>
       <main className="arena-main">{children}</main>
     </div>
