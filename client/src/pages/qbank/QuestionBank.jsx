@@ -1,5 +1,6 @@
 import PracticeTabs from '../../components/PracticeTabs.jsx';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api.js';
 import { useAuth } from '../../context.jsx';
@@ -45,6 +46,14 @@ function Bank({ d }) {
 
   const doneAll = allSkills.reduce((n, s) => n + s.answered, 0);
   const isOn = (k, id) => scope.kind === k && (k === 'all' || scope.id === id);
+  // phone layout (≤ 900 px): the start bar sits above the bottom tab bar
+  const [phone, setPhone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)');
+    const f = () => setPhone(mq.matches);
+    mq.addEventListener?.('change', f);
+    return () => mq.removeEventListener?.('change', f);
+  }, []);
   const startBtn = user.role === 'student'
     ? <button className="btn primary lg block" disabled={!available} onClick={start}>Start {Math.min(available, Number(count))} questions <IconArrow /></button>
     : <Link className="btn soft block" to="/question-bank/manage">Manage questions <IconArrow width={16} height={16} /></Link>;
@@ -104,7 +113,9 @@ function Bank({ d }) {
             <Segmented value={count} onChange={setCount} options={[{ value: '5', label: '5' }, { value: '10', label: '10' }, { value: '20', label: '20' }]} />
           </div>
           {!available && <p className="qb-empty">No questions here yet. Try another level or “All”.</p>}
-          <div className="qb-go">{startBtn}</div>
+          {/* on phones the bar is fixed above the tab bar; it lives in <body> because an animated (transformed) parent
+              would otherwise pin it to the middle of the page, over the last topics */}
+          {phone ? createPortal(<div className="qb-go">{startBtn}</div>, document.body) : <div className="qb-go">{startBtn}</div>}
         </aside>
       </div>
     </>

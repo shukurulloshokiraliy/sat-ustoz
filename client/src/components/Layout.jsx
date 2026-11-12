@@ -83,6 +83,16 @@ export default function Layout() {
   const { theme, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const loc = useLocation();
+  // the bottom tab bar's real height (labels, two rows for teachers, the phone's safe area) for bars that sit above it
+  useEffect(() => {
+    const el = document.querySelector('.tabbar');
+    if (!el) return undefined;
+    const set = () => document.documentElement.style.setProperty('--tabbar-h', `${getComputedStyle(el).display === 'none' ? 0 : el.offsetHeight}px`);
+    set();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(set) : null;
+    ro?.observe(el); window.addEventListener('resize', set);
+    return () => { ro?.disconnect(); window.removeEventListener('resize', set); };
+  }, [user.role]);
   const on = (n) => !!n.also?.some((pfx) => loc.pathname.startsWith(pfx));
   useEffect(() => { setOpen(false); window.scrollTo({ top: 0 }); }, [loc.pathname]);
   const nav = user.role === 'master' ? MASTER_NAV.filter((n) => canSee(user, n.to)) : STUDENT_NAV;
