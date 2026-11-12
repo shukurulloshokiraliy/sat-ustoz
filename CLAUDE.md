@@ -1,7 +1,7 @@
 # SAT Ustoz — notes for every Claude session
 
 SAT Reading & Writing learning platform for students in Uzbekistan. Repo: shukurulloshokiraliy/sat-ustoz.
-Every push to `main` deploys to production on Vercel (https://www.ustozsat.uz and sat-ustoz.vercel.app).
+Every push to `main` deploys to production on the VPS (https://www.ustozsat.uz; moved off Vercel in Nov 2026). The client build must keep the SEO step (vite plugin in client/vite.config.js).
 Another Claude session may also push, so ALWAYS `git pull --rebase` before you start and before every push.
 
 Before changing anything: read `git log --oneline -40` and skim server/src/index.js, client/src/App.jsx,
