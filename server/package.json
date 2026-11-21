@@ -19,7 +19,7 @@
     "jsonwebtoken": "^9.0.2",
     "mammoth": "^1.13.0",
     "multer": "2.5.0",
-    "pdf-parse": "^1.1.1",
+    "pdf-parse": "^2.4.5",
     "pg": "^8.23.1",
     "xlsx": "npm:@e965/xlsx@0.20.3"
   },
