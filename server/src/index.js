@@ -38,6 +38,7 @@ import { migrateSubjects, registerSubjects } from './mathroad.js';
 import { migrateQuestionImages, registerQuestionImagesPublic, registerQuestionImages } from './qimages.js';
 import { migrateGroups, backfillMembers, registerGroups, setStudentGroups } from './groups.js';
 import { migrateFolders, registerFolders } from './folders.js';
+import { migrateAppAccount, registerAppAuth, registerAppAccount } from './appAccount.js'; // iOS app: Sign in with Apple, delete account
 import { migrateReserved, registerReserved, scanReserved, scanSoon } from './reserved.js';
 import { registerProgress } from './progress.js';
 import { migrateMistakes, registerMistakes } from './mistakes.js';
@@ -157,6 +158,7 @@ if (!schemaOk) {
   await migrateSubjects();
   await migrateQuestionImages();
   await migrateGrowth();
+  await migrateAppAccount();
   await migrateMathMocks();
   // indexes for the leaderboard and teacher pages (they read by time, and by student)
   await db.exec(`
@@ -415,6 +417,7 @@ app.post('/api/auth/google', h(async (req, res) => {
 registerSitePublic(app, { h, bad, secret: getSecret });
 registerBot(app, { h, bad });
 registerGame(app, { h, bad, accessFor: (u) => accessFor(u) }); // Word Arena: guests can join with a code
+registerAppAuth(app, { h, bad }); // iOS app: POST /api/auth/apple
 
 // profile photos: public URLs so <img> tags work without a token
 registerQuestionImagesPublic(app, { h }); // pictures in questions: needed by guests taking the practice test
@@ -425,7 +428,7 @@ app.get('/api/avatars/:id', h(async (req, res) => {
   res.send(Buffer.from(a.data));
 }));
 
-const PUBLIC = new Set(['/auth/login', '/auth/logout', '/auth/register', '/auth/google', '/auth/telegram/start', '/auth/telegram/poll', '/auth/telegram/agree', '/visit', '/config', '/template.xlsx', '/cron/drip']);
+const PUBLIC = new Set(['/auth/login', '/auth/logout', '/auth/register', '/auth/google', '/auth/apple', '/auth/telegram/start', '/auth/telegram/poll', '/auth/telegram/agree', '/visit', '/config', '/template.xlsx', '/cron/drip']);
 app.use('/api', (req, res, next) => (PUBLIC.has(req.path) && req.path !== '/template.xlsx' ? next() : requireAuth(req, res, next)));
 // admin accounts: only their sections, and what they change goes to the activity log (admins.js)
 app.use('/api', adminGuard());
@@ -439,6 +442,7 @@ app.post('/api/usage/answer', requireStudent, h(async (req, res) => {
 }));
 
 registerSiteAdmin(app, { h, bad, requireMaster });
+registerAppAccount(app, { h, bad, requireStudent }); // iOS app: DELETE /api/me (student deletes own account)
 registerQuality(app, { h, bad, requireMaster });
 registerDrip(app, { h, bad, requireMaster, requireStudent, roadmapFor: (u) => roadmapFor(u), accessFor: (u) => accessFor(u) });
 registerLive(app, { h, bad, requireMaster, requireStudent });
@@ -477,7 +481,8 @@ app.get('/api/sat-dates', (req, res) => res.json(SAT_DATES));
  * review, 5 per correct Word Arena answer, 1 per minute of active study. Only first name + initial is shown.
  */
 const WEEK_START = "date_trunc('week', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent'";
-const shortName = (n) => { const w = String(n || '').trim().split(/\s+/); return w[0] + (w[1] ? ` ${w[1][0]}.` : ''); };
+// first name + initial; [...x][0] takes a whole character, so an emoji is never cut in half (that broke the iOS app's leaderboard)
+const shortName = (n) => { const w = String(n || '').trim().split(/\s+/); return w[0] + (w[1] ? ` ${[...w[1]][0]}.` : ''); };
 // fair play: a quiz counts on the first try and on one real retake, first-try right answers in the Question Bank count, and
 // practice tests, Word Arena and time on the platform have a daily ceiling (the prizes are real money)
 const LB = { practice_day: 3, arena_day: 300, minutes_day: 180 };

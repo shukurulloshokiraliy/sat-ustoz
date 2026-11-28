@@ -1,6 +1,7 @@
 import { tokenPayload } from './auth.js';
 import { satScore } from './scoring.js';
 import { OFERTA, OFERTA_FREE, OFERTA_OLD_PAID } from './oferta.js';
+import { PRIVACY } from './privacy.js';
 /**
  * Public website (no sign-in needed) + teacher-editable content.
  *
@@ -162,6 +163,8 @@ export async function seedSite() {
   await db.run(`UPDATE site_blocks SET data = regexp_replace(data, 'Take [0-9]+ free practice questions every day to test yourself right now', 'Take unlimited free practice questions right now', 'g') WHERE data ~ 'Take [0-9]+ free practice questions every day'`);
   // the public offer page always exists (the teacher can edit it, it is never overwritten)
   await db.run('INSERT INTO site_pages (section, slug, title, summary, body, emoji, position) VALUES (?,?,?,?,?,?,?) ON CONFLICT (slug) DO NOTHING', [OFERTA.section, OFERTA.slug, OFERTA.title, OFERTA.summary, OFERTA.body, OFERTA.emoji, 999]);
+  // the privacy policy page always exists too (App Store and Google sign-in need it); never overwritten
+  await db.run('INSERT INTO site_pages (section, slug, title, summary, body, emoji, position) VALUES (?,?,?,?,?,?,?) ON CONFLICT (slug) DO NOTHING', [PRIVACY.section, PRIVACY.slug, PRIVACY.title, PRIVACY.summary, PRIVACY.body, PRIVACY.emoji, 1000]);
   // SAT Ustoz became free: swap the old payment section of the terms for the free one (other edits stay)
   const terms = await db.one("SELECT body FROM site_pages WHERE slug = 'oferta'");
   if (terms?.body?.includes(OFERTA_OLD_PAID.trim())) {
